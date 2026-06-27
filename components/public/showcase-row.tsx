@@ -26,7 +26,10 @@ export function ShowcaseRow({
             href={profile.href}
             className="snap-start shrink-0 w-64 md:w-72 group"
           >
-            <div className="relative h-44 rounded-2xl overflow-hidden mb-3">
+            <div
+              className="relative h-44 rounded-2xl overflow-hidden mb-3"
+              style={{ position: 'relative', width: '100%', height: 176, overflow: 'hidden' }}
+            >
               <Image
                 src={profile.imageUrl}
                 alt={profile.name}

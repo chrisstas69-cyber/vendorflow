@@ -23,7 +23,15 @@ export function PublicEventCard({ event, size = 'default', showFeaturedBadge = t
         isLarge ? 'col-span-1 md:col-span-2' : ''
       }`}
     >
-      <div className={`relative overflow-hidden ${isLarge ? 'h-64 md:h-72' : isCompact ? 'h-36' : 'h-48'}`}>
+      <div
+        className={`relative overflow-hidden ${isLarge ? 'h-64 md:h-72' : isCompact ? 'h-36' : 'h-48'}`}
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: isLarge ? 256 : isCompact ? 144 : 192,
+          overflow: 'hidden',
+        }}
+      >
         <Image
           src={event.coverImageUrl}
           alt={event.name}

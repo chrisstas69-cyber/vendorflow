@@ -11,9 +11,15 @@ export function FeaturedSpotlightBanner({ event }: { event: PlatformEvent }) {
     <Link
       href={`/events/${event.id}`}
       className="block relative group overflow-hidden rounded-2xl md:rounded-3xl isolate"
-      style={{ minHeight: 320, position: 'relative', display: 'block' }}
+      style={{
+        minHeight: 320,
+        position: 'relative',
+        display: 'block',
+        width: '100%',
+        overflow: 'hidden',
+      }}
     >
-      <div style={{ position: 'absolute', inset: 0 }}>
+      <div style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
         <Image
           src={event.coverImageUrl}
           alt={event.name}

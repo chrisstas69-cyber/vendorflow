@@ -1,6 +1,8 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { roleFromPathname } from '@/lib/role-routes';
 import type { UserRole } from '@/lib/platform-data';
 
 const STORAGE_KEY = 'vendorflow-role';
@@ -16,18 +18,26 @@ const RoleContext = createContext<RoleContextValue>({
 });
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
-  const [role, setRoleState] = useState<UserRole>('public');
+  const pathname = usePathname();
+  const [role, setRoleState] = useState<UserRole>(() => roleFromPathname(pathname));
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY) as UserRole | null;
-    if (saved === 'public' || saved === 'vendor' || saved === 'organizer') {
-      setRoleState(saved);
+    const derived = roleFromPathname(pathname);
+    setRoleState(derived);
+    try {
+      localStorage.setItem(STORAGE_KEY, derived);
+    } catch {
+      /* private browsing */
     }
-  }, []);
+  }, [pathname]);
 
   const setRole = (r: UserRole) => {
     setRoleState(r);
-    localStorage.setItem(STORAGE_KEY, r);
+    try {
+      localStorage.setItem(STORAGE_KEY, r);
+    } catch {
+      /* private browsing */
+    }
   };
 
   return (

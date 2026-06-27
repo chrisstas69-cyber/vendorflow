@@ -28,7 +28,7 @@ export const STOCK = {
   aerialFair:
     'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1200&q=80&auto=format&fit=crop',
   crowdHands:
-    'https://images.unsplash.com/photo-1459749411175-04bf8504cebf?w=1200&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=1200&q=80&auto=format&fit=crop',
   carShow:
     'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1200&q=80&auto=format&fit=crop',
   liveMusic:

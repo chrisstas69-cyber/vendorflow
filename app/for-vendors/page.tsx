@@ -1,18 +1,27 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { PublicLayout } from '@/components/layout/public-layout';
+import { SafeImageFrame } from '@/components/public/safe-image-frame';
 import { STOCK } from '@/lib/event-images';
 import { Activity, Command, DollarSign, Shield, ArrowRight } from 'lucide-react';
 
 export default function ForVendorsPage() {
   return (
     <PublicLayout>
-      <div className="relative h-48 md:h-64 mb-8 overflow-hidden">
-        <Image src={STOCK.toyBooth} alt="Vendor booth at street fair" fill className="object-cover" priority sizes="100vw" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/20" />
-        <div className="absolute bottom-6 left-0 right-0 max-w-4xl mx-auto px-4">
+      <div
+        className="relative mb-8 overflow-hidden"
+        style={{ position: 'relative', width: '100%', overflow: 'hidden' }}
+      >
+        <SafeImageFrame src={STOCK.toyBooth} alt="Vendor booth at street fair" height={256} priority sizes="100vw" />
+        <div
+          className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/20 pointer-events-none"
+          style={{ position: 'absolute', inset: 0 }}
+        />
+        <div
+          className="absolute bottom-6 left-0 right-0 max-w-4xl mx-auto px-4"
+          style={{ position: 'absolute', bottom: 24, left: 0, right: 0 }}
+        >
           <h1 className="text-3xl md:text-4xl font-bold text-white">Built for street fair vendors</h1>
         </div>
       </div>
