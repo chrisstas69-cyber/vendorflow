@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useDemoStore } from '@/contexts/demo-store-context';
 import { OrganizerLayout } from '@/components/layout/organizer-layout';
 import { VendorSetupPreview } from '@/components/vendor/vendor-setup-preview';
+import { VendorDecisionPanel } from '@/components/organizer/vendor-decision-panel';
 import { Mail, ArrowRight, Star } from 'lucide-react';
 
 export default function OrganizerApplicationsPage() {
@@ -106,6 +107,11 @@ export default function OrganizerApplicationsPage() {
                 </div>
 
                 <div className="p-5">
+                  <VendorDecisionPanel
+                    vendorEmail={sub.vendorEmail}
+                    eventId={sub.eventId}
+                    vendorName={sub.vendorName}
+                  />
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
                     <div>
                       <div className="font-bold text-lg flex items-center gap-2">

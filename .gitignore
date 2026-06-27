@@ -34,6 +34,10 @@ yarn-error.log*
 data/events.db
 data/events.db-shm
 data/events.db-wal
+data/platform.db
+data/platform.db-journal
+prisma/*.db
+prisma/*.db-journal
 
 # google credentials
 credentials.json

@@ -1,0 +1,307 @@
+// VendorFlow platform database — separate from scraper SQLite (data/events.db)
+// Run: npx prisma db push && npx prisma generate
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Vendor Passport ─────────────────────────────────────────────────────────
+
+model VendorPassport {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vendorEmail  String  @unique
+  businessName String  @default("")
+  dba          String?
+  contactName  String  @default("")
+  phone        String  @default("")
+  website      String?
+  description  String  @default("")
+
+  /// JSON string[] — product / service categories
+  categories  String @default("[]")
+  /// JSON string[] — AI matching tags (family-friendly, needs-20a-power, …)
+  serviceTags String @default("[]")
+
+  // Document compliance
+  validationState String    @default("incomplete") // incomplete | documents_pending | needs_review | ready_for_matching
+  complianceScore Int       @default(0)
+  insuranceExpiry DateTime?
+  setupPhotoUrl   String?
+
+  // Trailer & booth logistics
+  vehicleType      String  @default("tent-only") // tent-only | van | trailer | food-truck | other
+  trailerLengthFt  Float?
+  boothWidthFt     Float?
+  boothDepthFt     Float?
+  needsElectric    Boolean @default(false)
+  ampRequirement   String?
+  setupTimeMinutes Int?
+  waterAccess      Boolean?
+  generatorOk      Boolean?
+
+  documents VendorDocument[]
+  invoices  Invoice[]
+
+  @@index([validationState])
+}
+
+model VendorDocument {
+  id         String   @id @default(cuid())
+  uploadedAt DateTime @default(now())
+
+  passportId String
+  passport   VendorPassport @relation(fields: [passportId], references: [id], onDelete: Cascade)
+
+  type      String // coi | w9 | ce200 | booth-layout | vehicle-info | food-permit | other
+  fileName  String
+  fileUrl   String?
+  status    String    @default("pending") // pending | approved | rejected | expired
+  expiresAt DateTime?
+  notes     String?
+
+  @@index([passportId, type])
+}
+
+// ─── Event Series ────────────────────────────────────────────────────────────
+
+model EventSeries {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  slug          String  @unique
+  name          String
+  description   String  @default("")
+  organizerId   String
+  seasonLabel   String?
+  coverImageUrl String?
+
+  events   SeriesEvent[]
+  invoices Invoice[]
+
+  @@index([organizerId])
+}
+
+model SeriesEvent {
+  id       String @id @default(cuid())
+  seriesId String
+  series   EventSeries @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  eventId  String
+
+  @@unique([seriesId, eventId])
+  @@index([eventId])
+}
+
+// ─── Payments & Contracts ────────────────────────────────────────────────────
+
+model PaymentAccount {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownerType String // vendor | organizer | platform
+  ownerId   String
+  provider  String @default("stripe") // stripe | manual
+
+  externalAccountId String?
+  displayName       String?
+  onboardingStatus  String  @default("pending") // pending | in_progress | complete | restricted
+  payoutEnabled     Boolean @default(false)
+  /// JSON — provider-specific metadata (Connect account id, last webhook, …)
+  metadata          String  @default("{}")
+
+  splits PaymentSplit[]
+
+  @@unique([ownerType, ownerId, provider])
+  @@index([ownerId])
+}
+
+model Invoice {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  invoiceNumber String @unique
+  status        String @default("draft") // draft | sent | partial | paid | void | overdue
+
+  organizerId      String
+  eventId          String?
+  seriesId         String?
+  vendorPassportId String?
+
+  series   EventSeries?    @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  vendor   VendorPassport? @relation(fields: [vendorPassportId], references: [id], onDelete: SetNull)
+
+  totalAmountCents Int      @default(0)
+  currency         String   @default("usd")
+  dueDate          DateTime?
+  paidAt           DateTime?
+  notes            String?
+
+  lineItems InvoiceLineItem[]
+  splits    PaymentSplit[]
+  payments  Payment[]
+  contracts Contract[]
+
+  @@index([organizerId, status])
+  @@index([eventId])
+  @@index([vendorPassportId])
+}
+
+model InvoiceLineItem {
+  id        String @id @default(cuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  label       String
+  description String?
+  amountCents Int
+  quantity    Int     @default(1)
+  sortOrder   Int     @default(0)
+
+  @@index([invoiceId])
+}
+
+model PaymentSplit {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  payeeAccountId String?
+  payeeAccount   PaymentAccount? @relation(fields: [payeeAccountId], references: [id], onDelete: SetNull)
+
+  payeeType  String // vendor | organizer | platform | sponsor
+  payeeLabel String?
+
+  /// Fixed allocation in cents — use when not percentage-based
+  amountCents Int?
+  /// Basis points (1500 = 15.00%) — use for proportional splits
+  percentBps  Int?
+
+  status    String    @default("pending") // pending | processing | paid | failed | waived
+  paidAt    DateTime?
+  externalTransferId String?
+
+  @@index([invoiceId])
+  @@index([payeeAccountId])
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  amountCents       Int
+  currency          String  @default("usd")
+  status            String  @default("pending") // pending | processing | succeeded | failed | refunded
+  provider          String  @default("stripe")
+  externalPaymentId String?
+  paymentMethod     String?
+  milestoneId       String?
+  /// JSON — checkout session, receipt, failure reason
+  metadata          String  @default("{}")
+
+  @@index([invoiceId, status])
+  @@index([externalPaymentId])
+}
+
+model ContractTemplate {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  slug              String  @unique
+  name              String
+  description       String  @default("")
+  bodyTemplate      String
+  /// JSON PaymentMilestone[] — e.g. 50% deposit, 50% balance 30 days out
+  defaultMilestones String  @default("[]")
+  isActive          Boolean @default(true)
+
+  contracts Contract[]
+}
+
+model Contract {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  templateId String
+  template   ContractTemplate @relation(fields: [templateId], references: [id])
+
+  invoiceId        String?
+  invoice          Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  vendorPassportId String
+  organizerId      String
+  eventId          String?
+
+  status String @default("draft") // draft | sent | signed_vendor | signed_organizer | active | cancelled
+  /// JSON resolved milestone schedule with due dates
+  milestones       String @default("[]")
+  documentBody     String @default("")
+  signedAtVendor   DateTime?
+  signedAtOrganizer DateTime?
+  documentUrl      String?
+
+  @@index([vendorPassportId])
+  @@index([organizerId, status])
+}
+
+// ─── Long Island / Regional Compliance ───────────────────────────────────────
+
+model ComplianceRule {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  region              String // nassau | suffolk | nyc | nj
+  documentType        String
+  label               String
+  description         String  @default("")
+  /// JSON string[] — event categories this applies to; empty = all
+  requiredForCategories String @default("[]")
+  salesTaxRateBps     Int?
+  permitTemplateUrl   String?
+  isFoundersEdition   Boolean @default(false)
+
+  @@index([region, documentType])
+}
+
+// ─── AI Intelligence Cache ───────────────────────────────────────────────────
+
+model AIInsight {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  scopeType String // vendor | event | series | organizer | match
+  scopeId   String
+
+  insightType String // match_recommendation | revenue_forecast | compliance_alert | assistant_reply | risk_score
+  title       String
+  summary     String
+  /// JSON — structured payload for UI components (scores, event ids, actions, …)
+  payload     String @default("{}")
+
+  modelVersion String?
+  confidence   Float?
+  status       String    @default("active") // active | dismissed | expired
+  expiresAt    DateTime?
+
+  @@index([scopeType, scopeId, status])
+  @@index([insightType, status])
+  @@index([expiresAt])
+}

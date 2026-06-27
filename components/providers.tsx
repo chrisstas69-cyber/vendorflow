@@ -3,12 +3,15 @@
 import { ThemeProvider } from '@/contexts/theme-context';
 import { DemoStoreProvider } from '@/contexts/demo-store-context';
 import { RoleProvider } from '@/contexts/role-context';
+import { VendorPassportProvider } from '@/contexts/vendor-passport-context';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
       <RoleProvider>
-        <DemoStoreProvider>{children}</DemoStoreProvider>
+        <DemoStoreProvider>
+          <VendorPassportProvider>{children}</VendorPassportProvider>
+        </DemoStoreProvider>
       </RoleProvider>
     </ThemeProvider>
   );
