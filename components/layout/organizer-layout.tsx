@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, Calendar, FileText, LayoutDashboard, Plus, Users } from 'lucide-react';
+import { BarChart3, Calendar, FileText, LayoutDashboard, Plus, Users, CreditCard, MessageSquare } from 'lucide-react';
 import { RoleSwitcher } from '@/components/layout/role-switcher';
 import { PublicThemeToggle } from '@/components/public/theme-toggle';
 import { useTheme } from '@/contexts/theme-context';
@@ -11,6 +11,8 @@ const NAV = [
   { href: '/organizer', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/organizer/events', label: 'My Events', icon: Calendar },
   { href: '/organizer/applications', label: 'Applications', icon: FileText },
+  { href: '/organizer/invoicing', label: 'Invoicing', icon: CreditCard },
+  { href: '/organizer/assistant', label: 'Assistant', icon: MessageSquare },
   { href: '/organizer/command', label: 'Command Center', icon: Users },
   { href: '/organizer/events/new', label: 'Create Event', icon: Plus },
 ];

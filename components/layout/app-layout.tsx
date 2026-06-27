@@ -8,6 +8,8 @@ import {
   Command,
   Calendar,
   DollarSign,
+  IdCard,
+  MessageSquare,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/theme-context';
 import { RoleSwitcher } from '@/components/layout/role-switcher';
@@ -15,6 +17,8 @@ import { PublicThemeToggle } from '@/components/public/theme-toggle';
 
 const NAV = [
   { href: '/pulse', icon: Activity, label: 'Find Events' },
+  { href: '/vendor', icon: IdCard, label: 'Passport' },
+  { href: '/vendor/assistant', icon: MessageSquare, label: 'Assistant' },
   { href: '/command', icon: Command, label: 'Command Center' },
   { href: '/intelligence', icon: Shield, label: 'Intel' },
   { href: '/calendar', icon: Calendar, label: 'Calendar' },

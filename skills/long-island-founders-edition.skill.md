@@ -1,13 +1,30 @@
-# Skill: Long Island Founders Edition
+# Long Island Founders Edition (Pilot)
 
-## Context
-Specific requirements for the Long Island launch, focusing on Nassau and Suffolk counties.
+## Goal
+Hyper-local Nassau & Suffolk compliance, premium onboarding, and in-flow document checks.
 
-## Step-by-step plan
-1. Configure compliance rules for New York state and local Long Island municipalities.
-2. Tune public discovery algorithms to prioritize events in Nassau and Suffolk counties.
-3. Establish a "Founders" badge system for early adopters (vendors and organizers).
-4. Build a dedicated landing page for the Long Island region launch.
-5. Integrate local event data sources from LI-specific calendars.
-6. Refactor the regional filtering system to support county-level granularity.
-7. Finalize the Founders Edition feature set and summarize all changes.
+## Data (`lib/long-island/`)
+- `compliance-rules.ts` — NYS Certificate of Authority, health permits, fire marshal, parks auth
+- `compliance-check.ts` — runs against VendorPassport + event region/category
+- `seed.ts` — persists rules to `ComplianceRule` Prisma table
+
+## Sales tax
+Nassau/Suffolk combined rate stored as `salesTaxRateBps: 8625` (8.625%)
+
+## UI
+- `FoundersEditionBanner` — premium gradient on vendor passport, assistants, event apply
+- `LocalComplianceAlert` — missing local docs in vendor application modal
+
+## Seeded rules
+| ID | Region | Document |
+|----|--------|----------|
+| li-nassau-coa | Nassau | NYS Certificate of Authority |
+| li-suffolk-coa | Suffolk | NYS Certificate of Authority |
+| li-nassau-health | Nassau | Temporary Food Permit |
+| li-suffolk-health | Suffolk | Mobile Food Unit Permit |
+| li-nassau-fire | Nassau | Tent/Canopy Permit |
+| li-suffolk-park | Suffolk | Parks Vendor Authorization |
+
+## Phase 3
+- County-specific application PDF templates
+- Auto-fetch permit status from county APIs

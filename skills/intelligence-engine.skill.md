@@ -1,13 +1,25 @@
-# Skill: Intelligence Engine
+# Intelligence Engine — Deterministic Matching (Phase 2)
 
-## Context
-Core logic for predictive matching, data aggregation, and autonomous decision support.
+## Goal
+Rule-based vendor ↔ event compatibility scores before AI enhancement.
 
-## Step-by-step plan
-1. Implement centralized data ingestion service for all platform entities.
-2. Build scoring algorithms for vendor-event matching based on historical data.
-3. Develop predictive analytics for organizer decision support (e.g., event turnout estimation).
-4. Add intelligence layer to the existing communication system for automated follow-ups.
-5. Create comprehensive logging and auditing for all AI-driven decisions.
-6. Refactor platform services to interact with the Intelligence Engine for data-heavy tasks.
-7. Finalize and document the Intelligence Engine architecture.
+## Matching utility (`lib/intel/matching.ts`)
+Scores on:
+- Category caps / slot availability
+- Booth footprint & trailer limits
+- Insurance / COI compliance
+- Required document checklist
+- Geographic radius (haversine from region centroid)
+
+## API
+| Method | Route | Purpose |
+|--------|-------|---------|
+| GET | `/api/intel/match?vendorEmail=&eventId=` | Rule-based score + breakdown |
+| GET | `/api/intel/match?...&ai=1` | Merged rule + Claude cache |
+
+## UI
+- `VendorDecisionPanel` on `/organizer/applications` — shows % match + rule lines + AI accordion
+
+## Phase 3
+- Weight tuning per event category
+- Custom geo coordinates per event row

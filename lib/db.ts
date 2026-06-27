@@ -118,6 +118,10 @@ export function getEvents(db: Database.Database, opts?: {
   region?: string;
   event_type?: string;
   isWeekend?: boolean;
+  town?: string;
+  query?: string;
+  state?: 'NY' | 'NJ';
+  limit?: number;
 }): EventRow[] {
   let sql = 'SELECT * FROM events WHERE 1=1';
   const params: unknown[] = [];
@@ -140,6 +144,11 @@ export function getEvents(db: Database.Database, opts?: {
     sql += ' AND region = ?';
     params.push(opts.region);
   }
+  if (opts?.state === 'NJ') {
+    sql += " AND region = 'NJ'";
+  } else if (opts?.state === 'NY') {
+    sql += " AND region != 'NJ'";
+  }
   if (opts?.event_type) {
     sql += ' AND event_type = ?';
     params.push(opts.event_type);
@@ -147,7 +156,21 @@ export function getEvents(db: Database.Database, opts?: {
   if (opts?.isWeekend) {
     sql += ' AND is_weekend = 1';
   }
+  if (opts?.town) {
+    const townLike = `%${opts.town}%`;
+    sql += ' AND (LOWER(town) LIKE LOWER(?) OR LOWER(location) LIKE LOWER(?) OR LOWER(county) LIKE LOWER(?))';
+    params.push(townLike, townLike, townLike);
+  }
+  if (opts?.query) {
+    const qLike = `%${opts.query}%`;
+    sql += ' AND (LOWER(title) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?) OR LOWER(town) LIKE LOWER(?) OR LOWER(location) LIKE LOWER(?))';
+    params.push(qLike, qLike, qLike, qLike);
+  }
   sql += ' ORDER BY event_date ASC, event_time ASC';
+  if (opts?.limit) {
+    sql += ' LIMIT ?';
+    params.push(opts.limit);
+  }
   return db.prepare(sql).all(...params) as EventRow[];
 }
 

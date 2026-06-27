@@ -5,15 +5,21 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useDemoStore } from '@/contexts/demo-store-context';
+import { useVendorPassport } from '@/contexts/vendor-passport-context';
 import { PublicLayout } from '@/components/layout/public-layout';
 import { CATEGORY_LABELS } from '@/lib/platform-data';
 import { SetupPhotoUpload } from '@/components/vendor/setup-photo-upload';
 import { Calendar, MapPin, Users, Clock, Store, ArrowLeft, CheckCircle, Star } from 'lucide-react';
+import { mockVendorPassport } from '@/lib/vendor-passport';
+import { runLongIslandComplianceCheck } from '@/lib/long-island/compliance-check';
+import { FoundersEditionBanner } from '@/components/founders/founders-banner';
+import { LocalComplianceAlert } from '@/components/founders/local-compliance-alert';
 
 export default function EventDetailPage() {
   const params = useParams();
   const id = params.id as string;
   const { getEvent, incrementViews, submitVendorApplication } = useDemoStore();
+  const { passport, validation } = useVendorPassport();
   const event = getEvent(id);
 
   const [activeImage, setActiveImage] = useState(0);
@@ -55,10 +61,13 @@ export default function EventDetailPage() {
   };
 
   const slotsLeft = event.vendorSlots - event.vendorSlotsFilled;
+  const liCompliance = runLongIslandComplianceCheck(mockVendorPassport, event);
 
   return (
     <PublicLayout>
       <div className="max-w-4xl mx-auto px-4 py-6">
+        <FoundersEditionBanner compact />
+        <div className="h-4" />
         <Link href="/discover" className="inline-flex items-center gap-1 text-sm public-muted hover:opacity-80 mb-4">
           <ArrowLeft className="h-4 w-4" /> All events
         </Link>
@@ -173,11 +182,26 @@ export default function EventDetailPage() {
               </p>
               <button
                 type="button"
-                onClick={() => setShowApply(true)}
+                onClick={() => {
+                  setForm({
+                    vendorName: passport.businessName || 'Demo Vendor Co.',
+                    vendorEmail: passport.vendorEmail,
+                    category: passport.categories[0] ?? 'LED Toys',
+                    message: '',
+                    hasInsurance: passport.documents.some(d => d.type === 'coi'),
+                    setupPhotoUrl: passport.setupPhotoUrl,
+                  });
+                  setShowApply(true);
+                }}
                 className="w-full py-3 bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold rounded-xl transition-colors"
               >
                 Apply as Vendor
               </button>
+              {!validation.readyForMatching && (
+                <p className="text-xs text-amber-700 mt-2 text-center">
+                  Passport: {validation.label} — <Link href="/vendor" className="underline">complete profile</Link>
+                </p>
+              )}
               <Link
                 href="/pulse"
                 className="block text-center text-sm public-muted mt-3 hover:underline"
@@ -201,6 +225,7 @@ export default function EventDetailPage() {
             <form onSubmit={handleApply} className="public-card border rounded-2xl w-full max-w-md p-6 shadow-xl max-h-[90vh] overflow-y-auto">
               <h2 className="text-xl font-bold public-heading mb-4">Vendor Application</h2>
               <p className="text-sm public-muted mb-4">{event.name}</p>
+              <LocalComplianceAlert result={liCompliance} />
               <div className="space-y-3">
                 {(['vendorName', 'vendorEmail', 'category'] as const).map(field => (
                   <input

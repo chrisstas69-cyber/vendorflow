@@ -6,7 +6,7 @@ export const ROLE_HOME: Record<UserRole, string> = {
   organizer: '/organizer',
 };
 
-const VENDOR_PREFIXES = ['/pulse', '/command', '/intelligence', '/calendar', '/journal'];
+const VENDOR_PREFIXES = ['/pulse', '/command', '/intelligence', '/calendar', '/journal', '/vendor'];
 
 /** Derive active role from the current URL — source of truth for tab highlighting. */
 export function roleFromPathname(pathname: string): UserRole {

@@ -1,5 +1,6 @@
 import type { AlphaTier, MockEvent } from '@/lib/mock-data';
 import { mockEvents } from '@/lib/mock-data';
+import type { OrganizerPipelineStage } from '@/lib/organizer-schema';
 import { getEventCoverImage, STOCK } from '@/lib/event-images';
 
 export type UserRole = 'public' | 'vendor' | 'organizer';
@@ -29,6 +30,17 @@ export interface Organizer {
 
 export type PromotionTier = 'none' | 'featured' | 'spotlight';
 
+export interface EventSeries {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  organizerId: string;
+  seasonLabel: string;
+  eventIds: string[];
+  coverImageUrl?: string;
+}
+
 export interface PlatformEvent {
   id: string;
   slug: string;
@@ -44,6 +56,7 @@ export interface PlatformEvent {
   audienceTags: string[];
   organizerId: string;
   organizerName: string;
+  seriesId?: string;
   listingStatus: 'published' | 'draft';
   vendorSlots: number;
   vendorSlotsFilled: number;
@@ -75,6 +88,8 @@ export interface VendorSubmission {
   category: string;
   message: string;
   status: 'pending' | 'approved' | 'rejected';
+  pipelineStage?: OrganizerPipelineStage;
+  infoRequested?: boolean;
   submittedAt: string;
   hasInsurance: boolean;
   documents: import('@/lib/documents').VendorDocument[];
@@ -85,13 +100,17 @@ export interface VendorSubmission {
   shortlisted?: boolean;
 }
 
+/** Demo organizer owns seeded events; evt-003 stays claimable for scrape flow */
+export const DEMO_ORGANIZER_ID = 'org-demo';
+export const DEMO_ORGANIZER_NAME = 'My Events Co.';
+
 const ORGANIZER_META: Record<string, Partial<PlatformEvent>> = {
-  'evt-001': { city: 'New York', state: 'NY', region: 'NYC', organizerId: 'org-001', organizerName: 'NYC Parks Events', category: 'festival', audienceTags: ['Family', 'Free', 'Outdoor'], vendorSlots: 80, vendorSlotsFilled: 62, applicationDeadline: '2026-02-28', views: 2840, saves: 412, promotionTier: 'featured' as const },
-  'evt-002': { city: 'Jersey City', state: 'NJ', region: 'Hudson County', organizerId: 'org-002', organizerName: 'Riverside Events Co.', category: 'carnival', audienceTags: ['Family', 'Kids', 'Indoor'], vendorSlots: 45, vendorSlotsFilled: 38, applicationDeadline: '2026-03-01', views: 1920, saves: 287 },
+  'evt-001': { city: 'New York', state: 'NY', region: 'NYC', organizerId: DEMO_ORGANIZER_ID, organizerName: DEMO_ORGANIZER_NAME, seriesId: 'series-spring-2026', category: 'festival', audienceTags: ['Family', 'Free', 'Outdoor'], vendorSlots: 80, vendorSlotsFilled: 62, applicationDeadline: '2026-02-28', views: 2840, saves: 412, promotionTier: 'featured' as const },
+  'evt-002': { city: 'Jersey City', state: 'NJ', region: 'Hudson County', organizerId: DEMO_ORGANIZER_ID, organizerName: DEMO_ORGANIZER_NAME, seriesId: 'series-spring-2026', category: 'carnival', audienceTags: ['Family', 'Kids', 'Indoor'], vendorSlots: 45, vendorSlotsFilled: 38, applicationDeadline: '2026-03-01', views: 1920, saves: 287 },
   'evt-003': { city: 'Newark', state: 'NJ', region: 'Essex County', organizerId: 'org-scraped', organizerName: 'Unclaimed — scraped', category: 'farmers-market', audienceTags: ['Local', 'Food', 'Outdoor'], vendorSlots: 30, vendorSlotsFilled: 18, views: 980, saves: 134, isClaimable: true },
-  'evt-004': { city: 'Westfield', state: 'NJ', region: 'Union County', organizerId: 'org-004', organizerName: 'Lincoln Elementary PTA', category: 'school-fair', audienceTags: ['Family', 'School', 'Kids'], vendorSlots: 25, vendorSlotsFilled: 22, applicationDeadline: '2026-03-15', views: 1560, saves: 201 },
-  'evt-005': { city: 'Hoboken', state: 'NJ', region: 'Hudson County', organizerId: 'org-005', organizerName: 'Main Street BID', category: 'street-fair', audienceTags: ['Food', 'Outdoor', 'Live Music'], vendorSlots: 60, vendorSlotsFilled: 41, views: 2100, saves: 298 },
-  'evt-006': { city: 'Edison', state: 'NJ', region: 'Middlesex County', organizerId: 'org-006', organizerName: 'Metro Expo Group', category: 'festival', audienceTags: ['Family', 'Toys', 'Indoor'], vendorSlots: 100, vendorSlotsFilled: 74, applicationDeadline: '2026-03-10', views: 3200, saves: 445, promotionTier: 'spotlight' as const },
+  'evt-004': { city: 'Westfield', state: 'NJ', region: 'Union County', organizerId: DEMO_ORGANIZER_ID, organizerName: DEMO_ORGANIZER_NAME, seriesId: 'series-spring-2026', category: 'school-fair', audienceTags: ['Family', 'School', 'Kids'], vendorSlots: 25, vendorSlotsFilled: 22, applicationDeadline: '2026-03-15', views: 1560, saves: 201 },
+  'evt-005': { city: 'Hoboken', state: 'NJ', region: 'Hudson County', organizerId: DEMO_ORGANIZER_ID, organizerName: DEMO_ORGANIZER_NAME, seriesId: 'series-summer-expo', category: 'street-fair', audienceTags: ['Food', 'Outdoor', 'Live Music'], vendorSlots: 60, vendorSlotsFilled: 41, views: 2100, saves: 298 },
+  'evt-006': { city: 'Edison', state: 'NJ', region: 'Middlesex County', organizerId: DEMO_ORGANIZER_ID, organizerName: DEMO_ORGANIZER_NAME, seriesId: 'series-summer-expo', category: 'festival', audienceTags: ['Family', 'Toys', 'Indoor'], vendorSlots: 100, vendorSlotsFilled: 74, applicationDeadline: '2026-03-10', views: 3200, saves: 445, promotionTier: 'spotlight' as const },
 };
 
 function slugify(name: string): string {
@@ -164,8 +183,9 @@ export const mockPlatformEvents: PlatformEvent[] = [
       city: 'Wantagh',
       state: 'NY',
       region: 'Long Island',
-      organizerId: 'org-007',
-      organizerName: 'LI Summer Events',
+      organizerId: DEMO_ORGANIZER_ID,
+      organizerName: DEMO_ORGANIZER_NAME,
+      seriesId: 'series-li-summer',
       category: 'festival',
       audienceTags: ['Family', 'Beach', 'Music', 'Food'],
       vendorSlots: 120,
@@ -198,8 +218,9 @@ export const mockPlatformEvents: PlatformEvent[] = [
       city: 'Maplewood',
       state: 'NJ',
       region: 'Essex County',
-      organizerId: 'org-008',
-      organizerName: 'Maplewood Village Alliance',
+      organizerId: DEMO_ORGANIZER_ID,
+      organizerName: DEMO_ORGANIZER_NAME,
+      seriesId: 'series-spring-2026',
       category: 'street-fair',
       audienceTags: ['Family', 'Local', 'Artisan', 'Food'],
       vendorSlots: 55,
@@ -230,8 +251,9 @@ export const mockPlatformEvents: PlatformEvent[] = [
       city: 'Hoboken',
       state: 'NJ',
       region: 'Hudson County',
-      organizerId: 'org-009',
-      organizerName: 'Hudson Auto Events',
+      organizerId: DEMO_ORGANIZER_ID,
+      organizerName: DEMO_ORGANIZER_NAME,
+      seriesId: 'series-summer-expo',
       category: 'car-show',
       audienceTags: ['Cars', 'Outdoor', 'Food', 'Live Music'],
       vendorSlots: 40,
@@ -242,6 +264,39 @@ export const mockPlatformEvents: PlatformEvent[] = [
       promotionTier: 'featured' as const,
     }
   ),
+];
+
+export const mockEventSeries: EventSeries[] = [
+  {
+    id: 'series-spring-2026',
+    name: 'Spring 2026 Fair Circuit',
+    slug: 'spring-2026-fair-circuit',
+    description: 'School fairs, festivals, and community markets across NY/NJ — March through April.',
+    organizerId: DEMO_ORGANIZER_ID,
+    seasonLabel: 'Spring 2026',
+    eventIds: ['evt-001', 'evt-002', 'evt-004', 'evt-008'],
+    coverImageUrl: STOCK.festivalCrowd,
+  },
+  {
+    id: 'series-summer-expo',
+    name: 'Summer Expo Series',
+    slug: 'summer-expo-series',
+    description: 'Large-format expos, street fairs, and car shows — May through June.',
+    organizerId: DEMO_ORGANIZER_ID,
+    seasonLabel: 'Summer 2026',
+    eventIds: ['evt-005', 'evt-006', 'evt-009'],
+    coverImageUrl: STOCK.expoHall,
+  },
+  {
+    id: 'series-li-summer',
+    name: 'LI Summer Tour',
+    slug: 'li-summer-tour',
+    description: 'Long Island boardwalk and beach festivals.',
+    organizerId: DEMO_ORGANIZER_ID,
+    seasonLabel: 'Summer 2026',
+    eventIds: ['evt-007'],
+    coverImageUrl: STOCK.beachFest,
+  },
 ];
 
 export const mockOrganizers: Organizer[] = [
@@ -260,6 +315,7 @@ export const mockVendorSubmissions: VendorSubmission[] = [
     category: 'LED Toys',
     message: 'We do spinning LED toys and light-up wands. 3 years at street fairs.',
     status: 'approved',
+    pipelineStage: 'approved',
     submittedAt: '2026-02-20T14:30:00Z',
     hasInsurance: true,
     applicationId: 'app-001',
@@ -282,6 +338,9 @@ export const mockVendorSubmissions: VendorSubmission[] = [
     category: 'Balloons & Face Paint',
     message: 'School fairs are our specialty. COI attached.',
     status: 'pending',
+    pipelineStage: 'reviewing',
+    shortlisted: true,
+    infoRequested: false,
     submittedAt: '2026-02-22T09:15:00Z',
     hasInsurance: true,
     requiredForms: ['coi', 'w9'],
@@ -299,6 +358,7 @@ export const mockVendorSubmissions: VendorSubmission[] = [
     category: 'Games & Toys',
     message: 'Portable mini arcade games for kids.',
     status: 'approved',
+    pipelineStage: 'approved',
     submittedAt: '2026-02-18T11:00:00Z',
     hasInsurance: true,
     applicationId: 'app-003',
@@ -315,6 +375,7 @@ export const mockVendorSubmissions: VendorSubmission[] = [
     category: 'Food Truck',
     message: 'Award-winning BBQ — perfect for car show crowds.',
     status: 'pending',
+    pipelineStage: 'applied',
     submittedAt: '2026-02-25T16:00:00Z',
     hasInsurance: true,
     requiredForms: ['coi', 'ce200', 'w9', 'vehicle-info', 'food-permit'],
@@ -324,9 +385,40 @@ export const mockVendorSubmissions: VendorSubmission[] = [
     ],
     setupPhotoUrl: STOCK.foodTrucks,
   },
+  {
+    id: 'sub-005',
+    eventId: 'evt-002',
+    eventName: 'Kids Carnival Weekend',
+    vendorName: 'Sweet Treats Cart',
+    vendorEmail: 'sweets@example.com',
+    category: 'Desserts',
+    message: 'Handmade cotton candy and funnel cakes — saw you at Riverside last year.',
+    status: 'pending',
+    pipelineStage: 'scraped',
+    submittedAt: '2026-02-19T08:00:00Z',
+    hasInsurance: false,
+    requiredForms: ['coi', 'w9'],
+    documents: [],
+    setupPhotoUrl: STOCK.vendorTent,
+  },
+  {
+    id: 'sub-006',
+    eventId: 'evt-005',
+    eventName: 'Hoboken Spring Street Fair',
+    vendorName: 'Artisan Candle Co.',
+    vendorEmail: 'candles@example.com',
+    category: 'Craft',
+    message: 'Local soy candles — need insurance docs by Friday.',
+    status: 'pending',
+    pipelineStage: 'reviewing',
+    infoRequested: true,
+    submittedAt: '2026-02-24T11:30:00Z',
+    hasInsurance: true,
+    requiredForms: ['coi', 'w9'],
+    documents: [{ id: 'doc-s7', type: 'coi', fileName: 'COI_ArtisanCandle.pdf', uploadedAt: '2026-02-24T11:00:00Z' }],
+    setupPhotoUrl: STOCK.farmersMarket,
+  },
 ];
-
-export const DEMO_ORGANIZER_ID = 'org-demo';
 
 export function toVendorEvent(e: PlatformEvent): MockEvent {
   return {

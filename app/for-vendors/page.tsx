@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { PublicLayout } from '@/components/layout/public-layout';
 import { SafeImageFrame } from '@/components/public/safe-image-frame';
 import { STOCK } from '@/lib/event-images';
+import { FoundersEditionBanner } from '@/components/founders/founders-banner';
 import { Activity, Command, DollarSign, Shield, ArrowRight } from 'lucide-react';
 
 export default function ForVendorsPage() {
@@ -27,6 +28,9 @@ export default function ForVendorsPage() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 pb-12">
+        <div className="mb-8">
+          <FoundersEditionBanner />
+        </div>
         <p className="text-xl public-muted mb-10">
           Find S-tier events, track applications, and log profit — all in one OS.
         </p>
