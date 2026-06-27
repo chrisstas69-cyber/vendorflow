@@ -8,6 +8,7 @@ import {
   ORGANIZER_STARTER_PROMPTS,
   VENDOR_STARTER_PROMPTS,
 } from '@/lib/assistant/quick-actions';
+import { useVendorTheme } from '@/components/vendor/use-vendor-theme';
 
 interface ChatMessage {
   id: string;
@@ -22,6 +23,8 @@ export interface AssistantChatPanelProps {
 
 export function AssistantChatPanel({ role }: AssistantChatPanelProps) {
   const starters = role === 'organizer' ? ORGANIZER_STARTER_PROMPTS : VENDOR_STARTER_PROMPTS;
+  const { card, cardInset, muted, heading, input: inputClass, btnPrimary, btnSecondary, divider, accent, dark } =
+    useVendorTheme();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
@@ -35,6 +38,13 @@ export function AssistantChatPanel({ role }: AssistantChatPanelProps) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+
+  const userBubble =
+    role === 'vendor'
+      ? 'bg-amber-400 text-gray-900'
+      : dark
+        ? 'bg-indigo-600 text-white'
+        : 'bg-indigo-600 text-white';
 
   const send = useCallback(
     async (text: string) => {
@@ -67,28 +77,28 @@ export function AssistantChatPanel({ role }: AssistantChatPanelProps) {
   );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)] max-h-[720px] rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-gray-900">
+    <div className={`flex flex-col h-[calc(100vh-12rem)] max-h-[720px] rounded-2xl border overflow-hidden ${card}`}>
       <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map(msg => (
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
               className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
                 msg.role === 'user'
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100'
+                  ? userBubble
+                  : `${cardInset} ${heading}`
               }`}
             >
               {msg.role === 'assistant' && (
-                <Sparkles className="h-4 w-4 text-indigo-500 mb-1" />
+                <Sparkles className={`h-4 w-4 mb-1 ${role === 'vendor' ? accent : 'text-indigo-500'}`} />
               )}
               <p className="whitespace-pre-wrap">{msg.content}</p>
               {msg.actions && msg.actions.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-200/50 dark:border-gray-700">
+                <div className={`flex flex-wrap gap-2 mt-3 pt-3 border-t ${divider}`}>
                   {msg.actions.map(action => (
                     <Link
                       key={action.id}
                       href={action.href}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-400 text-gray-900 text-xs font-semibold hover:bg-amber-300"
+                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold ${btnPrimary}`}
                     >
                       <Zap className="h-3 w-3" />
                       {action.label}
@@ -100,20 +110,20 @@ export function AssistantChatPanel({ role }: AssistantChatPanelProps) {
           </div>
         ))}
         {loading && (
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+          <div className={`flex items-center gap-2 text-sm ${muted}`}>
             <Loader2 className="h-4 w-4 animate-spin" /> Thinking…
           </div>
         )}
       </div>
 
-      <div className="border-t border-gray-200 dark:border-gray-800 p-3 space-y-2">
+      <div className={`border-t p-3 space-y-2 ${divider}`}>
         <div className="flex flex-wrap gap-2">
           {starters.map(p => (
             <button
               key={p}
               type="button"
               onClick={() => send(p)}
-              className="text-xs px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+              className={`text-xs px-3 py-1.5 rounded-full border ${btnSecondary}`}
             >
               {p}
             </button>
@@ -130,12 +140,14 @@ export function AssistantChatPanel({ role }: AssistantChatPanelProps) {
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder="Ask anything…"
-            className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className={`flex-1 px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 ${inputClass}`}
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="p-2.5 rounded-xl bg-indigo-600 text-white disabled:opacity-50"
+            className={`p-2.5 rounded-xl disabled:opacity-50 ${
+              role === 'vendor' ? btnPrimary : 'bg-indigo-600 text-white hover:bg-indigo-500'
+            }`}
           >
             <Send className="h-5 w-5" />
           </button>

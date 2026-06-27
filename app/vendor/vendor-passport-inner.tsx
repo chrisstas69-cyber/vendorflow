@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AppLayout } from '@/components/layout/app-layout';
 import { useVendorPassport } from '@/contexts/vendor-passport-context';
+import { useVendorTheme } from '@/components/vendor/use-vendor-theme';
 import { PassportValidationBanner } from '@/components/vendor/passport/validation-banner';
 import { PassportGeneralTab } from '@/components/vendor/passport/general-tab';
 import { PassportLogisticsTab } from '@/components/vendor/passport/logistics-tab';
@@ -29,6 +30,7 @@ export default function VendorPassportPageInner() {
     TABS.some(t => t.id === initialTab) ? initialTab : 'general'
   );
   const { ready, passport, validation, refreshFromServer, resetToDemo } = useVendorPassport();
+  const { card, muted, heading, tabActive, tabIdle, btnSecondary, accent, divider } = useVendorTheme();
 
   useEffect(() => {
     const t = searchParams.get('tab') as TabId;
@@ -38,7 +40,7 @@ export default function VendorPassportPageInner() {
   if (!ready) {
     return (
       <AppLayout title="Vendor Passport">
-        <div className="p-8 text-center text-gray-500 text-sm">Loading passport…</div>
+        <div className={`p-8 text-center text-sm ${muted}`}>Loading passport…</div>
       </AppLayout>
     );
   }
@@ -48,8 +50,8 @@ export default function VendorPassportPageInner() {
       <div className="max-w-4xl mx-auto p-4 md:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Vendor Passport</h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <h1 className={`text-2xl font-bold ${heading}`}>Vendor Passport</h1>
+            <p className={`text-sm mt-1 ${muted}`}>
               One profile for every application — {passport.vendorEmail}
             </p>
           </div>
@@ -57,20 +59,20 @@ export default function VendorPassportPageInner() {
             <button
               type="button"
               onClick={() => refreshFromServer()}
-              className="inline-flex items-center gap-1 px-3 py-2 border rounded-lg text-sm font-medium"
+              className={`inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium ${btnSecondary}`}
             >
               <RefreshCw className="h-4 w-4" /> Sync
             </button>
             <button
               type="button"
               onClick={resetToDemo}
-              className="px-3 py-2 border rounded-lg text-xs text-gray-500"
+              className={`px-3 py-2 rounded-lg text-xs ${btnSecondary} ${muted}`}
             >
               Reset demo
             </button>
             <Link
               href="/vendor/assistant"
-              className="inline-flex items-center gap-1 px-3 py-2 border rounded-lg text-sm font-medium"
+              className={`inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium ${btnSecondary}`}
             >
               <MessageSquare className="h-4 w-4" /> Assistant
             </Link>
@@ -85,25 +87,23 @@ export default function VendorPassportPageInner() {
           <PassportValidationBanner validation={validation} />
         </div>
 
-        <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800 mb-6 overflow-x-auto">
+        <div className={`flex gap-1 border-b mb-6 overflow-x-auto ${divider}`}>
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               type="button"
               onClick={() => setTab(id)}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 -mb-px whitespace-nowrap transition-colors ${
-                tab === id
-                  ? 'border-amber-400 text-amber-700 dark:text-amber-300'
-                  : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
+                tab === id ? tabActive : tabIdle
               }`}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className={`h-4 w-4 ${tab === id ? accent : ''}`} />
               {label}
             </button>
           ))}
         </div>
 
-        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 md:p-6">
+        <div className={`rounded-xl border p-5 md:p-6 ${card}`}>
           {tab === 'general' && <PassportGeneralTab />}
           {tab === 'logistics' && <PassportLogisticsTab />}
           {tab === 'documents' && <PassportDocumentsTab />}

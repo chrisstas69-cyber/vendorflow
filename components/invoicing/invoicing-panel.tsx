@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { InvoiceStatusBadge } from '@/components/invoicing/invoice-status-badge';
+import { useVendorTheme } from '@/components/vendor/use-vendor-theme';
 import { CreditCard, FileText, Loader2 } from 'lucide-react';
 
 interface InvoiceRow {
@@ -24,6 +25,7 @@ export interface InvoicingPanelProps {
 }
 
 export function InvoicingPanel({ role, organizerId, vendorEmail }: InvoicingPanelProps) {
+  const { card, cardInset, muted, heading, btnPrimary } = useVendorTheme();
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [payingId, setPayingId] = useState<string | null>(null);
@@ -66,14 +68,14 @@ export function InvoicingPanel({ role, organizerId, vendorEmail }: InvoicingPane
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-sm text-gray-500 py-8 justify-center">
+      <div className={`flex items-center gap-2 text-sm py-8 justify-center ${muted}`}>
         <Loader2 className="h-4 w-4 animate-spin" /> Loading invoices…
       </div>
     );
   }
 
   if (invoices.length === 0) {
-    return <p className="text-sm text-gray-500 py-6">No invoices yet.</p>;
+    return <p className={`text-sm py-6 ${muted}`}>No invoices yet.</p>;
   }
 
   return (
@@ -83,28 +85,30 @@ export function InvoicingPanel({ role, organizerId, vendorEmail }: InvoicingPane
           .filter(p => p.status === 'succeeded')
           .reduce((s, p) => s + p.amountCents, 0);
         return (
-          <div key={inv.id} className="rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+          <div key={inv.id} className={`rounded-xl border p-4 ${cardInset}`}>
             <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
               <div>
-                <div className="font-semibold flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-gray-400" />
+                <div className={`font-semibold flex items-center gap-2 ${heading}`}>
+                  <FileText className={`h-4 w-4 ${muted}`} />
                   {inv.invoiceNumber}
                 </div>
                 {role === 'organizer' && inv.vendorName && (
-                  <div className="text-sm text-gray-500">{inv.vendorName}</div>
+                  <div className={`text-sm ${muted}`}>{inv.vendorName}</div>
                 )}
-                {inv.eventId && <div className="text-xs text-gray-400 mt-0.5">Event {inv.eventId}</div>}
+                {inv.eventId && <div className={`text-xs mt-0.5 ${muted}`}>Event {inv.eventId}</div>}
               </div>
               <InvoiceStatusBadge status={inv.status} />
             </div>
-            <div className="text-2xl font-bold mb-2">${(inv.totalAmountCents / 100).toFixed(2)}</div>
+            <div className={`text-2xl font-bold mb-2 ${heading}`}>
+              ${(inv.totalAmountCents / 100).toFixed(2)}
+            </div>
             {inv.dueDate && (
-              <p className="text-xs text-gray-500 mb-3">
+              <p className={`text-xs mb-3 ${muted}`}>
                 Due {new Date(inv.dueDate).toLocaleDateString()}
                 {paidCents > 0 && ` · $${(paidCents / 100).toFixed(2)} paid`}
               </p>
             )}
-            <ul className="text-sm text-gray-600 mb-4 space-y-1">
+            <ul className={`text-sm mb-4 space-y-1 ${muted}`}>
               {inv.lineItems.map(li => (
                 <li key={li.label} className="flex justify-between">
                   <span>{li.label}</span>
@@ -117,7 +121,7 @@ export function InvoicingPanel({ role, organizerId, vendorEmail }: InvoicingPane
                 type="button"
                 disabled={payingId === inv.id}
                 onClick={() => startCheckout(inv.id)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-amber-400 text-gray-900 font-semibold rounded-lg text-sm disabled:opacity-60"
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm disabled:opacity-60 ${btnPrimary}`}
               >
                 {payingId === inv.id ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

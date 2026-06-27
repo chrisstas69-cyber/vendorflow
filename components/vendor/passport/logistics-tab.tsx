@@ -1,6 +1,7 @@
 'use client';
 
 import { useVendorPassport } from '@/contexts/vendor-passport-context';
+import { useVendorTheme } from '@/components/vendor/use-vendor-theme';
 import {
   VENDOR_CATEGORY_OPTIONS,
   VENDOR_SERVICE_TAG_OPTIONS,
@@ -19,10 +20,12 @@ function TagToggle({
   label,
   active,
   onToggle,
+  dark,
 }: {
   label: string;
   active: boolean;
   onToggle: () => void;
+  dark: boolean;
 }) {
   return (
     <button
@@ -31,7 +34,9 @@ function TagToggle({
       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
         active
           ? 'bg-amber-400 border-amber-400 text-gray-900'
-          : 'border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-amber-400'
+          : dark
+            ? 'border-gray-700 text-gray-400 hover:border-amber-400'
+            : 'border-gray-300 text-gray-600 hover:border-amber-400'
       }`}
     >
       {label}
@@ -42,6 +47,7 @@ function TagToggle({
 export function PassportLogisticsTab() {
   const { passport, updatePassport, saving } = useVendorPassport();
   const { logistics } = passport;
+  const { input, label, muted, heading, accent, dark } = useVendorTheme();
 
   const toggleCategory = (cat: string) => {
     const next = passport.categories.includes(cat)
@@ -58,12 +64,12 @@ export function PassportLogisticsTab() {
   };
 
   const numField = (
-    label: string,
+    fieldLabel: string,
     key: 'trailerLengthFt' | 'boothWidthFt' | 'boothDepthFt' | 'setupTimeMinutes',
     step = 1
   ) => (
     <label className="block">
-      <span className="text-sm font-medium">{label}</span>
+      <span className={`text-sm font-medium ${label}`}>{fieldLabel}</span>
       <input
         type="number"
         min={0}
@@ -74,7 +80,7 @@ export function PassportLogisticsTab() {
             logistics: { ...logistics, [key]: e.target.value ? Number(e.target.value) : undefined },
           })
         }
-        className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
+        className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm ${input}`}
       />
     </label>
   );
@@ -82,8 +88,8 @@ export function PassportLogisticsTab() {
   return (
     <div className="space-y-8 max-w-2xl">
       <section>
-        <h3 className="font-semibold mb-2">Categories</h3>
-        <p className="text-xs text-gray-500 mb-3">What type of vendor are you?</p>
+        <h3 className={`font-semibold mb-2 ${heading}`}>Categories</h3>
+        <p className={`text-xs mb-3 ${muted}`}>What type of vendor are you?</p>
         <div className="flex flex-wrap gap-2">
           {VENDOR_CATEGORY_OPTIONS.map(cat => (
             <TagToggle
@@ -91,14 +97,15 @@ export function PassportLogisticsTab() {
               label={cat}
               active={passport.categories.includes(cat)}
               onToggle={() => toggleCategory(cat)}
+              dark={dark}
             />
           ))}
         </div>
       </section>
 
       <section>
-        <h3 className="font-semibold mb-2">Matching tags</h3>
-        <p className="text-xs text-gray-500 mb-3">Used by AI matching and organizer filters</p>
+        <h3 className={`font-semibold mb-2 ${heading}`}>Matching tags</h3>
+        <p className={`text-xs mb-3 ${muted}`}>Used by AI matching and organizer filters</p>
         <div className="flex flex-wrap gap-2">
           {VENDOR_SERVICE_TAG_OPTIONS.map(tag => (
             <TagToggle
@@ -106,16 +113,17 @@ export function PassportLogisticsTab() {
               label={tag.replace(/-/g, ' ')}
               active={passport.serviceTags.includes(tag)}
               onToggle={() => toggleTag(tag)}
+              dark={dark}
             />
           ))}
         </div>
       </section>
 
       <section>
-        <h3 className="font-semibold mb-3">Setup &amp; trailer requirements</h3>
+        <h3 className={`font-semibold mb-3 ${heading}`}>Setup &amp; trailer requirements</h3>
         <div className="grid sm:grid-cols-2 gap-4">
           <label className="block sm:col-span-2">
-            <span className="text-sm font-medium">Vehicle type</span>
+            <span className={`text-sm font-medium ${label}`}>Vehicle type</span>
             <select
               value={logistics.vehicleType}
               onChange={e =>
@@ -123,7 +131,7 @@ export function PassportLogisticsTab() {
                   logistics: { ...logistics, vehicleType: e.target.value as VehicleType },
                 })
               }
-              className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
+              className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm ${input}`}
             >
               {VEHICLE_OPTIONS.map(o => (
                 <option key={o.value} value={o.value}>
@@ -137,7 +145,7 @@ export function PassportLogisticsTab() {
           {numField('Trailer length (ft)', 'trailerLengthFt')}
           {numField('Setup time (minutes)', 'setupTimeMinutes', 15)}
           <label className="block sm:col-span-2">
-            <span className="text-sm font-medium">Power requirement</span>
+            <span className={`text-sm font-medium ${label}`}>Power requirement</span>
             <input
               type="text"
               placeholder="e.g. 20A, none"
@@ -151,7 +159,7 @@ export function PassportLogisticsTab() {
                   },
                 })
               }
-              className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
+              className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm ${input}`}
             />
           </label>
         </div>
@@ -162,8 +170,8 @@ export function PassportLogisticsTab() {
               ['generatorOk', 'Can bring generator'],
               ['waterAccess', 'Needs water access'],
             ] as const
-          ).map(([key, label]) => (
-            <label key={key} className="flex items-center gap-2 text-sm">
+          ).map(([key, fieldLabel]) => (
+            <label key={key} className={`flex items-center gap-2 text-sm ${label}`}>
               <input
                 type="checkbox"
                 checked={!!logistics[key]}
@@ -172,12 +180,12 @@ export function PassportLogisticsTab() {
                 }
                 className="rounded"
               />
-              {label}
+              {fieldLabel}
             </label>
           ))}
         </div>
       </section>
-      {saving && <p className="text-xs text-amber-600">Saving…</p>}
+      {saving && <p className={`text-xs ${accent}`}>Saving…</p>}
     </div>
   );
 }
