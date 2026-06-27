@@ -24,15 +24,22 @@ export async function POST(req: NextRequest) {
 
   // Merge new values
   const allowedKeys = [
+    'AIRTABLE_PAT', 'AIRTABLE_BASE_ID',
     'GOOGLE_SERVICE_ACCOUNT_JSON', 'GOOGLE_SPREADSHEET_ID',
     'GMAIL_FROM', 'GMAIL_APP_PASSWORD', 'GMAIL_TO',
+    'CRON_SECRET',
     'CLAUDE_API_KEY', 'STRIPE_SECRET_KEY', 'STRIPE_PUBLISHABLE_KEY',
     'STRIPE_WEBHOOK_SECRET', 'RESEND_API_KEY',
   ];
 
   for (const key of allowedKeys) {
     if (body[key] !== undefined && body[key] !== '') {
-      existing[key] = body[key];
+      let val = String(body[key]).trim();
+      // Fix common paste mistakes: full line or key prefix included
+      if (val.includes('=') && val.toUpperCase().startsWith(key.toUpperCase())) {
+        val = val.split('=').slice(1).join('=').trim();
+      }
+      existing[key] = val;
     }
   }
 

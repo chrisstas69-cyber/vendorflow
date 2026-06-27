@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { AppLayout } from '@/components/layout/app-layout';
 
 interface ConfigField {
   key: string;
@@ -12,21 +14,38 @@ interface ConfigField {
 }
 
 const FIELDS: ConfigField[] = [
-  { key: 'GOOGLE_SERVICE_ACCOUNT_JSON', label: 'Google Service Account JSON', placeholder: '{"type":"service_account",...}', type: 'textarea', group: 'Google Sheets', helpText: 'Go to console.cloud.google.com → Create Service Account → Download JSON key' },
-  { key: 'GOOGLE_SPREADSHEET_ID', label: 'Google Spreadsheet ID', placeholder: '1EZFP9EOuU2b9Jh5plAf3G2eJ...', type: 'text', group: 'Google Sheets', helpText: 'The ID from your Google Sheets URL (between /d/ and /edit)' },
-  { key: 'GMAIL_FROM', label: 'Gmail From Address', placeholder: 'you@gmail.com', type: 'text', group: 'Email Digest', helpText: 'Gmail address to send daily digest from' },
-  { key: 'GMAIL_APP_PASSWORD', label: 'Gmail App Password', placeholder: 'xxxx xxxx xxxx xxxx', type: 'password', group: 'Email Digest', helpText: 'Go to myaccount.google.com → Security → 2FA → App Passwords' },
-  { key: 'GMAIL_TO', label: 'Email Recipient', placeholder: 'you@email.com', type: 'text', group: 'Email Digest', helpText: 'Where to send the daily event digest' },
+  { key: 'AIRTABLE_PAT', label: 'Airtable Personal Access Token', placeholder: 'patXXXXXXXXXXXXXX', type: 'password', group: 'Airtable (required)', helpText: 'Paste ONLY the token from airtable.com/create/tokens (starts with pat)' },
+  { key: 'AIRTABLE_BASE_ID', label: 'Airtable Base ID', placeholder: 'appXXXXXXXXXXXXXX', type: 'text', group: 'Airtable (required)', helpText: 'From URL airtable.com/appXXXXXX/... — copy only the appXXXX part' },
+  { key: 'GOOGLE_SERVICE_ACCOUNT_JSON', label: 'Google Service Account JSON', placeholder: '{"type":"service_account",...}', type: 'textarea', group: 'Google Sheets (optional)', helpText: 'Skip for now if not ready' },
+  { key: 'GOOGLE_SPREADSHEET_ID', label: 'Google Spreadsheet ID', placeholder: '1EZFP9EOuU2b9Jh5plAf3G2eJ...', type: 'text', group: 'Google Sheets (optional)', helpText: 'Optional' },
+  { key: 'GMAIL_FROM', label: 'Gmail From Address', placeholder: 'you@gmail.com', type: 'text', group: 'Email Digest (optional)', helpText: 'Optional' },
+  { key: 'GMAIL_APP_PASSWORD', label: 'Gmail App Password', placeholder: 'xxxx xxxx xxxx xxxx', type: 'password', group: 'Email Digest (optional)', helpText: 'Optional' },
+  { key: 'GMAIL_TO', label: 'Email Recipient', placeholder: 'you@email.com', type: 'text', group: 'Email Digest (optional)', helpText: 'Optional' },
 ];
 
 export default function SetupPage() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [status, setStatus] = useState<{ airtableReady: boolean; nextSteps: string[] } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/setup/status').then(r => r.json()).then(setStatus).catch(() => {});
+  }, []);
 
   const groups = Array.from(new Set(FIELDS.map(f => f.group)));
 
   const handleSave = async () => {
+    const pat = values.AIRTABLE_PAT?.trim();
+    const base = values.AIRTABLE_BASE_ID?.trim();
+    if (pat && !pat.startsWith('pat')) {
+      setMessage({ type: 'error', text: 'Token must start with "pat" — you may have pasted the field name instead of the value.' });
+      return;
+    }
+    if (base && !base.startsWith('app')) {
+      setMessage({ type: 'error', text: 'Base ID must start with "app" — copy from your browser URL bar.' });
+      return;
+    }
     setSaving(true);
     setMessage(null);
     try {
@@ -37,7 +56,11 @@ export default function SetupPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setMessage({ type: 'success', text: `Saved! ${data.configured.length} keys configured. Restart the dev server for changes to take effect.` });
+        setMessage({
+          type: 'success',
+          text: 'Saved! Run in Terminal: npm run airtable:setup && npm run airtable:verify',
+        });
+        fetch('/api/setup/status').then(r => r.json()).then(setStatus);
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to save' });
       }
@@ -48,28 +71,36 @@ export default function SetupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <div className="max-w-3xl mx-auto px-6 py-12">
-        <h1 className="text-3xl font-bold mb-2">Setup</h1>
-        <p className="text-gray-400 mb-8">Add your API keys below. Google Sheets and Email are optional — the event tracker works without them, just with limited export features.</p>
+    <AppLayout title="SETUP">
+      <div className="max-w-3xl mx-auto px-6 py-8">
+        {status && !status.airtableReady && (
+          <div className="mb-6 p-4 border-2 border-accent-tertiary bg-accent-tertiary/10 text-sm">
+            <strong>Airtable not connected yet.</strong> Fix the two fields below, then save.
+          </div>
+        )}
+        {status?.airtableReady && (
+          <div className="mb-6 p-4 border-2 border-accent-primary bg-accent-primary/10 text-sm text-black">
+            Airtable credentials look valid. Run <code className="font-mono">npm run airtable:setup</code> in Terminal.
+          </div>
+        )}
 
         {message && (
-          <div className={`mb-6 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-900/50 border border-green-700 text-green-300' : 'bg-red-900/50 border border-red-700 text-red-300'}`}>
+          <div className={`mb-6 p-4 border-2 ${message.type === 'success' ? 'border-accent-primary bg-accent-primary/10' : 'border-accent-tertiary bg-accent-tertiary/10'}`}>
             {message.text}
           </div>
         )}
 
         {groups.map(group => (
           <div key={group} className="mb-8">
-            <h2 className="text-lg font-semibold text-blue-400 mb-4 border-b border-gray-800 pb-2">{group}</h2>
+            <h2 className="text-sm font-bold text-accent-primary mb-4 border-b-2 border-border-primary pb-2">{group}</h2>
             <div className="space-y-4">
               {FIELDS.filter(f => f.group === group).map(field => (
                 <div key={field.key}>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">{field.label}</label>
-                  <p className="text-xs text-gray-500 mb-2">{field.helpText}</p>
+                  <label className="block text-sm font-bold mb-1">{field.label}</label>
+                  <p className="text-xs text-text-secondary mb-2">{field.helpText}</p>
                   {field.type === 'textarea' ? (
                     <textarea
-                      className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 font-mono"
+                      className="w-full bg-bg-primary border-2 border-border-primary px-4 py-3 text-sm font-mono"
                       rows={4}
                       placeholder={field.placeholder}
                       value={values[field.key] || ''}
@@ -78,7 +109,7 @@ export default function SetupPage() {
                   ) : (
                     <input
                       type={field.type}
-                      className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 font-mono"
+                      className="w-full bg-bg-primary border-2 border-border-primary px-4 py-3 text-sm font-mono"
                       placeholder={field.placeholder}
                       value={values[field.key] || ''}
                       onChange={e => setValues({ ...values, [field.key]: e.target.value })}
@@ -91,17 +122,18 @@ export default function SetupPage() {
         ))}
 
         <button
+          type="button"
           onClick={handleSave}
           disabled={saving}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+          className="w-full bg-accent-primary hover:bg-accent-secondary disabled:opacity-50 text-black font-bold py-3 px-6 border-2 border-black"
         >
-          {saving ? 'Saving...' : 'Save All Configuration'}
+          {saving ? 'Saving...' : 'Save Configuration'}
         </button>
 
-        <p className="text-xs text-gray-600 mt-4 text-center">
-          Configuration is saved to .env.local. You must restart the dev server after saving.
+        <p className="text-xs text-text-secondary mt-4 text-center">
+          <Link href="/" className="text-accent-primary underline">Back to Event Pulse</Link>
         </p>
       </div>
-    </div>
+    </AppLayout>
   );
 }
