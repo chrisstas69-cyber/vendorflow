@@ -14,6 +14,7 @@ import {
 import { useTheme } from '@/contexts/theme-context';
 import { RoleSwitcher } from '@/components/layout/role-switcher';
 import { PublicThemeToggle } from '@/components/public/theme-toggle';
+import { VendorPlanBadge } from '@/components/vendor/vendor-plan-badge';
 
 const NAV = [
   { href: '/pulse', icon: Activity, label: 'Find Events' },
@@ -68,6 +69,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
           })}
         </nav>
         <div className={`p-3 border-t space-y-2 ${dark ? 'border-gray-800' : 'border-gray-200'}`}>
+          <VendorPlanBadge />
           <PublicThemeToggle />
         </div>
       </aside>

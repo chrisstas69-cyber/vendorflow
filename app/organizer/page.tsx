@@ -10,11 +10,14 @@ import { ComplianceChecklistPanel } from '@/components/organizer/compliance-chec
 import { useOrganizerInbox } from '@/hooks/use-organizer-inbox';
 import { useOrganizerContext } from '@/contexts/organizer-context';
 import { useOrganizerTheme } from '@/components/organizer/use-organizer-theme';
+import { usePilotConfig } from '@/hooks/use-pilot-config';
+import { OrganizerPageHeader } from '@/components/organizer/organizer-page-header';
 import { Loader2 } from 'lucide-react';
 
 export default function OrganizerDashboardPage() {
   const { seriesId, eventId } = useOrganizerContext();
-  const { heading, muted, pageTitle } = useOrganizerTheme();
+  const { organizer } = usePilotConfig();
+  const { heading, muted, sectionTitle } = useOrganizerTheme();
   const [toast, setToast] = useState('');
   const { data, loading, error, performAction } = useOrganizerInbox({
     seriesId: seriesId ?? undefined,
@@ -36,12 +39,10 @@ export default function OrganizerDashboardPage() {
 
   return (
     <OrganizerLayout>
-      <div className="mb-6">
-        <h1 className={`${pageTitle} ${heading}`}>Season dashboard</h1>
-        <p className={`text-base mt-1 ${muted}`}>
-          Your vendor pipeline, compliance, and revenue at a glance.
-        </p>
-      </div>
+      <OrganizerPageHeader
+        title="Season dashboard"
+        description="Your vendor pipeline, compliance, and revenue at a glance."
+      />
 
       {toast && (
         <div className="mb-4 px-4 py-2 rounded-lg bg-emerald-100 text-emerald-800 text-sm font-medium">
@@ -72,7 +73,7 @@ export default function OrganizerDashboardPage() {
 
       <ComplianceChecklistPanel
         category={selectedEvent?.category ?? 'festival'}
-        region="nassau"
+        region={organizer.region}
         uploadedDocTypes={[]}
       />
     </OrganizerLayout>

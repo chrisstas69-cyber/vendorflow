@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  getApplicationsInbox,
   performInboxAction,
   resetOrganizerServerStore,
-} from '@/lib/organizer-server-store';
+  resolveOrganizerInboxAsync,
+} from '@/lib/pilot-data-adapter';
 import type { InboxAction } from '@/lib/organizer-schema';
 import type { OrganizerPipelineStage } from '@/lib/organizer-schema';
 
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   const seriesId = searchParams.get('seriesId') ?? undefined;
   const pipelineStage = searchParams.get('pipelineStage') as OrganizerPipelineStage | null;
 
-  const data = getApplicationsInbox({
+  const data = await resolveOrganizerInboxAsync({
     organizerId,
     eventId: eventId ?? undefined,
     seriesId: seriesId ?? undefined,

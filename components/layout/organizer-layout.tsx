@@ -16,6 +16,8 @@ import { RoleSwitcher } from '@/components/layout/role-switcher';
 import { PublicThemeToggle } from '@/components/public/theme-toggle';
 import { useOrganizerTheme } from '@/components/organizer/use-organizer-theme';
 import { FoundersEditionBanner } from '@/components/founders/founders-banner';
+import { PilotModeBanner } from '@/components/organizer/pilot-mode-banner';
+import { OrganizerPlanBadge } from '@/components/organizer/plan-badge';
 
 const NAV = [
   { href: '/organizer', label: 'Seasons', icon: LayoutGrid, match: (p: string) => p === '/organizer' },
@@ -64,6 +66,7 @@ export function OrganizerLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
         <div className={`p-3 border-t space-y-2 ${t.divider}`}>
+          <OrganizerPlanBadge />
           <PublicThemeToggle />
           <RoleSwitcher variant="compact" accent="teal" />
         </div>
@@ -95,7 +98,8 @@ export function OrganizerLayout({ children }: { children: React.ReactNode }) {
           ))}
         </div>
 
-        <div className="px-4 pt-4">
+        <div className="px-4 pt-4 space-y-3">
+          <PilotModeBanner />
           <FoundersEditionBanner compact />
         </div>
 

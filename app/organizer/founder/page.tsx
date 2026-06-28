@@ -1,82 +1,92 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { OrganizerLayout } from '@/components/layout/organizer-layout';
+import { OrganizerPageHeader } from '@/components/organizer/organizer-page-header';
 import { useOrganizerTheme } from '@/components/organizer/use-organizer-theme';
-import { DEMO_ORGANIZER_ID } from '@/lib/platform-data';
-import { Calendar, IdCard, Loader2, TrendingUp, Users } from 'lucide-react';
+import { Calendar, IdCard, Loader2, TrendingUp, Users, DollarSign } from 'lucide-react';
 
-interface FounderMetrics {
-  organizers: number;
-  vendors: number;
-  events: number;
-  applications: number;
-  activePassports: number;
-  series: number;
+interface FounderMetricsResponse {
+  metrics: {
+    organizers: number;
+    vendors: number;
+    events: number;
+    applications: number;
+    activePassports: number;
+    series: number;
+    approvedVendors: number;
+    projectedRevenueCents: number;
+  };
+  pilot: { dataSource: string; organizer: { organization: string; seasonLabel: string } };
+  updatedAt: string;
 }
 
 export default function FounderMetricsPage() {
-  const { card, heading, muted, pageTitle, statIcon } = useOrganizerTheme();
-  const [metrics, setMetrics] = useState<FounderMetrics | null>(null);
+  const { card, muted, heading, statIcon } = useOrganizerTheme();
+  const [data, setData] = useState<FounderMetricsResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function load() {
-      const [inboxRes, passportRes] = await Promise.all([
-        fetch(`/api/organizer/applications?organizerId=${DEMO_ORGANIZER_ID}`),
-        fetch('/api/vendors/passport?email=vendor@demo.vendorflow.app'),
-      ]);
-      const inbox = await inboxRes.json();
-      const passport = await passportRes.json();
-      const emails = new Set((inbox.items ?? []).map((i: { vendorEmail: string }) => i.vendorEmail));
-
-      setMetrics({
-        organizers: 1,
-        vendors: emails.size + 1,
-        events: inbox.events?.length ?? 0,
-        applications: inbox.items?.length ?? 0,
-        activePassports: passport.passport ? 1 : 0,
-        series: inbox.series?.length ?? 0,
-      });
-      setLoading(false);
-    }
-    load();
+    fetch('/api/founder/metrics')
+      .then(r => r.json())
+      .then(json => {
+        if (json.ok) setData(json);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
-  const stats = metrics
+  const stats = data
     ? [
-        { label: 'Pilot organizers', value: metrics.organizers, icon: Users },
-        { label: 'Unique vendors', value: metrics.vendors, icon: Users },
-        { label: 'Events live', value: metrics.events, icon: Calendar },
-        { label: 'Applications', value: metrics.applications, icon: TrendingUp },
-        { label: 'Active passports', value: metrics.activePassports, icon: IdCard },
-        { label: 'Seasons', value: metrics.series, icon: Calendar },
+        { label: 'Pilot organizers', value: data.metrics.organizers, icon: Users },
+        { label: 'Unique vendors', value: data.metrics.vendors, icon: Users },
+        { label: 'Events live', value: data.metrics.events, icon: Calendar },
+        { label: 'Applications', value: data.metrics.applications, icon: TrendingUp },
+        { label: 'Approved vendors', value: data.metrics.approvedVendors, icon: Users },
+        { label: 'Active passports', value: data.metrics.activePassports, icon: IdCard },
+        { label: 'Seasons', value: data.metrics.series, icon: Calendar },
+        {
+          label: 'Projected revenue',
+          value: `$${(data.metrics.projectedRevenueCents / 100).toLocaleString()}`,
+          icon: DollarSign,
+        },
       ]
     : [];
 
   return (
     <OrganizerLayout>
-      <div className="mb-6">
-        <h1 className={`${pageTitle} ${heading}`}>Founder metrics</h1>
-        <p className={`text-base mt-1 ${muted}`}>
-          Long Island pilot traction — internal dashboard, not customer-facing.
+      <OrganizerPageHeader
+        title="Founder metrics"
+        description="Long Island pilot traction — internal dashboard, not customer-facing."
+      />
+
+      {data && (
+        <p className={`text-sm mb-6 -mt-2 ${muted}`}>
+          {data.pilot.organizer.organization} · {data.pilot.organizer.seasonLabel} ·{' '}
+          {data.pilot.dataSource} data · updated {new Date(data.updatedAt).toLocaleString()}
         </p>
-      </div>
+      )}
 
       {loading ? (
         <div className={`flex items-center gap-2 ${muted}`}>
           <Loader2 className="h-5 w-5 animate-spin" /> Loading…
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {stats.map(stat => (
-            <div key={stat.label} className={`rounded-xl border p-5 ${card}`}>
-              <stat.icon className={`h-6 w-6 mb-3 ${statIcon}`} />
-              <div className="text-3xl font-bold">{stat.value}</div>
-              <div className={`text-sm ${muted}`}>{stat.label}</div>
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {stats.map(stat => (
+              <div key={stat.label} className={`rounded-xl border p-5 ${card}`}>
+                <stat.icon className={`h-6 w-6 mb-3 ${statIcon}`} />
+                <div className={`text-3xl font-bold ${heading}`}>{stat.value}</div>
+                <div className={`text-sm ${muted}`}>{stat.label}</div>
+              </div>
+            ))}
+          </div>
+          <Link href="/pricing" className="text-sm font-semibold text-teal-600 hover:underline">
+            View pricing scaffolding →
+          </Link>
+        </>
       )}
     </OrganizerLayout>
   );

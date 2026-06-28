@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { DEMO_ORGANIZER_ID } from '@/lib/platform-data';
+import { getActiveOrganizerId, PILOT_ORGANIZER } from '@/lib/pilot-config';
 
 const STORAGE_KEY = 'vendorflow-organizer-season';
 
@@ -14,7 +14,7 @@ interface OrganizerContextValue {
 }
 
 const OrganizerContext = createContext<OrganizerContextValue>({
-  organizerId: DEMO_ORGANIZER_ID,
+  organizerId: getActiveOrganizerId(),
   seriesId: null,
   eventId: null,
   setSeriesId: () => {},
@@ -31,10 +31,13 @@ export function OrganizerProvider({ children }: { children: React.ReactNode }) {
       if (raw) {
         const parsed = JSON.parse(raw) as { seriesId?: string | null; eventId?: string | null };
         if (parsed.seriesId) setSeriesIdState(parsed.seriesId);
+        else setSeriesIdState(PILOT_ORGANIZER.defaultSeriesId);
         if (parsed.eventId) setEventIdState(parsed.eventId);
+      } else {
+        setSeriesIdState(PILOT_ORGANIZER.defaultSeriesId);
       }
     } catch {
-      /* ignore */
+      setSeriesIdState(PILOT_ORGANIZER.defaultSeriesId);
     }
   }, []);
 
@@ -52,7 +55,7 @@ export function OrganizerProvider({ children }: { children: React.ReactNode }) {
   return (
     <OrganizerContext.Provider
       value={{
-        organizerId: DEMO_ORGANIZER_ID,
+        organizerId: getActiveOrganizerId(),
         seriesId,
         eventId,
         setSeriesId,
