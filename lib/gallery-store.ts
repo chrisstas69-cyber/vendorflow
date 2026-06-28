@@ -1,4 +1,4 @@
-import { getPilotDataSource } from '@/lib/pilot-config';
+import { getEffectiveDataSource } from '@/lib/pilot-config';
 import type { GalleryEntityType, GalleryItemRecord, GalleryTag } from '@/lib/gallery-schema';
 import { getCoverImageUrl } from '@/lib/gallery-schema';
 import {
@@ -22,7 +22,7 @@ export async function listGallery(
   entityId: string,
   publicOnly = false
 ): Promise<{ items: GalleryItemRecord[]; dataSource: 'seed' | 'db' }> {
-  if (getPilotDataSource() === 'db') {
+  if (getEffectiveDataSource() === 'db') {
     await ensureGalleryDbSeed();
     const items = await listGalleryDb(entityType, entityId, publicOnly);
     return { items, dataSource: 'db' };
@@ -39,7 +39,7 @@ export async function createGalleryItem(input: {
   isCover?: boolean;
   isPublic?: boolean;
 }) {
-  if (getPilotDataSource() === 'db') {
+  if (getEffectiveDataSource() === 'db') {
     await ensureGalleryDbSeed();
     return createGalleryDb(input);
   }
@@ -52,14 +52,14 @@ export async function updateGalleryItem(
     Pick<GalleryItemRecord, 'caption' | 'tags' | 'isCover' | 'isPublic' | 'imageUrl'>
   >
 ) {
-  if (getPilotDataSource() === 'db') {
+  if (getEffectiveDataSource() === 'db') {
     return updateGalleryDb(id, patch);
   }
   return updateGallerySeed(id, patch);
 }
 
 export async function deleteGalleryItem(id: string) {
-  if (getPilotDataSource() === 'db') {
+  if (getEffectiveDataSource() === 'db') {
     return deleteGalleryDb(id);
   }
   return deleteGallerySeed(id);
@@ -70,7 +70,7 @@ export async function reorderGalleryItems(
   entityId: string,
   orderedIds: string[]
 ) {
-  if (getPilotDataSource() === 'db') {
+  if (getEffectiveDataSource() === 'db') {
     return reorderGalleryDb(entityType, entityId, orderedIds);
   }
   return reorderGallerySeed(entityType, entityId, orderedIds);

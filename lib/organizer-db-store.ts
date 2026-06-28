@@ -20,6 +20,8 @@ import { ensurePilotDbSeed } from '@/lib/pilot-db-seed';
 import { emitActivity, writeAuditLog, parseActivityMetadata } from '@/lib/workflow/emit-activity';
 import { WorkflowEventType } from '@/lib/workflow/event-types';
 import type { ActivityFeedDTO } from '@/lib/workflow/event-types';
+import { generateBoothInventory } from '@/lib/booth/street-fair-generate';
+import type { LayoutMode, StreetFairLayoutDefinition } from '@/lib/booth/street-fair-schema';
 import { getActiveOrganizerId } from '@/lib/pilot-config';
 
 function parseJsonArray(raw: string): string[] {
@@ -399,6 +401,46 @@ export async function persistBoothAssignmentsDb(input: {
   }
 
   return getBoothMapFromDb(organizerId, eventId);
+}
+
+type BoothMapWithAssignments = NonNullable<Awaited<ReturnType<typeof getBoothMapFromDb>>>;
+
+export async function getBoothLayoutResponseDb(map: BoothMapWithAssignments) {
+  const streetFair = JSON.parse(map.streetFairJson || '{}') as StreetFairLayoutDefinition;
+  const layoutMode = (map.layoutMode || 'grid') as LayoutMode;
+  const grid = JSON.parse(map.gridJson || '[]');
+
+  const assignmentMap = new Map(
+    map.assignments.map(a => [
+      a.boothLabel,
+      {
+        vendorName: a.vendorName,
+        vendorEmail: a.vendorEmail,
+        applicationId: a.applicationId ?? undefined,
+      },
+    ])
+  );
+
+  const assignments = map.assignments.map(a => ({
+    boothLabel: a.boothLabel,
+    applicationId: a.applicationId,
+    vendorEmail: a.vendorEmail,
+    vendorName: a.vendorName,
+    utilities: JSON.parse(a.utilities || '[]'),
+  }));
+
+  const generatedBooths =
+    layoutMode === 'street-fair' && streetFair.streets?.length
+      ? generateBoothInventory(streetFair, assignmentMap)
+      : [];
+
+  return {
+    layoutMode,
+    grid,
+    streetFair,
+    generatedBooths,
+    assignments,
+  };
 }
 
 export async function getActivityFeedFromDb(

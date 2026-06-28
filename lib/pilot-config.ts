@@ -40,6 +40,17 @@ export function getPilotDataSource(): PilotDataSource {
   return v === 'db' ? 'db' : 'seed';
 }
 
+/** Runtime mode after platform-seed probe — use instead of getPilotDataSource() in API paths */
+let effectiveDataSource: PilotDataSource = 'seed';
+
+export function setEffectiveDataSource(source: PilotDataSource) {
+  effectiveDataSource = source;
+}
+
+export function getEffectiveDataSource(): PilotDataSource {
+  return effectiveDataSource;
+}
+
 export function isPilotModeEnabled(): boolean {
   const v =
     (typeof process !== 'undefined' && process.env.PILOT_MODE) ||

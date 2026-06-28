@@ -2,23 +2,29 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useDemoStore } from '@/contexts/demo-store-context';
 import { OrganizerLayout } from '@/components/layout/organizer-layout';
 import { VendorSetupPreview } from '@/components/vendor/vendor-setup-preview';
 import { ApplicationDetailDrawer } from '@/components/organizer/application-detail-drawer';
 import { DocumentCompletenessBadge } from '@/components/organizer/document-completeness-badge';
+import { OrganizerLoadingState } from '@/components/organizer/organizer-loading-state';
 import { buildApplicationDetail } from '@/lib/application-detail';
+import { inboxItemsToSubmissions } from '@/lib/inbox-to-submission';
+import { useOrganizerInbox } from '@/hooks/use-organizer-inbox';
 import { useOrganizerTheme } from '@/components/organizer/use-organizer-theme';
 import { ArrowRight, ChevronRight, Star } from 'lucide-react';
 import type { VendorSubmission } from '@/lib/platform-data';
 
 export default function OrganizerApplicationsPage() {
-  const { submissions, approveSubmission, sendCe200Email, updateSubmission, toggleShortlist } =
-    useDemoStore();
+  const { data, loading, error, reload, performAction } = useOrganizerInbox();
   const { card, muted, heading, pageTitle, btnPrimary, btnSecondary } = useOrganizerTheme();
   const [toast, setToast] = useState('');
   const [view, setView] = useState<'all' | 'shortlisted'>('all');
   const [selected, setSelected] = useState<VendorSubmission | null>(null);
+
+  const submissions = useMemo(
+    () => inboxItemsToSubmissions(data?.items ?? []),
+    [data?.items]
+  );
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -32,17 +38,55 @@ export default function OrganizerApplicationsPage() {
 
   const shortlistedCount = submissions.filter(s => s.shortlisted).length;
 
-  const handleReview = (id: string, status: 'approved' | 'rejected') => {
-    if (status === 'approved') {
-      showToast(approveSubmission(id).message);
-    } else {
-      updateSubmission(id, { status: 'rejected' });
-      showToast('Application rejected');
-    }
-    if (selected?.id === id) {
-      setSelected(prev => (prev ? { ...prev, status } : null));
+  const patchApplication = async (id: string, body: Record<string, unknown>) => {
+    const res = await fetch(`/api/organizer/applications/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error ?? 'Update failed');
+    await reload();
+    return json;
+  };
+
+  const toggleShortlist = async (submissionId: string) => {
+    const sub = submissions.find(s => s.id === submissionId);
+    if (!sub?.applicationId) return;
+    try {
+      await patchApplication(sub.applicationId, { shortlisted: !sub.shortlisted });
+    } catch {
+      showToast('Shortlist requires hosted DB mode (PILOT_DATA_SOURCE=db)');
     }
   };
+
+  const handleReview = async (id: string, status: 'approved' | 'rejected') => {
+    try {
+      const msg = await performAction(id, status === 'approved' ? 'accept' : 'reject');
+      showToast(msg);
+      if (selected?.id === id) {
+        setSelected(prev => (prev ? { ...prev, status } : null));
+      }
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Action failed');
+    }
+  };
+
+  if (loading) {
+    return (
+      <OrganizerLayout>
+        <OrganizerLoadingState label="Loading applications…" />
+      </OrganizerLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <OrganizerLayout>
+        <p className="text-red-600 text-sm">{error}</p>
+      </OrganizerLayout>
+    );
+  }
 
   return (
     <OrganizerLayout>
@@ -110,7 +154,7 @@ export default function OrganizerApplicationsPage() {
                       type="button"
                       onClick={e => {
                         e.stopPropagation();
-                        toggleShortlist(sub.id);
+                        void toggleShortlist(sub.id);
                       }}
                       className={`absolute top-2 left-2 p-2 rounded-full shadow ${
                         sub.shortlisted ? 'bg-amber-400 text-gray-900' : 'bg-white/90 text-gray-600 hover:bg-white'
@@ -170,14 +214,15 @@ export default function OrganizerApplicationsPage() {
         submission={selected}
         allSubmissions={submissions}
         onClose={() => setSelected(null)}
-        onApprove={id => handleReview(id, 'approved')}
-        onReject={id => handleReview(id, 'rejected')}
+        onApprove={id => void handleReview(id, 'approved')}
+        onReject={id => void handleReview(id, 'rejected')}
         onRequestDoc={id => {
-          updateSubmission(id, { infoRequested: true });
-          showToast('Document request sent to vendor');
+          void performAction(id, 'request_info')
+            .then(msg => showToast(msg))
+            .catch(e => showToast(e instanceof Error ? e.message : 'Request failed'));
         }}
-        onSendCe200={id => showToast(sendCe200Email(id).message)}
-        onToggleShortlist={toggleShortlist}
+        onSendCe200={() => showToast('CE200 workflow — email integration pending')}
+        onToggleShortlist={id => void toggleShortlist(id)}
         onToast={showToast}
       />
     </OrganizerLayout>

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getActiveOrganizerId, getPilotDataSource } from '@/lib/pilot-config';
+import { getActiveOrganizerId, getEffectiveDataSource } from '@/lib/pilot-config';
 import {
   getBoothMapFromDb,
+  getBoothLayoutResponseDb,
   persistBoothAssignmentsDb,
   updateBoothLayoutDb,
 } from '@/lib/organizer-db-store';
@@ -11,8 +12,7 @@ import {
   persistAssignmentsSeed,
   updateEventLayoutSeed,
 } from '@/lib/booth/booth-layout-seed-store';
-import type { StreetFairLayoutDefinition } from '@/lib/booth/street-fair-schema';
-import type { LayoutMode } from '@/lib/booth/street-fair-schema';
+import type { LayoutMode, StreetFairLayoutDefinition } from '@/lib/booth/street-fair-schema';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'eventId is required' }, { status: 400 });
   }
 
-  if (getPilotDataSource() !== 'db') {
+  if (getEffectiveDataSource() !== 'db') {
     const state = getEventLayoutSeed(organizerId, eventId);
     return NextResponse.json({
       ok: true,
@@ -54,6 +54,7 @@ export async function GET(req: NextRequest) {
   if (!map) {
     return NextResponse.json({
       ok: true,
+      dataSource: 'db',
       eventId,
       layoutMode: 'grid',
       grid: [],
@@ -63,25 +64,14 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const streetFair = JSON.parse(map.streetFairJson || '{}') as StreetFairLayoutDefinition;
-  const layoutMode = (map.layoutMode || 'grid') as LayoutMode;
-
+  const payload = await getBoothLayoutResponseDb(map);
   return NextResponse.json({
     ok: true,
     dataSource: 'db',
     eventId,
     mapId: map.id,
     name: map.name,
-    layoutMode,
-    grid: JSON.parse(map.gridJson || '[]'),
-    streetFair,
-    assignments: map.assignments.map(a => ({
-      boothLabel: a.boothLabel,
-      applicationId: a.applicationId,
-      vendorEmail: a.vendorEmail,
-      vendorName: a.vendorName,
-      utilities: JSON.parse(a.utilities || '[]'),
-    })),
+    ...payload,
   });
 }
 
@@ -108,7 +98,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'eventId is required' }, { status: 400 });
   }
 
-  if (getPilotDataSource() !== 'db') {
+  if (getEffectiveDataSource() !== 'db') {
     const state = updateEventLayoutSeed(organizerId, eventId, {
       layoutMode,
       streetFair,
@@ -164,7 +154,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (getPilotDataSource() !== 'db') {
+  if (getEffectiveDataSource() !== 'db') {
     persistAssignmentsSeed(organizerId, eventId, assignments);
     const state = getEventLayoutSeed(organizerId, eventId);
     return NextResponse.json({

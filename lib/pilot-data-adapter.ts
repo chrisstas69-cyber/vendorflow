@@ -2,7 +2,7 @@
  * Pilot data adapter — UI and APIs read through here so seed → DB migration
  * does not require page-level changes. Set PILOT_DATA_SOURCE=db when ready.
  */
-import { getActiveOrganizerId, getPilotDataSource } from '@/lib/pilot-config';
+import { getActiveOrganizerId, getEffectiveDataSource } from '@/lib/pilot-config';
 import {
   getApplicationsInbox,
   performInboxAction,
@@ -32,7 +32,7 @@ export function resolveOrganizerInbox(filters: InboxFilters = {}) {
 export async function resolveOrganizerInboxAsync(filters: InboxFilters = {}) {
   const organizerId = filters.organizerId ?? getActiveOrganizerId();
 
-  if (getPilotDataSource() === 'db') {
+  if (getEffectiveDataSource() === 'db') {
     return getApplicationsInboxFromDb({ ...filters, organizerId });
   }
 
@@ -40,14 +40,14 @@ export async function resolveOrganizerInboxAsync(filters: InboxFilters = {}) {
 }
 
 export async function resolveApplicationActionAsync(submissionId: string, action: InboxAction) {
-  if (getPilotDataSource() === 'db') {
+  if (getEffectiveDataSource() === 'db') {
     return performApplicationActionDb(submissionId, action);
   }
   return performInboxAction(submissionId, action);
 }
 
 export async function resolveApplicationByIdAsync(id: string, organizerId?: string) {
-  if (getPilotDataSource() === 'db') {
+  if (getEffectiveDataSource() === 'db') {
     return getApplicationByIdFromDb(id, organizerId);
   }
   const inbox = getApplicationsInbox({ organizerId: organizerId ?? getActiveOrganizerId() });
@@ -57,14 +57,14 @@ export async function resolveApplicationByIdAsync(id: string, organizerId?: stri
 export async function resolveCreateApplicationAsync(
   input: Parameters<typeof createApplicationDb>[0]
 ) {
-  if (getPilotDataSource() === 'db') {
+  if (getEffectiveDataSource() === 'db') {
     return createApplicationDb(input);
   }
   return null;
 }
 
 export async function resetPilotDataAsync() {
-  if (getPilotDataSource() === 'db') {
+  if (getEffectiveDataSource() === 'db') {
     await resetPilotDbSeed();
     return;
   }

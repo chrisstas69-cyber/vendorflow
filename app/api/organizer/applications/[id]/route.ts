@@ -3,7 +3,7 @@ import {
   resolveApplicationByIdAsync,
   resolveCreateApplicationAsync,
 } from '@/lib/pilot-data-adapter';
-import { getActiveOrganizerId, getPilotDataSource } from '@/lib/pilot-config';
+import { getActiveOrganizerId, getEffectiveDataSource } from '@/lib/pilot-config';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
 
 export const dynamic = 'force-dynamic';
@@ -29,7 +29,7 @@ export async function PATCH(
 ) {
   await ensurePlatformSeed();
 
-  if (getPilotDataSource() !== 'db') {
+  if (getEffectiveDataSource() !== 'db') {
     return NextResponse.json(
       { ok: false, error: 'Application updates require PILOT_DATA_SOURCE=db' },
       { status: 400 }

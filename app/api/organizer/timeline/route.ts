@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getActiveOrganizerId, getPilotDataSource } from '@/lib/pilot-config';
+import { getActiveOrganizerId, getEffectiveDataSource } from '@/lib/pilot-config';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
 import { prisma } from '@/lib/prisma';
 import { defaultTimelineStages } from '@/lib/workflow/timeline-stages';
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'eventId is required' }, { status: 400 });
   }
 
-  if (getPilotDataSource() === 'db') {
+  if (getEffectiveDataSource() === 'db') {
     try {
       const row = await prisma.eventTimeline.findUnique({
         where: { organizerId_eventId: { organizerId, eventId } },

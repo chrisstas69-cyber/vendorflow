@@ -1,4 +1,4 @@
-import { getPilotDataSource } from '@/lib/pilot-config';
+import { getEffectiveDataSource } from '@/lib/pilot-config';
 import type {
   ImportRunSummary,
   OpsContactsSearchParams,
@@ -25,6 +25,7 @@ import {
   listJurisdictionsDb,
   runChamberImportDb,
   searchOrganizationsDb,
+  updateContactDb,
   updateOrganizationDb,
 } from '@/lib/ops-contacts-db-store';
 import { getSourceHealthSnapshot, chamberCsvFreshness } from '@/lib/import/source-health';
@@ -33,7 +34,7 @@ export async function searchOpsOrganizations(
   params: OpsContactsSearchParams,
   viewer: ViewerRole
 ): Promise<{ organizations: OpsOrganizationRecord[]; dataSource: 'seed' | 'db' }> {
-  if (getPilotDataSource() === 'db') {
+  if (getEffectiveDataSource() === 'db') {
     await ensureOpsContactsDbSeed();
     const organizations = await searchOrganizationsDb(params, viewer);
     return { organizations, dataSource: 'db' };
@@ -43,7 +44,7 @@ export async function searchOpsOrganizations(
 }
 
 export async function getOpsOrganization(id: string, viewer: ViewerRole) {
-  if (getPilotDataSource() === 'db') {
+  if (getEffectiveDataSource() === 'db') {
     await ensureOpsContactsDbSeed();
     return getOrganizationDb(id, viewer);
   }
@@ -52,7 +53,7 @@ export async function getOpsOrganization(id: string, viewer: ViewerRole) {
 }
 
 export async function listOpsJurisdictions() {
-  if (getPilotDataSource() === 'db') {
+  if (getEffectiveDataSource() === 'db') {
     await ensureOpsContactsDbSeed();
     return listJurisdictionsDb();
   }
@@ -64,7 +65,7 @@ export async function updateOpsOrganization(
   id: string,
   patch: Partial<Pick<OpsOrganizationRecord, 'outreachStatus' | 'notes' | 'internalOnly' | 'defaultVisibility'>>
 ) {
-  if (getPilotDataSource() === 'db') {
+  if (getEffectiveDataSource() === 'db') {
     return updateOrganizationDb(id, patch);
   }
   return updateOrganizationSeed(id, patch);
@@ -77,7 +78,7 @@ export async function logOpsOutreach(input: {
   summary: string;
   actorLabel?: string;
 }) {
-  if (getPilotDataSource() === 'db') {
+  if (getEffectiveDataSource() === 'db') {
     return addOutreachActivityDb(input);
   }
   return addOutreachActivitySeed(input);
@@ -87,9 +88,8 @@ export async function updateOpsContact(
   id: string,
   patch: Parameters<typeof updateContactSeed>[1]
 ) {
-  if (getPilotDataSource() === 'db') {
-    // simplified — seed path for pilot edits in db mode can extend later
-    return updateContactSeed(id, patch);
+  if (getEffectiveDataSource() === 'db') {
+    return updateContactDb(id, patch);
   }
   return updateContactSeed(id, patch);
 }
@@ -100,7 +100,7 @@ export async function runChamberImport(input: {
   actorLabel?: string;
   forceOverwriteManual?: boolean;
 }): Promise<{ run: ImportRunSummary; dataSource: 'seed' | 'db' }> {
-  if (getPilotDataSource() === 'db') {
+  if (getEffectiveDataSource() === 'db') {
     const run = await runChamberImportDb(input);
     return { run, dataSource: 'db' };
   }
@@ -109,7 +109,7 @@ export async function runChamberImport(input: {
 }
 
 export async function listChamberImportRuns(limit = 20): Promise<ImportRunSummary[]> {
-  if (getPilotDataSource() === 'db') {
+  if (getEffectiveDataSource() === 'db') {
     return listImportRunsDb(limit);
   }
   return listChamberImportRunsSeed(limit);

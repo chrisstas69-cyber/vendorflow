@@ -330,6 +330,26 @@ export async function updateOrganizationDb(
   return mapOrg(row);
 }
 
+export async function updateContactDb(
+  id: string,
+  patch: Partial<Pick<OpsContactRecord, 'notes' | 'visibility' | 'phone' | 'email'>>
+): Promise<OpsContactRecord | null> {
+  try {
+    const row = await prisma.opsContact.update({
+      where: { id },
+      data: {
+        ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
+        ...(patch.visibility !== undefined ? { visibility: patch.visibility } : {}),
+        ...(patch.phone !== undefined ? { phone: patch.phone } : {}),
+        ...(patch.email !== undefined ? { email: patch.email } : {}),
+      },
+    });
+    return mapContact(row);
+  } catch {
+    return null;
+  }
+}
+
 export async function addOutreachActivityDb(input: {
   organizationId: string;
   contactId?: string;

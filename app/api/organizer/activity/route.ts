@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getActiveOrganizerId, getPilotDataSource } from '@/lib/pilot-config';
+import { getActiveOrganizerId, getEffectiveDataSource } from '@/lib/pilot-config';
 import {
   getActivityFeedFromDb,
   markActivityReadDb,
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   const unreadOnly = searchParams.get('unreadOnly') === '1';
   const limit = Number(searchParams.get('limit') ?? 50);
 
-  if (getPilotDataSource() !== 'db') {
+  if (getEffectiveDataSource() !== 'db') {
     return NextResponse.json({
       ok: true,
       dataSource: 'seed',
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   await ensurePlatformSeed();
 
-  if (getPilotDataSource() !== 'db') {
+  if (getEffectiveDataSource() !== 'db') {
     return NextResponse.json({ ok: false, error: 'Requires PILOT_DATA_SOURCE=db' }, { status: 400 });
   }
 
