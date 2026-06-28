@@ -2,6 +2,10 @@
 
 Event vendor intelligence for NY/NJ street fair operators — discovery, pipeline, deadlines, and profit tracking.
 
+> **Repository:** This repo is **VendorFlow only**. The separate NY/NJ event scanner lives in [`ny-nj-event-tracker`](https://github.com/chrisstas69-cyber/ny-nj-event-tracker) on branch `main`.
+
+**Production:** https://vendorflow-mu.vercel.app
+
 ## Quick start
 
 ```bash

@@ -8,34 +8,42 @@ export const dynamic = 'force-dynamic';
 
 /** GET — list gallery items for an entity */
 export async function GET(req: NextRequest) {
-  await ensurePlatformSeed();
+  try {
+    await ensurePlatformSeed();
 
-  const { searchParams } = new URL(req.url);
-  const entityType = searchParams.get('entityType') as GalleryEntityType | null;
-  const entityId = searchParams.get('entityId');
-  const publicOnly = searchParams.get('publicOnly') === 'true';
+    const { searchParams } = new URL(req.url);
+    const entityType = searchParams.get('entityType') as GalleryEntityType | null;
+    const entityId = searchParams.get('entityId');
+    const publicOnly = searchParams.get('publicOnly') === 'true';
 
-  if (!entityType || !entityId) {
+    if (!entityType || !entityId) {
+      return NextResponse.json(
+        { ok: false, error: 'entityType and entityId are required' },
+        { status: 400 }
+      );
+    }
+
+    if (!['event', 'organizer', 'vendor'].includes(entityType)) {
+      return NextResponse.json({ ok: false, error: 'Invalid entityType' }, { status: 400 });
+    }
+
+    const { items, dataSource } = await listGallery(entityType, entityId, publicOnly);
+
+    return NextResponse.json({
+      ok: true,
+      entityType,
+      entityId,
+      items,
+      coverImageUrl: getCoverImageUrl(items),
+      dataSource,
+    });
+  } catch (err) {
+    console.error('[galleries GET]', err);
     return NextResponse.json(
-      { ok: false, error: 'entityType and entityId are required' },
-      { status: 400 }
+      { ok: false, error: err instanceof Error ? err.message : 'Failed to load gallery' },
+      { status: 500 }
     );
   }
-
-  if (!['event', 'organizer', 'vendor'].includes(entityType)) {
-    return NextResponse.json({ ok: false, error: 'Invalid entityType' }, { status: 400 });
-  }
-
-  const { items, dataSource } = await listGallery(entityType, entityId, publicOnly);
-
-  return NextResponse.json({
-    ok: true,
-    entityType,
-    entityId,
-    items,
-    coverImageUrl: getCoverImageUrl(items),
-    dataSource,
-  });
 }
 
 /** POST — add a gallery item */
