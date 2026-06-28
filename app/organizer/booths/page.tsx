@@ -1,7 +1,7 @@
 'use client';
 
 import { OrganizerLayout } from '@/components/layout/organizer-layout';
-import { BoothMapEditor } from '@/components/organizer/booth-map-editor';
+import { BoothPlanningShell } from '@/components/organizer/booth-planning-shell';
 import { OrganizerPageHeader } from '@/components/organizer/organizer-page-header';
 import { useOrganizerContext } from '@/contexts/organizer-context';
 import { useOrganizerInbox } from '@/hooks/use-organizer-inbox';
@@ -16,7 +16,7 @@ export default function OrganizerBoothsPage() {
     <OrganizerLayout showBanners={false}>
       <OrganizerPageHeader
         title="Booths"
-        description="Assign approved vendors to grid positions — electric and water tags included."
+        description="Quick Grid or Street Fair Mode — assign approved vendors to booth spaces."
         actions={
           events.length > 0 ? (
             <select
@@ -34,7 +34,7 @@ export default function OrganizerBoothsPage() {
           ) : undefined
         }
       />
-      <BoothMapEditor eventId={selected} />
+      <BoothPlanningShell eventId={selected} />
     </OrganizerLayout>
   );
 }

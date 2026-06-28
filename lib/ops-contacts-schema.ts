@@ -107,6 +107,66 @@ export interface OutreachActivityRecord {
   createdAt: string;
 }
 
+/** Import metadata — internal intelligence layer */
+export interface OpsImportMetadata {
+  canonicalName?: string;
+  normalizedDomain?: string | null;
+  dedupeKey?: string;
+  county?: string;
+  town?: string;
+  sourceSystem?: 'manual' | 'tracker' | 'legacy';
+  sourceFile?: string;
+  sourceUrl?: string;
+  sourcePriority?: number;
+  lastImportedAt?: string;
+  lastSeenAt?: string;
+  importRunId?: string;
+  manuallyEdited?: boolean;
+}
+
+export type ImportRowAction = 'create' | 'update' | 'skip' | 'conflict' | 'error';
+
+export interface ImportRowResult {
+  rowIndex: number;
+  chamberName: string;
+  dedupeKey: string;
+  action: ImportRowAction;
+  existingId?: string;
+  reason: string;
+  changedFields?: string[];
+}
+
+export interface ImportRunSummary {
+  id: string;
+  createdAt: string;
+  sourceSystem: string;
+  sourceFile?: string;
+  dryRun: boolean;
+  status: 'preview' | 'completed' | 'failed';
+  rowsProcessed: number;
+  createdCount: number;
+  updatedCount: number;
+  skippedCount: number;
+  conflictCount: number;
+  errorCount: number;
+  rows: ImportRowResult[];
+  actorLabel?: string;
+}
+
+export interface ScrapeSourceHealthRecord {
+  id: string;
+  name: string;
+  status: 'active' | 'inactive' | 'degraded' | 'unknown';
+  active: boolean;
+  lastCheckedAt?: string;
+  lastSuccessAt?: string;
+  lastFailureAt?: string;
+  lastError?: string;
+  outputCount?: number;
+  region?: string;
+  category?: string;
+}
+
 export interface OpsOrganizationRecord {
   id: string;
   type: OrgType;
@@ -130,6 +190,7 @@ export interface OpsOrganizationRecord {
   outreachActivities: OutreachActivityRecord[];
   createdAt: string;
   updatedAt: string;
+  import?: OpsImportMetadata;
 }
 
 export interface OpsContactsSearchParams {

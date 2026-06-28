@@ -12,12 +12,19 @@ import {
   resolveViewerRole,
 } from '@/lib/ops-contacts-schema';
 import { buildSeedOpsOrganizations, SEED_JURISDICTIONS } from '@/lib/ops-contacts-seed-data';
+import { loadChamberOpsOrganizations, mergeOpsOrganizations } from '@/lib/import/chambers-to-ops';
+import { applyChamberImport, previewChamberImport } from '@/lib/import/chamber-import';
+import { saveImportRunSeed, listImportRunsSeed as listStoredImportRuns } from '@/lib/import/import-run-store';
+import type { ImportRunSummary } from '@/lib/ops-contacts-schema';
 
 let organizations: OpsOrganizationRecord[] = [];
 
 export function ensureOpsContactsSeedStore() {
   if (organizations.length === 0) {
-    organizations = buildSeedOpsOrganizations();
+    organizations = mergeOpsOrganizations(
+      buildSeedOpsOrganizations(),
+      loadChamberOpsOrganizations()
+    );
   }
 }
 
@@ -97,9 +104,49 @@ export function updateOrganizationSeed(
   organizations[idx] = {
     ...organizations[idx],
     ...patch,
+    import: {
+      ...organizations[idx].import,
+      manuallyEdited: true,
+    },
     updatedAt: new Date().toISOString(),
   };
   return organizations[idx];
+}
+
+export function runChamberImportSeed(input: {
+  dryRun: boolean;
+  filePath?: string;
+  actorLabel?: string;
+  forceOverwriteManual?: boolean;
+}): ImportRunSummary {
+  ensureOpsContactsSeedStore();
+  if (input.dryRun) {
+    return previewChamberImport({
+      dryRun: true,
+      filePath: input.filePath,
+      actorLabel: input.actorLabel,
+      forceOverwriteManual: input.forceOverwriteManual,
+      existingOrgs: organizations,
+    });
+  }
+  const { organizations: next, run } = applyChamberImport({
+    dryRun: false,
+    filePath: input.filePath,
+    actorLabel: input.actorLabel,
+    forceOverwriteManual: input.forceOverwriteManual,
+    existingOrgs: organizations,
+  });
+  organizations = next;
+  return saveImportRunSeed(run);
+}
+
+export function listChamberImportRunsSeed(limit = 20): ImportRunSummary[] {
+  return listStoredImportRuns(limit);
+}
+
+export function getAllOrganizationsSeed(): OpsOrganizationRecord[] {
+  ensureOpsContactsSeedStore();
+  return organizations;
 }
 
 export function addOutreachActivitySeed(input: {

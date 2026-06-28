@@ -1,21 +1,175 @@
-Town,County,Chamber Name,Chamber URL,Events Page URL
-Garden City,Nassau,Garden City Chamber of Commerce,https://www.gardencitychamber.org,https://www.gardencitychamber.org/events
-Huntington,Suffolk,Huntington Township Chamber of Commerce,https://www.huntingtonchamber.com,https://www.huntingtonchamber.com/events
-Babylon,Suffolk,Babylon Village Chamber of Commerce,https://www.babylonchamber.com,https://www.babylonchamber.com/events
-Patchogue,Suffolk,Greater Patchogue Chamber of Commerce,https://www.patchoguechamber.com,https://www.patchoguechamber.com/events
-Smithtown,Suffolk,Smithtown Chamber of Commerce,https://www.smithtownchamber.com,https://www.smithtownchamber.com/events
-Massapequa,Nassau,Massapequa Chamber of Commerce,https://www.massapequachamber.com,https://www.massapequachamber.com/events
-Hempstead,Nassau,Hempstead Chamber of Commerce,https://www.hempsteadchamber.com,https://www.hempsteadchamber.com/events
-Freeport,Nassau,Freeport Chamber of Commerce,https://www.freeportchamber.com,https://www.freeportchamber.com/events
-Long Beach,Nassau,Long Beach Chamber of Commerce,https://www.longbeachchamber.com,https://www.longbeachchamber.com/events
-Rockville Centre,Nassau,Rockville Centre Chamber of Commerce,https://www.rvchamber.com,https://www.rvchamber.com/events
-Oyster Bay,Nassau,Oyster Bay Chamber of Commerce,https://www.oysterbaychamber.org,https://www.oysterbaychamber.org/events
-Glen Cove,Nassau,Glen Cove Chamber of Commerce,https://www.glencovechamber.org,https://www.glencovechamber.org/events
-Port Jefferson,Suffolk,Port Jefferson Chamber of Commerce,https://www.portjeffchamber.com,https://www.portjeffchamber.com/events
-Riverhead,Suffolk,Riverhead Chamber of Commerce,https://www.riverheadchamber.com,https://www.riverheadchamber.com/events
-Sayville,Suffolk,Sayville Chamber of Commerce,https://www.sayvillechamber.com,https://www.sayvillechamber.com/events
-Northport,Suffolk,Northport Chamber of Commerce,https://www.northportchamber.com,https://www.northportchamber.com/events
-Islip,Suffolk,Islip Chamber of Commerce,https://www.islipchamber.com,https://www.islipchamber.com/events
-Farmingdale,Nassau,Farmingdale Chamber of Commerce,https://www.farmingdalechamber.com,https://www.farmingdalechamber.com/events
-Hicksville,Nassau,Hicksville Chamber of Commerce,https://www.hicksvillechamber.com,https://www.hicksvillechamber.com/events
-Merrick,Nassau,Merrick Chamber of Commerce,https://www.merrickchamber.org,https://www.merrickchamber.org/events
+name,url,town,county,calendar_path,notes,status,last_checked,review_note
+Amityville Chamber,http://www.amityvillechamber.org/,Amityville,Suffolk,,imported from Copy of suffolk
+Babylon Chamber,http://www.babylonvillagechamber.org/,Babylon,Suffolk,,imported from Copy of suffolk
+Copiague Chamber,https://www.copiaguechamber.org/,Copiague,Suffolk,,imported from Copy of suffolk
+Deer Park Chamber,https://chamberofdeerpark.org/,Deer Park,Suffolk,,updated from chamber refresh
+Lindenhurst Chamber,http://lindenhurstchamber.org/,Lindenhurst,Suffolk,,imported from Copy of suffolk
+North Amityville Chamber,http://www.longisland.com/north-amityville/chambers-of-commerce/,North Amityville,Suffolk,,imported from Copy of suffolk
+North Babylon Chamber,http://www.northbabylonchamber.org/,North Babylon,Suffolk,,imported from Copy of suffolk
+West Babylon Chamber,http://www.gaebler.com/West+Babylon--New+York--Chamber-of-Commerce,West Babylon,Suffolk,,imported from Copy of suffolk
+Wyandanch Chamber,https://www.chamberofcommerce.com/wyandanch-ny,Wyandanch,Suffolk,,imported from Copy of suffolk
+Bellport Chamber,http://www.bellportchamberofcommerce.com/,Bellport,Suffolk,,imported from Copy of suffolk
+Blue Point Chamber,http://bayportbluepoint.com/,Blue Point,Suffolk,,imported from Copy of suffolk
+Brookhaven Chamber,http://www.northbrookhavenchamber.org/,Brookhaven,Suffolk,,imported from Copy of suffolk
+Calverton Chamber,https://northforkchamber.org/,Calverton,Suffolk,,updated from chamber refresh
+Centereach Chamber,https://middlecountrychamber.com/,Centereach,Suffolk,,updated from chamber refresh
+Center Moriches Chamber,http://www.moricheschamber.org/,Center Moriches,Suffolk,,imported from Copy of suffolk
+Coram Chamber,http://www.gaebler.com/Coram--New+York--Chamber-of-Commerce,Coram,Suffolk,,imported from Copy of suffolk
+East Moriches Chamber,http://www.manorvillechamber.org/,East Moriches,Suffolk,,imported from Copy of suffolk
+East Patchogue Chamber,https://patchogue.com/,East Patchogue,Suffolk,,updated from chamber refresh
+Eastport Chamber,http://www.eastport.net/,Eastport,Suffolk,,imported from Copy of suffolk
+East Setauket Chamber,http://www.manta.com/c/mr5st59/east-setauket-three-village-chamber-of-commerce,East Setauket,Suffolk,,imported from Copy of suffolk
+Farmingville Chamber,http://www.farmingvillechamber.com/,Farmingville,Suffolk,,imported from Copy of suffolk
+Holbrook Chamber,https://www.holbrookchamber.com/,Holbrook,Suffolk,,imported from Copy of suffolk
+Holtsville Chamber,https://farmingvillechamber.com/,Holtsville,Suffolk,,updated from chamber refresh
+Lake Grove Chamber,http://www.gaebler.com/Lake+Grove--New+York--Chamber-of-Commerce,Lake Grove,Suffolk,,imported from Copy of suffolk
+Manorville Chamber,http://www.manorvillechamber.org/,Manorville,Suffolk,,imported from Copy of suffolk
+Mastic Chamber,https://masticshirleychamber.org/,Mastic,Suffolk,,imported from Copy of suffolk
+Mastic Beach Chamber,http://masticbeachchamber.com/,Mastic Beach,Suffolk,,imported from Copy of suffolk
+Medford Chamber,https://www.medfordchamberny.org/,Medford,Suffolk,,imported from Copy of suffolk
+Middle Island Chamber,https://www.brookhavencoalition.org/business-directory/27/longwood-middle-island-coram-chamber-of-commerce/,Middle Island,Suffolk,,imported from Copy of suffolk
+Miller Place Chamber,"http://www.2chambers.com/miller_place,_new_york.htm",Miller Place,Suffolk,,imported from Copy of suffolk
+Moriches Chamber,http://www.moricheschamber.org/,Moriches,Suffolk,,imported from Copy of suffolk
+Mount Sinai Chamber,http://www.northbrookhavenchamber.org/,Mount Sinai,Suffolk,,imported from Copy of suffolk
+North Patchogue Chamber,http://www.patchogue.com/,North Patchogue,Suffolk,,imported from Copy of suffolk
+Patchogue Chamber,http://www.patchogue.com/,Patchogue,Suffolk,,imported from Copy of suffolk
+Port Jefferson Chamber,http://portjeffchamber.com/,Port Jefferson,Suffolk,,imported from Copy of suffolk
+Port Jefferson Station Chamber,http://portjeffchamber.com/,Port Jefferson Station,Suffolk,,imported from Copy of suffolk
+Ridge Chamber,http://www.gaebler.com/Ridge--New+York--Chamber-of-Commerce,Ridge,Suffolk,,imported from Copy of suffolk
+Rocky Point Chamber,http://www.northbrookhavenchamber.org/,Rocky Point,Suffolk,,imported from Copy of suffolk
+Ronkonkoma Chamber,http://www.ronkonkomachamber.com/,Ronkonkoma,Suffolk,,imported from Copy of suffolk
+Selden Chamber,http://www.longisland.com/selden/chambers-of-commerce/,Selden,Suffolk,,imported from Copy of suffolk
+Shirley Chamber,https://masticshirleychamber.org/,Shirley,Suffolk,,imported from Copy of suffolk
+Shoreham Chamber,http://www.countyoffice.org/shoreham-vt-chamber-of-commerce/,Shoreham,Suffolk,,imported from Copy of suffolk
+Sound Beach Chamber,http://www.northbrookhavenchamber.org/list/member/civic-association-of-sound-beach-sound-beach-26918253,Sound Beach,Suffolk,,imported from Copy of suffolk
+Stony Brook Chamber,http://www.3vchamber.com/clubportal/ClubStatic.cfm?clubID=3881&pubmenuoptID=43757&CFID=175622055&CFTOKEN=37848ed0c748531b-4FFF1D89-FF2E-823F-E5D6AD6CB41B2920,Stony Brook,Suffolk,,imported from Copy of suffolk
+Upton Chamber,http://www.uptonwy.com/upton-chamber,Upton,Suffolk,,imported from Copy of suffolk
+Wading River Chamber,http://www.uptonwy.com/upton-chamber,Wading River,Suffolk,,imported from Copy of suffolk
+Yaphank Chamber,http://www.visitbrookhaven.com/About-Brookhaven/Brookhaven-Chambers-of-Commerce,Yaphank,Suffolk,,imported from Copy of suffolk
+Amagansett Chamber,http://www.amagansettchamber.org/,Amagansett,Suffolk,,imported from Copy of suffolk
+East Hampton Chamber,https://easthamptonchamber.com/,East Hampton,Suffolk,,updated from chamber refresh
+Montauk Chamber,http://www.montaukchamber.com/,Montauk,Suffolk,,imported from Copy of suffolk
+Sag Harbor Chamber,http://sagharborchamber.com/,Sag Harbor,Suffolk,,imported from Copy of suffolk
+Wainscott Chamber,http://www.countyoffice.org/wainscott-ny-chamber-of-commerce/,Wainscott,Suffolk,,imported from Copy of suffolk
+Centerport Chamber,http://www.gaebler.com/Centerport--New+York--Chamber-of-Commerce,Centerport,Suffolk,,imported from Copy of suffolk
+Cold Spring Harbor Chamber,https://coldspringharborvillage.org/village-association,Cold Spring Harbor,Suffolk,,updated from chamber refresh
+Commack Chamber,http://www.lifeonlongisland.com/index.cfm?fuseaction=directory.viewlisting&page_id=97&Directory_ID=13138&dircat_ID=281,Commack,Suffolk,,imported from Copy of suffolk
+East Northport Chamber,http://eastnorthport.com/,East Northport,Suffolk,,imported from Copy of suffolk
+Greenlawn Chamber,https://huntingtonchamber.com/,Greenlawn,Suffolk,,updated from chamber refresh
+Huntington Chamber,http://www.huntingtonchamber.com/,Huntington,Suffolk,,imported from Copy of suffolk
+Huntington Station Chamber,https://huntingtonstationbid.com/,Huntington Station,Suffolk,,updated from chamber refresh
+Lloyd Harbor Chamber,http://www.longisland.com/lloyd-harbor/chambers-of-commerce/,Lloyd Harbor,Suffolk,,imported from Copy of suffolk
+Melville Chamber,http://huntingtonchamber.chambermaster.com/list/member/melville-chamber-of-commerce-melville-13808,Melville,Suffolk,,imported from Copy of suffolk
+Northport Chamber,http://www.northportny.com/,Northport,Suffolk,,imported from Copy of suffolk
+Bayport Chamber,http://bayportbluepoint.com/,Bayport,Suffolk,,imported from Copy of suffolk
+Bay Shore Chamber,https://chamberofcommerceofgreaterbayshore.com/,Bay Shore,Suffolk,,updated from chamber refresh
+Bohemia Chamber,http://bohemiachamberofcommerce.org/,Bohemia,Suffolk,,imported from Copy of suffolk
+Brentwood Chamber,http://brentwoodchamber.org/,Brentwood,Suffolk,,imported from Copy of suffolk
+Brightwaters Chamber,https://chamberofcommerceofgreaterbayshore.com/,Brightwaters,Suffolk,,updated from chamber refresh
+Central Islip Chamber,http://islipchamberofcommerce.org/,Central Islip,Suffolk,,imported from Copy of suffolk
+East Islip Chamber,https://eichamber.org/,East Islip,Suffolk,,updated from chamber refresh
+Great River Chamber,https://eichamber.org/,Great River,Suffolk,,updated from chamber refresh
+Hauppauge Chamber,https://hiali.org/,Hauppauge,Suffolk,,updated from chamber refresh
+Holtsville Chamber 2,https://farmingvillechamber.com/,Holtsville,Suffolk,,updated from chamber refresh
+Islandia Chamber,http://www.newvillageofislandia.com/pages/village_hall/islandia-chamber-of-commerce.php,Islandia,Suffolk,,imported from Copy of suffolk
+Islip Chamber,http://islipchamberofcommerce.org/,Islip,Suffolk,,imported from Copy of suffolk
+Islip Terrace Chamber,https://eichamber.org/,Islip Terrace,Suffolk,,updated from chamber refresh
+Oakdale Chamber,http://www.oakdalecivicassociation.org/Our_Chamber_of_Commerce.html,Oakdale,Suffolk,,imported from Copy of suffolk
+Ocean Beach Chamber,http://www.chamber-commerce.net/dir/9349/Ocean-Beach-Chamber-of-Commerce-in-Ocean-Beach,Ocean Beach,Suffolk,,imported from Copy of suffolk
+Ronkonkoma Chamber 2,http://www.ronkonkomachamber.com/,Ronkonkoma,Suffolk,,imported from Copy of suffolk
+Sayville Chamber,http://greatersayvillechamber.com/,Sayville,Suffolk,,imported from Copy of suffolk
+West Islip Chamber,http://westislipchamber.org/,West Islip,Suffolk,,imported from Copy of suffolk
+West Sayville Chamber,http://greatersayvillechamber.com/,West Sayville,Suffolk,,imported from Copy of suffolk
+Aquebogue Chamber,https://riverheadchamber.com/,Aquebogue,Suffolk,,updated from chamber refresh
+Calverton Chamber 2,https://northforkchamber.org/,Calverton,Suffolk,,updated from chamber refresh
+Jamesport Chamber,http://www.countyoffice.org/jamesport-ny-chamber-of-commerce/,Jamesport,Suffolk,,imported from Copy of suffolk
+Laurel Chamber,http://www.laurelchamber.com/,Laurel,Suffolk,,imported from Copy of suffolk
+Riverhead Chamber,http://www.riverheadchamber.com/,Riverhead,Suffolk,,imported from Copy of suffolk
+South Jamesport Chamber,http://www.countyoffice.org/south-jamesport-ny-chamber-of-commerce/,South Jamesport,Suffolk,,imported from Copy of suffolk
+Wading River Chamber 2,http://www.longisland.com/business/19.html,Wading River,Suffolk,,imported from Copy of suffolk
+Shelter Island Chamber,https://www.shelterislandchamber.org/,Shelter Island,Suffolk,,imported from Copy of suffolk
+Shelter Island Heights Chamber,https://www.shelterislandchamber.org/,Shelter Island Heights,Suffolk,,imported from Copy of suffolk
+Commack Chamber 2,http://www.lifeonlongisland.com/index.cfm?fuseaction=directory.viewlisting&page_id=97&Directory_ID=13138&dircat_ID=281,Commack,Suffolk,,imported from Copy of suffolk
+Hauppauge Chamber 2,https://hiali.org/,Hauppauge,Suffolk,,updated from chamber refresh
+Kings Park Chamber,http://kingsparkli.com/,Kings Park,Suffolk,,imported from Copy of suffolk
+Nesconset Chamber,http://nesconsetchamber.org/,Nesconset,Suffolk,,imported from Copy of suffolk
+Saint James Chamber,http://stjameschamber.org/,Saint James,Suffolk,,imported from Copy of suffolk
+Smithtown Chamber,http://www.smithtownny.gov/index.aspx?NID=250,Smithtown,Suffolk,,imported from Copy of suffolk
+Bridgehampton Chamber,https://southamptonchamber.com/,Bridgehampton,Suffolk,,updated from chamber refresh
+East Quogue Chamber,http://eqny.com/,East Quogue,Suffolk,,imported from Copy of suffolk
+Hampton Bays Chamber,http://www.hamptonbayschamber.com/,Hampton Bays,Suffolk,,imported from Copy of suffolk
+Remsenburg Chamber,http://www.westhamptonchamber.org/area-information/remsenburg/,Remsenburg,Suffolk,,imported from Copy of suffolk
+Sagaponack Chamber,http://www.countyoffice.org/sagaponack-ny-chamber-of-commerce/,Sagaponack,Suffolk,,imported from Copy of suffolk
+Southampton Chamber,https://southamptonchamber.com/,Southampton,Suffolk,,imported from Copy of suffolk
+Speonk Chamber,http://www.westhamptonchamber.org/area-information/speonk/,Speonk,Suffolk,,imported from Copy of suffolk
+Water Mill Chamber,http://watermill-ny.usa-chamber.org/,Water Mill,Suffolk,,imported from Copy of suffolk
+Westhampton Chamber,http://www.discoverlongisland.com/member/greater-westhampton-chamber-of-commerce/,Westhampton,Suffolk,,imported from Copy of suffolk
+Westhampton Beach Chamber,http://www.westhamptonchamber.org/,Westhampton Beach,Suffolk,,imported from Copy of suffolk
+Cutchogue Chamber,http://www.lifeonlongisland.com/index.cfm?fuseaction=directory.viewlisting&page_id=97&Directory_ID=13140&dircat_ID=281,Cutchogue,Suffolk,,imported from Copy of suffolk
+East Marion Chamber,https://northforkchamber.org/,East Marion,Suffolk,,updated from chamber refresh
+Fishers Island Chamber,https://northforkchamber.org/,Fishers Island,Suffolk,,updated from chamber refresh
+Greenport Chamber,https://greenportvillage.com/the-village-roots,Greenport,Suffolk,,updated from chamber refresh
+Mattituck Chamber,http://www.mattituckchamber.org/,Mattituck,Suffolk,,imported from Copy of suffolk
+New Suffolk Chamber,http://www.suffolkchambers.org/,New Suffolk,Suffolk,,imported from Copy of suffolk
+Orient Chamber,http://www.countyoffice.org/orient-ny-chamber-of-commerce/,Orient,Suffolk,,imported from Copy of suffolk
+Peconic Chamber,http://www.countyoffice.org/peconic-ny-chamber-of-commerce/,Peconic,Suffolk,,imported from Copy of suffolk
+Southold Chamber,http://www.longisland.com/southold/chambers-of-commerce/,Southold,Suffolk,,imported from Copy of suffolk
+Bayville Chamber,http://www.bayvillechamberofcommerce.com/,Bayville,Nassau,,imported from Copy of Nassau County
+Locust Valley Chamber,http://www.locustvalleychamber.com/,Locust Valley,Nassau,,imported from Copy of Nassau County
+Glen Cove Chamber,http://www.glencovechamber.org/,Glen Cove,Nassau,,imported from Copy of Nassau County
+Mill Neck Chamber,https://www.greatneckchamber.org/,Mill Neck,Nassau,,imported from Copy of Nassau County
+Oyster Bay Chamber,http://ncchambers.org/chamber/oyster-bay/,Oyster Bay,Nassau,,imported from Copy of Nassau County
+East Norwich Chamber,http://visitoysterbay.com/,East Norwich,Nassau,,imported from Copy of Nassau County
+Sea Cliff Chamber,http://www.glencovechamber.org/,Sea Cliff,Nassau,,imported from Copy of Nassau County
+Port Washington Chamber,http://www.pwcoc.org/,Port Washington,Nassau,,imported from Copy of Nassau County
+Glen Head Chamber,http://www.glencovechamber.org/,Glen Head,Nassau,,imported from Copy of Nassau County
+Syosset Chamber,https://www.syossetchamber.com/,Syosset,Nassau,,imported from Copy of Nassau County
+Woodbury Chamber,http://www.woodburychamber.org/,Woodbury,Nassau,,imported from Copy of Nassau County
+Jericho Chamber,http://www.countyoffice.org/jericho-ny-chamber-of-commerce/,Jericho,Nassau,,imported from Copy of Nassau County
+Old Westbury Chamber,http://ncchambers.org/chamber/westbury-carle-place/,Old Westbury,Nassau,,imported from Copy of Nassau County
+Greenvale Chamber,https://roslynchamber.org/,Greenvale,Nassau,,updated from chamber refresh
+Roslyn Heights Chamber,http://www.countyoffice.org/roslyn-heights-ny-chamber-of-commerce/,Roslyn Heights,Nassau,,imported from Copy of Nassau County
+Albertson Chamber,https://roslynchamber.org/,Albertson,Nassau,,updated from chamber refresh
+Manhasset Chamber,http://www.manhassetny.org/,Manhasset,Nassau,,imported from Copy of Nassau County
+Great Neck Chamber,http://www.greatneckchamber.org/,Great Neck,Nassau,,imported from Copy of Nassau County
+Williston Park Chamber,https://www.yellowpages.com/williston-park-ny/chamber-of-commerce,Williston Park,Nassau,,imported from Copy of Nassau County
+Carle Place Chamber,https://wcpchamber.org/,Carle Place,Nassau,,updated from chamber refresh
+Roslyn Chamber,http://ncchambers.org/chamber/roslyn/,Roslyn,Nassau,,imported from Copy of Nassau County
+Mineola Chamber,http://ncchambers.org/chamber/roslyn/,Mineola,Nassau,,imported from Copy of Nassau County
+New Hyde Park Chamber,http://www.nhpchamber.org/,New Hyde Park,Nassau,,imported from Copy of Nassau County
+Garden City Chamber,http://www.nhpchamber.org/,Garden City,Nassau,,imported from Copy of Nassau County
+Plainview Chamber,https://pobcoc.com/,Plainview,Nassau,,imported from Copy of Nassau County
+Hicksville Chamber,https://hicksvillechamber.com/,Hicksville,Nassau,,updated from chamber refresh
+Old Bethpage Chamber,http://ncchambers.org/chamber/plainview-old-bethpage/,Old Bethpage,Nassau,,imported from Copy of Nassau County
+Bethpage Chamber,http://ncchambers.org/chamber/bethpage/,Bethpage,Nassau,,imported from Copy of Nassau County
+Farmingdale Chamber,http://ncchambers.org/chamber/farmingdale/,Farmingdale,Nassau,,imported from Copy of Nassau County
+Levittown Chamber,http://ncchambers.org/chamber/levittown/,Levittown,Nassau,,imported from Copy of Nassau County
+East Meadow Chamber,http://ncchambers.org/chamber/east-meadow/,East Meadow,Nassau,,imported from Copy of Nassau County
+Uniondale Chamber,http://ncchambers.org/chamber/uniondale/,Uniondale,Nassau,,imported from Copy of Nassau County
+Hempstead Chamber,https://hempsteadchamber.com/,Hempstead,Nassau,,updated from chamber refresh
+West Hempstead Chamber,http://ncchambers.org/chamber/west-hempstead/,West Hempstead,Nassau,,imported from Copy of Nassau County
+Franklin Square Chamber,http://ncchambers.org/chamber/franklin-square/,Franklin Square,Nassau,,imported from Copy of Nassau County
+Elmont Chamber,https://elmontchamber.net/,Elmont,Nassau,,updated from chamber refresh
+Roosevelt Chamber,http://ncchambers.org/chamber/roosevelt/,Roosevelt,Nassau,,imported from Copy of Nassau County
+Malverne Chamber,http://www.rooseveltnychamber.org/,Malverne,Nassau,,imported from Copy of Nassau County
+Valley Stream Chamber,http://valleystreamchamber.org/,Valley Stream,Nassau,,imported from Copy of Nassau County
+Rockville Centre Chamber,http://rockvillecentrechamberofcommerce.com/,Rockville Centre,Nassau,,imported from Copy of Nassau County
+Baldwin Chamber,http://www.baldwinchamber.com/,Baldwin,Nassau,,imported from Copy of Nassau County
+Lynbrook Chamber,http://ncchambers.org/chamber/lynbrook/,Lynbrook,Nassau,,imported from Copy of Nassau County
+Merrick Chamber,http://ncchambers.org/chamber/merrick/,Merrick,Nassau,,imported from Copy of Nassau County
+Bellmore Chamber,http://ncchambers.org/chamber/bellmore/,Bellmore,Nassau,,imported from Copy of Nassau County
+Wantagh Chamber,http://ncchambers.org/chamber/wantagh/,Wantagh,Nassau,,imported from Copy of Nassau County
+Massapequa Park Chamber,http://www.countyoffice.org/massapequa-park-ny-chamber-of-commerce/,Massapequa Park,Nassau,,imported from Copy of Nassau County
+Massapequa Chamber,http://ncchambers.org/chamber/massapequa/,Massapequa,Nassau,,imported from Copy of Nassau County
+Freeport Chamber,http://ncchambers.org/chamber/freeport/,Freeport,Nassau,,imported from Copy of Nassau County
+Seaford Chamber,http://ncchambers.org/chamber/seaford/,Seaford,Nassau,,imported from Copy of Nassau County
+East Rockaway Chamber,http://ncchambers.org/chamber/111/,East Rockaway,Nassau,,imported from Copy of Nassau County
+Oceanside Chamber,http://ncchambers.org/chamber/oceanside/,Oceanside,Nassau,,imported from Copy of Nassau County
+Hewlett Chamber,https://hwba.org/,Hewlett,Nassau,,updated from chamber refresh
+Woodmere Chamber,http://ncchambers.org/chamber/hewlett/,Woodmere,Nassau,,imported from Copy of Nassau County
+Inwood Chamber,https://imanyc.org/,Inwood,Nassau,,updated from chamber refresh
+Cedarhurst Chamber,https://shopcedarhurst.com/,Cedarhurst,Nassau,,updated from chamber refresh
+Island Park Chamber,http://ncchambers.org/chamber/103/,Island Park,Nassau,,imported from Copy of Nassau County
+Atlantic Beach Chamber,https://thelongbeachchamber.com/,Atlantic Beach,Nassau,,updated from chamber refresh
+Long Beach Chamber,http://ncchambers.org/chamber/long-beach/,Long Beach,Nassau,,imported from Copy of Nassau County
+Point Lookout Chamber,http://www.pointlookoutcommerce.com/,Point Lookout,Nassau,,imported from Copy of Nassau County

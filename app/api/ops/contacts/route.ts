@@ -49,11 +49,14 @@ export async function GET(req: NextRequest) {
         purposeTags: CONTACT_PURPOSE_TAGS,
         outreachStatuses: OUTREACH_STATUSES,
       },
-      meta: {
-        total: organizations.length,
-        private: true,
-        description: 'Operational contact intelligence — not a public directory',
-      },
+    meta: {
+      total: organizations.length,
+      private: true,
+      chamberCount: organizations.filter(o => o.type === 'chamber').length,
+      manuallyEditedCount: organizations.filter(o => o.import?.manuallyEdited).length,
+      withDedupeKey: organizations.filter(o => o.import?.dedupeKey).length,
+      description: 'Operational contact intelligence — internal/premium layer, not a public directory',
+    },
     });
   } catch (err) {
     console.error('[ops/contacts]', err);

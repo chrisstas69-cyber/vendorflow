@@ -1,14 +1,18 @@
 import { getPilotDataSource } from '@/lib/pilot-config';
 import type {
+  ImportRunSummary,
   OpsContactsSearchParams,
   OpsOrganizationRecord,
+  ScrapeSourceHealthRecord,
   ViewerRole,
 } from '@/lib/ops-contacts-schema';
 import {
   addOutreachActivitySeed,
   ensureOpsContactsSeedStore,
   getOrganizationSeed,
+  listChamberImportRunsSeed,
   listJurisdictionsSeed,
+  runChamberImportSeed,
   searchOrganizationsSeed,
   updateContactSeed,
   updateOrganizationSeed,
@@ -17,10 +21,13 @@ import {
   addOutreachActivityDb,
   ensureOpsContactsDbSeed,
   getOrganizationDb,
+  listImportRunsDb,
   listJurisdictionsDb,
+  runChamberImportDb,
   searchOrganizationsDb,
   updateOrganizationDb,
 } from '@/lib/ops-contacts-db-store';
+import { getSourceHealthSnapshot, chamberCsvFreshness } from '@/lib/import/source-health';
 
 export async function searchOpsOrganizations(
   params: OpsContactsSearchParams,
@@ -85,4 +92,35 @@ export async function updateOpsContact(
     return updateContactSeed(id, patch);
   }
   return updateContactSeed(id, patch);
+}
+
+export async function runChamberImport(input: {
+  dryRun: boolean;
+  filePath?: string;
+  actorLabel?: string;
+  forceOverwriteManual?: boolean;
+}): Promise<{ run: ImportRunSummary; dataSource: 'seed' | 'db' }> {
+  if (getPilotDataSource() === 'db') {
+    const run = await runChamberImportDb(input);
+    return { run, dataSource: 'db' };
+  }
+  const run = runChamberImportSeed(input);
+  return { run, dataSource: 'seed' };
+}
+
+export async function listChamberImportRuns(limit = 20): Promise<ImportRunSummary[]> {
+  if (getPilotDataSource() === 'db') {
+    return listImportRunsDb(limit);
+  }
+  return listChamberImportRunsSeed(limit);
+}
+
+export async function getOpsSourceHealth(): Promise<{
+  sources: ScrapeSourceHealthRecord[];
+  chamberCsv: ReturnType<typeof chamberCsvFreshness>;
+}> {
+  return {
+    sources: getSourceHealthSnapshot(),
+    chamberCsv: chamberCsvFreshness(),
+  };
 }

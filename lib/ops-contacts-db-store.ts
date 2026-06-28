@@ -16,6 +16,9 @@ import {
   type VisibilityLevel,
 } from '@/lib/ops-contacts-schema';
 import { buildSeedOpsOrganizations, SEED_JURISDICTIONS } from '@/lib/ops-contacts-seed-data';
+import { loadChamberOpsOrganizations, mergeOpsOrganizations } from '@/lib/import/chambers-to-ops';
+import { applyChamberImport, previewChamberImport } from '@/lib/import/chamber-import';
+import type { ImportRunSummary } from '@/lib/ops-contacts-schema';
 
 let dbSeeded = false;
 
@@ -52,6 +55,38 @@ function mapContact(row: {
     internalNotes: row.internalNotes || undefined,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+function mapImportFields(row: {
+  canonicalName: string | null;
+  normalizedDomain: string | null;
+  dedupeKey: string | null;
+  county: string | null;
+  town: string | null;
+  sourceSystem: string | null;
+  sourceFile: string | null;
+  sourceUrl: string | null;
+  sourcePriority: number;
+  lastImportedAt: Date | null;
+  lastSeenAt: Date | null;
+  importRunId: string | null;
+  manuallyEdited: boolean;
+}) {
+  return {
+    canonicalName: row.canonicalName ?? undefined,
+    normalizedDomain: row.normalizedDomain,
+    dedupeKey: row.dedupeKey ?? undefined,
+    county: row.county ?? undefined,
+    town: row.town ?? undefined,
+    sourceSystem: (row.sourceSystem as 'manual' | 'tracker' | 'legacy') ?? undefined,
+    sourceFile: row.sourceFile ?? undefined,
+    sourceUrl: row.sourceUrl ?? undefined,
+    sourcePriority: row.sourcePriority,
+    lastImportedAt: row.lastImportedAt?.toISOString(),
+    lastSeenAt: row.lastSeenAt?.toISOString(),
+    importRunId: row.importRunId ?? undefined,
+    manuallyEdited: row.manuallyEdited,
   };
 }
 
@@ -105,6 +140,41 @@ function mapOrg(row: Awaited<ReturnType<typeof fetchOrgRows>>[0]): OpsOrganizati
     })),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
+    import: mapImportFields(row),
+  };
+}
+
+function orgCreateData(o: OpsOrganizationRecord) {
+  return {
+    id: o.id,
+    type: o.type,
+    name: o.name,
+    website: o.website ?? null,
+    publicPhone: o.publicPhone ?? null,
+    publicEmail: o.publicEmail ?? null,
+    address: o.address ?? null,
+    jurisdictionId: o.jurisdictionId ?? null,
+    jurisdictionCoverage: JSON.stringify(o.jurisdictionCoverage),
+    notes: o.notes,
+    recurringEventTypes: JSON.stringify(o.recurringEventTypes),
+    vendorHeavy: o.vendorHeavy,
+    fitScore: o.fitScore,
+    internalOnly: o.internalOnly,
+    outreachStatus: o.outreachStatus,
+    defaultVisibility: o.defaultVisibility,
+    canonicalName: o.import?.canonicalName ?? null,
+    normalizedDomain: o.import?.normalizedDomain ?? null,
+    dedupeKey: o.import?.dedupeKey ?? null,
+    county: o.import?.county ?? null,
+    town: o.import?.town ?? null,
+    sourceSystem: o.import?.sourceSystem ?? null,
+    sourceFile: o.import?.sourceFile ?? null,
+    sourceUrl: o.import?.sourceUrl ?? null,
+    sourcePriority: o.import?.sourcePriority ?? 50,
+    lastImportedAt: o.import?.lastImportedAt ? new Date(o.import.lastImportedAt) : null,
+    lastSeenAt: o.import?.lastSeenAt ? new Date(o.import.lastSeenAt) : null,
+    importRunId: o.import?.importRunId ?? null,
+    manuallyEdited: o.import?.manuallyEdited ?? false,
   };
 }
 
@@ -138,26 +208,14 @@ export async function ensureOpsContactsDbSeed() {
         },
       });
     }
-    const seedOrgs = buildSeedOpsOrganizations();
+    const seedOrgs = mergeOpsOrganizations(
+      buildSeedOpsOrganizations(),
+      loadChamberOpsOrganizations()
+    );
     for (const o of seedOrgs) {
       await prisma.opsOrganization.create({
         data: {
-          id: o.id,
-          type: o.type,
-          name: o.name,
-          website: o.website ?? null,
-          publicPhone: o.publicPhone ?? null,
-          publicEmail: o.publicEmail ?? null,
-          address: o.address ?? null,
-          jurisdictionId: o.jurisdictionId ?? null,
-          jurisdictionCoverage: JSON.stringify(o.jurisdictionCoverage),
-          notes: o.notes,
-          recurringEventTypes: JSON.stringify(o.recurringEventTypes),
-          vendorHeavy: o.vendorHeavy,
-          fitScore: o.fitScore,
-          internalOnly: o.internalOnly,
-          outreachStatus: o.outreachStatus,
-          defaultVisibility: o.defaultVisibility,
+          ...orgCreateData(o),
           contacts: {
             create: o.contacts.map(c => ({
               id: c.id,
@@ -260,6 +318,7 @@ export async function updateOrganizationDb(
       ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
       ...(patch.internalOnly !== undefined ? { internalOnly: patch.internalOnly } : {}),
       ...(patch.defaultVisibility !== undefined ? { defaultVisibility: patch.defaultVisibility } : {}),
+      manuallyEdited: true,
     },
     include: {
       jurisdiction: true,
@@ -309,6 +368,112 @@ export async function listJurisdictionsDb() {
     region: j.region,
     state: j.state,
   }));
+}
+
+async function fetchAllOrgsDb(): Promise<OpsOrganizationRecord[]> {
+  const rows = await fetchOrgRows();
+  return rows.map(mapOrg);
+}
+
+export async function runChamberImportDb(input: {
+  dryRun: boolean;
+  filePath?: string;
+  actorLabel?: string;
+  forceOverwriteManual?: boolean;
+}): Promise<ImportRunSummary> {
+  await ensureOpsContactsDbSeed();
+  const existing = await fetchAllOrgsDb();
+
+  if (input.dryRun) {
+    return previewChamberImport({
+      dryRun: true,
+      filePath: input.filePath,
+      actorLabel: input.actorLabel,
+      forceOverwriteManual: input.forceOverwriteManual,
+      existingOrgs: existing,
+    });
+  }
+
+  const { organizations: next, run } = applyChamberImport({
+    dryRun: false,
+    filePath: input.filePath,
+    actorLabel: input.actorLabel,
+    forceOverwriteManual: input.forceOverwriteManual,
+    existingOrgs: existing,
+  });
+
+  for (const org of next) {
+    const data = orgCreateData(org);
+    await prisma.opsOrganization.upsert({
+      where: { id: org.id },
+      create: {
+        ...data,
+        contacts: {
+          create: org.contacts.map(c => ({
+            id: c.id,
+            name: c.name,
+            title: c.title ?? null,
+            phone: c.phone ?? null,
+            email: c.email ?? null,
+            linkedIn: c.linkedIn ?? null,
+            department: c.department ?? null,
+            preferredContactMethod: c.preferredContactMethod,
+            purposeTags: JSON.stringify(c.purposeTags),
+            visibility: c.visibility,
+            notes: c.notes,
+            internalNotes: c.internalNotes ?? '',
+          })),
+        },
+      },
+      update: data,
+    });
+  }
+
+  await prisma.importRun.create({
+    data: {
+      id: run.id,
+      sourceSystem: run.sourceSystem,
+      sourceFile: run.sourceFile ?? null,
+      dryRun: false,
+      status: run.status,
+      rowsProcessed: run.rowsProcessed,
+      createdCount: run.createdCount,
+      updatedCount: run.updatedCount,
+      skippedCount: run.skippedCount,
+      conflictCount: run.conflictCount,
+      errorCount: run.errorCount,
+      summaryJson: JSON.stringify({ rows: run.rows }),
+      actorLabel: run.actorLabel ?? null,
+    },
+  });
+
+  return run;
+}
+
+export async function listImportRunsDb(limit = 20): Promise<ImportRunSummary[]> {
+  const rows = await prisma.importRun.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  });
+  return rows.map(r => {
+    const summary = JSON.parse(r.summaryJson || '{}') as { rows?: ImportRunSummary['rows'] };
+    return {
+      id: r.id,
+      createdAt: r.createdAt.toISOString(),
+      sourceSystem: r.sourceSystem,
+      sourceFile: r.sourceFile ?? undefined,
+      dryRun: r.dryRun,
+      status: r.status as ImportRunSummary['status'],
+      rowsProcessed: r.rowsProcessed,
+      createdCount: r.createdCount,
+      updatedCount: r.updatedCount,
+      skippedCount: r.skippedCount,
+      conflictCount: r.conflictCount,
+      errorCount: r.errorCount,
+      rows: summary.rows ?? [],
+      actorLabel: r.actorLabel ?? undefined,
+    };
+  });
 }
 
 export type { ContactPurposeTag };

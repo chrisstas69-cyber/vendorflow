@@ -306,6 +306,44 @@ export async function getBoothMapFromDb(organizerId: string, eventId: string) {
   return map;
 }
 
+export async function updateBoothLayoutDb(input: {
+  organizerId: string;
+  eventId: string;
+  layoutMode?: string;
+  streetFair?: unknown;
+  grid?: unknown[];
+}) {
+  await ensurePilotDbSeed();
+  const { organizerId, eventId, layoutMode, streetFair, grid } = input;
+
+  const data: {
+    layoutMode?: string;
+    streetFairJson?: string;
+    gridJson?: string;
+    name?: string;
+  } = {};
+
+  if (layoutMode) data.layoutMode = layoutMode;
+  if (streetFair) data.streetFairJson = JSON.stringify(streetFair);
+  if (grid) data.gridJson = JSON.stringify(grid);
+  if (layoutMode === 'street-fair') data.name = `${eventId} street fair`;
+
+  const boothMap = await prisma.boothMap.upsert({
+    where: { organizerId_eventId: { organizerId, eventId } },
+    create: {
+      organizerId,
+      eventId,
+      name: data.name ?? `${eventId} booth layout`,
+      layoutMode: layoutMode ?? 'grid',
+      gridJson: data.gridJson ?? '[]',
+      streetFairJson: data.streetFairJson ?? '{}',
+    },
+    update: data,
+  });
+
+  return boothMap;
+}
+
 export async function persistBoothAssignmentsDb(input: {
   organizerId: string;
   eventId: string;

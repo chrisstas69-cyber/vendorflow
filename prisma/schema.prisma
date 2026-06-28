@@ -86,8 +86,11 @@ model BoothMap {
   organizer   OrganizerAccount @relation(fields: [organizerId], references: [id], onDelete: Cascade)
   eventId     String
   name        String @default("Main grid")
+  layoutMode  String @default("grid")
   /// JSON BoothCell[] — label, utilities, optional pre-assignment hints
   gridJson    String @default("[]")
+  /// JSON StreetFairLayoutDefinition for street-fair mode
+  streetFairJson String @default("{}")
 
   assignments BoothAssignment[]
 
@@ -575,6 +578,22 @@ model OpsOrganization {
   /// internal | organizer-only | approved-vendor | all-paying-clients
   defaultVisibility   String  @default("internal")
 
+  /// Import / dedupe identity (internal intelligence layer)
+  canonicalName     String?
+  normalizedDomain  String?
+  dedupeKey         String?  @unique
+  county            String?  // denormalized for filters/dedup
+  town              String?
+  /// manual | tracker | legacy
+  sourceSystem      String?
+  sourceFile        String?
+  sourceUrl         String?
+  sourcePriority    Int      @default(50)
+  lastImportedAt    DateTime?
+  lastSeenAt        DateTime?
+  importRunId       String?
+  manuallyEdited    Boolean  @default(false)
+
   contacts         OpsContact[]
   eventProfiles    OrganizationEventProfile[]
   outreachActivities OutreachActivity[]
@@ -583,6 +602,9 @@ model OpsOrganization {
   @@index([jurisdictionId])
   @@index([outreachStatus])
   @@index([internalOnly])
+  @@index([sourceSystem])
+  @@index([dedupeKey])
+  @@index([normalizedDomain])
 }
 
 model OpsContact {
@@ -649,4 +671,49 @@ model OutreachActivity {
 
   @@index([organizationId, createdAt])
   @@index([contactId, createdAt])
+}
+
+/// Audit trail for chamber/contact CSV imports
+model ImportRun {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  sourceSystem  String
+  sourceFile    String?
+  dryRun        Boolean @default(false)
+  /// preview | completed | failed
+  status        String  @default("preview")
+  rowsProcessed Int     @default(0)
+  createdCount  Int     @default(0)
+  updatedCount  Int     @default(0)
+  skippedCount  Int     @default(0)
+  conflictCount Int     @default(0)
+  errorCount    Int     @default(0)
+  /// JSON ImportRunSummary — row-level preview/errors
+  summaryJson   String  @default("{}")
+  actorLabel    String?
+
+  @@index([createdAt])
+  @@index([sourceSystem])
+}
+
+/// Runtime health for scrape sources (tracker registry mirror)
+model ScrapeSourceHealth {
+  id        String   @id
+  updatedAt DateTime @updatedAt
+
+  name           String
+  /// active | inactive | degraded | unknown
+  status         String  @default("unknown")
+  active         Boolean @default(true)
+  lastCheckedAt  DateTime?
+  lastSuccessAt  DateTime?
+  lastFailureAt  DateTime?
+  lastError      String?
+  outputCount    Int?
+  region         String?
+  category       String?
+
+  @@index([status])
+  @@index([active])
 }

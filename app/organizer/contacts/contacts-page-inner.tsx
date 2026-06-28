@@ -7,6 +7,7 @@ import { OrganizerLayout } from '@/components/layout/organizer-layout';
 import { OrganizerPageHeader } from '@/components/organizer/organizer-page-header';
 import { useOrganizerTheme } from '@/components/organizer/use-organizer-theme';
 import { OpsContactDetailDrawer } from '@/components/ops-contacts/ops-contact-detail-drawer';
+import { OpsImportIntelligencePanel } from '@/components/ops-contacts/ops-import-intelligence-panel';
 import { useOpsContacts } from '@/hooks/use-ops-contacts';
 import { usePilotConfig } from '@/hooks/use-pilot-config';
 import {
@@ -25,7 +26,7 @@ export default function OrganizerContactsPageInner() {
 
   const { organizer } = usePilotConfig();
   const { surface, muted, heading, btnSecondary, btnPrimary } = useOrganizerTheme();
-  const { organizations, loading, error, filters, setFilters, loadOrganization, logOutreach } =
+  const { organizations, loading, error, filters, setFilters, loadOrganization, logOutreach, refresh } =
     useOpsContacts(viewerRole);
 
   const [selected, setSelected] = useState<OpsOrganizationRecord | null>(null);
@@ -73,6 +74,8 @@ export default function OrganizerContactsPageInner() {
           </p>
         </div>
       </div>
+
+      {internalMode && <OpsImportIntelligencePanel onImported={refresh} />}
 
       <div className={`rounded-2xl p-4 mb-6 ${surface}`}>
         <div className="flex flex-col lg:flex-row gap-3">

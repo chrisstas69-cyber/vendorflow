@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { useDemoStore } from '@/contexts/demo-store-context';
 import { OrganizerLayout } from '@/components/layout/organizer-layout';
 import { VendorSetupPreview } from '@/components/vendor/vendor-setup-preview';
-import { VendorDecisionPanel } from '@/components/organizer/vendor-decision-panel';
-import { DocumentStatusChips } from '@/components/organizer/document-status-chips';
+import { ApplicationDetailDrawer } from '@/components/organizer/application-detail-drawer';
+import { DocumentCompletenessBadge } from '@/components/organizer/document-completeness-badge';
+import { buildApplicationDetail } from '@/lib/application-detail';
 import { useOrganizerTheme } from '@/components/organizer/use-organizer-theme';
-import type { DocumentType } from '@/lib/documents';
-import { Mail, ArrowRight, Star } from 'lucide-react';
+import { ArrowRight, ChevronRight, Star } from 'lucide-react';
+import type { VendorSubmission } from '@/lib/platform-data';
 
 export default function OrganizerApplicationsPage() {
   const { submissions, approveSubmission, sendCe200Email, updateSubmission, toggleShortlist } =
@@ -17,6 +18,7 @@ export default function OrganizerApplicationsPage() {
   const { card, muted, heading, pageTitle, btnPrimary, btnSecondary } = useOrganizerTheme();
   const [toast, setToast] = useState('');
   const [view, setView] = useState<'all' | 'shortlisted'>('all');
+  const [selected, setSelected] = useState<VendorSubmission | null>(null);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -37,10 +39,9 @@ export default function OrganizerApplicationsPage() {
       updateSubmission(id, { status: 'rejected' });
       showToast('Application rejected');
     }
-  };
-
-  const contactVendor = (email: string, name: string) => {
-    window.location.href = `mailto:${email}?subject=VendorFlow — interested in your booth setup&body=Hi ${name}, we liked your setup photo and would like to discuss your booth for our event.`;
+    if (selected?.id === id) {
+      setSelected(prev => (prev ? { ...prev, status } : null));
+    }
   };
 
   return (
@@ -49,7 +50,7 @@ export default function OrganizerApplicationsPage() {
         <div>
           <h1 className={`${pageTitle} ${heading}`}>Vendor applications</h1>
           <p className={`text-base mt-1 ${muted}`}>
-            Review booth setup photos, shortlist favorites, then approve
+            Click any application to review profile, documents, and take action
           </p>
         </div>
         <Link
@@ -81,59 +82,55 @@ export default function OrganizerApplicationsPage() {
         ))}
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {filtered.length === 0 ? (
           <p className={muted}>
             {view === 'shortlisted' ? 'No shortlisted vendors yet — star the setups you like.' : 'No applications yet.'}
           </p>
         ) : (
           filtered.map(sub => {
-            const uploaded = sub.documents.map(d => d.type);
-            const missing = (sub.requiredForms as DocumentType[]).filter(r => !uploaded.includes(r));
+            const detail = buildApplicationDetail(sub, submissions);
             return (
-              <div key={sub.id} className={`rounded-xl border overflow-hidden ${card}`}>
-                <div className="grid md:grid-cols-[200px_1fr] gap-0">
-                  <div className="relative bg-stone-100 dark:bg-stone-800">
+              <button
+                key={sub.id}
+                type="button"
+                onClick={() => setSelected(sub)}
+                className={`w-full text-left rounded-xl border overflow-hidden transition-shadow hover:shadow-md hover:ring-2 hover:ring-teal-500/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${card}`}
+              >
+                <div className="grid md:grid-cols-[140px_1fr_auto] gap-0 items-stretch">
+                  <div className="relative bg-stone-100 dark:bg-stone-800 min-h-[120px]">
                     <VendorSetupPreview
                       src={sub.setupPhotoUrl}
                       vendorName={sub.vendorName}
                       category={sub.category}
                       size="lg"
-                      className="rounded-none border-0 h-full min-h-[180px]"
+                      className="rounded-none border-0 h-full min-h-[120px]"
                     />
                     <button
                       type="button"
-                      onClick={() => toggleShortlist(sub.id)}
+                      onClick={e => {
+                        e.stopPropagation();
+                        toggleShortlist(sub.id);
+                      }}
                       className={`absolute top-2 left-2 p-2 rounded-full shadow ${
                         sub.shortlisted ? 'bg-amber-400 text-gray-900' : 'bg-white/90 text-gray-600 hover:bg-white'
                       }`}
-                      title={sub.shortlisted ? 'Remove from shortlist' : 'Shortlist this setup'}
+                      aria-label={sub.shortlisted ? 'Remove from shortlist' : 'Shortlist'}
                     >
                       <Star className={`h-4 w-4 ${sub.shortlisted ? 'fill-current' : ''}`} />
                     </button>
                   </div>
 
-                  <div className="p-5">
-                    <VendorDecisionPanel
-                      vendorEmail={sub.vendorEmail}
-                      eventId={sub.eventId}
-                      vendorName={sub.vendorName}
-                    />
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
-                      <div>
-                        <div className={`font-bold text-lg flex items-center gap-2 ${heading}`}>
-                          {sub.vendorName}
-                          {sub.shortlisted && (
-                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-                              Shortlisted
-                            </span>
-                          )}
-                        </div>
-                        <div className={`text-sm ${muted}`}>{sub.vendorEmail}</div>
-                        <div className="text-sm font-medium text-teal-600 mt-1">{sub.eventName}</div>
-                      </div>
+                  <div className="p-4 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <span className={`font-bold text-lg ${heading}`}>{sub.vendorName}</span>
+                      {sub.shortlisted && (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                          Shortlisted
+                        </span>
+                      )}
                       <span
-                        className={`self-start text-xs font-semibold px-2.5 py-1 rounded-full ${
+                        className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                           sub.status === 'pending'
                             ? 'bg-amber-100 text-amber-800'
                             : sub.status === 'approved'
@@ -141,66 +138,48 @@ export default function OrganizerApplicationsPage() {
                               : 'bg-red-100 text-red-800'
                         }`}
                       >
-                        {sub.status.toUpperCase()}
+                        {sub.status}
                       </span>
                     </div>
-
+                    <div className={`text-sm ${muted}`}>{sub.category}</div>
+                    <div className="text-sm font-medium text-teal-600 mt-0.5">{sub.eventName}</div>
                     {sub.message && (
-                      <p className={`text-sm bg-stone-50 dark:bg-stone-800/50 p-3 rounded-lg mb-3 ${muted}`}>
-                        {sub.message}
-                      </p>
+                      <p className={`text-sm mt-2 line-clamp-2 ${muted}`}>{sub.message}</p>
                     )}
-
-                    <div className="mb-3">
-                      <DocumentStatusChips missing={missing} uploaded={uploaded} />
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          contactVendor(sub.vendorEmail, sub.vendorName);
-                          showToast(`Opening email to ${sub.vendorName}`);
-                        }}
-                        className={`flex items-center gap-1 px-4 py-2 text-sm font-semibold rounded-lg border ${btnSecondary}`}
-                      >
-                        <Mail className="h-4 w-4" /> Reach out
-                      </button>
-                      {sub.status === 'pending' && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => handleReview(sub.id, 'approved')}
-                            className={`px-4 py-2 text-sm font-semibold rounded-lg ${btnPrimary}`}
-                          >
-                            Approve
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleReview(sub.id, 'rejected')}
-                            className="px-4 py-2 border border-red-300 text-red-700 hover:bg-red-50 text-sm font-semibold rounded-lg"
-                          >
-                            Reject
-                          </button>
-                        </>
-                      )}
-                      {!sub.ce200SentAt && sub.requiredForms.includes('ce200') && (
-                        <button
-                          type="button"
-                          onClick={() => showToast(sendCe200Email(sub.id).message)}
-                          className={`flex items-center gap-1 px-4 py-2 text-sm font-semibold rounded-lg border ${btnSecondary}`}
-                        >
-                          Send CE200
-                        </button>
-                      )}
+                    <div className="mt-3">
+                      <DocumentCompletenessBadge
+                        received={detail.docSummary.received}
+                        total={detail.docSummary.total}
+                        expiringSoon={detail.docSummary.expiringSoon}
+                        compact
+                      />
                     </div>
                   </div>
+
+                  <div className="hidden md:flex items-center px-4 text-stone-400">
+                    <ChevronRight className="h-5 w-5" />
+                  </div>
                 </div>
-              </div>
+              </button>
             );
           })
         )}
       </div>
+
+      <ApplicationDetailDrawer
+        submission={selected}
+        allSubmissions={submissions}
+        onClose={() => setSelected(null)}
+        onApprove={id => handleReview(id, 'approved')}
+        onReject={id => handleReview(id, 'rejected')}
+        onRequestDoc={id => {
+          updateSubmission(id, { infoRequested: true });
+          showToast('Document request sent to vendor');
+        }}
+        onSendCe200={id => showToast(sendCe200Email(id).message)}
+        onToggleShortlist={toggleShortlist}
+        onToast={showToast}
+      />
     </OrganizerLayout>
   );
 }

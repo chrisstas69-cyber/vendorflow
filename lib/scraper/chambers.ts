@@ -1,14 +1,5 @@
 import { BaseScraper, ScrapedEvent } from './base';
-import fs from 'fs';
-import path from 'path';
-
-interface ChamberEntry {
-  town: string;
-  county: string;
-  name: string;
-  url: string;
-  eventsUrl: string;
-}
+import { loadChamberListFromFile } from '@/lib/import/chamber-list';
 
 export class ChambersScraper extends BaseScraper {
   constructor() {
@@ -16,20 +7,19 @@ export class ChambersScraper extends BaseScraper {
   }
 
   async run(): Promise<{ events: ScrapedEvent[]; error?: string }> {
-    const csvPath = path.join(process.cwd(), 'data', 'chamber_list.csv');
-    if (!fs.existsSync(csvPath)) {
-      return { events: [], error: 'chamber_list.csv not found' };
+    const chambers = loadChamberListFromFile();
+    if (chambers.length === 0) {
+      return { events: [], error: 'chamber_list.csv not found or empty' };
     }
 
-    const csv = fs.readFileSync(csvPath, 'utf-8');
-    const lines = csv.split('\n').slice(1).filter(l => l.trim());
-    const chambers: ChamberEntry[] = lines.map(line => {
-      const [town, county, name, url, eventsUrl] = line.split(',').map(s => s.trim());
-      return { town, county, name, url, eventsUrl };
-    }).filter(c => c.eventsUrl);
+    // Scrape 8 chambers per run — rotate through full list over time
+    const dayBucket = Math.floor(Date.now() / (24 * 60 * 60 * 1000));
+    const start = (dayBucket * 8) % chambers.length;
+    const selected = [
+      ...chambers.slice(start, start + 8),
+      ...chambers.slice(0, Math.max(0, start + 8 - chambers.length)),
+    ].slice(0, 8);
 
-    // Scrape 5 random chambers per run to avoid rate limiting
-    const selected = chambers.sort(() => Math.random() - 0.5).slice(0, 5);
     const allEvents: ScrapedEvent[] = [];
     const errors: string[] = [];
 
@@ -38,7 +28,7 @@ export class ChambersScraper extends BaseScraper {
         const html = await this.fetch(chamber.eventsUrl);
         const events = this.parseChamber(html, chamber);
         allEvents.push(...events);
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise(r => setTimeout(r, 1500));
       } catch (err) {
         errors.push(`${chamber.town}: ${err instanceof Error ? err.message : String(err)}`);
       }
@@ -51,14 +41,22 @@ export class ChambersScraper extends BaseScraper {
   }
 
   parse(html: string): ScrapedEvent[] {
-    return this.parseChamber(html, { town: '', county: '', name: '', url: '', eventsUrl: '' });
+    return this.parseChamber(html, {
+      name: '',
+      url: '',
+      town: '',
+      county: '',
+      eventsUrl: '',
+    });
   }
 
-  private parseChamber(html: string, chamber: ChamberEntry): ScrapedEvent[] {
+  private parseChamber(
+    html: string,
+    chamber: { town: string; county: string; name: string; url: string; eventsUrl: string }
+  ): ScrapedEvent[] {
     const $ = this.load(html);
     const events: ScrapedEvent[] = [];
 
-    // Chamber sites vary widely — look for common event calendar patterns
     $('article, .event, .event-item, .calendar-event, tr, li').each((_, el) => {
       try {
         const $el = $(el);
@@ -78,7 +76,9 @@ export class ChambersScraper extends BaseScraper {
           url: link ? new URL(link, chamber.url).href : chamber.eventsUrl,
           source: `chamber_${chamber.town.toLowerCase().replace(/\s+/g, '_')}`,
         });
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     });
 
     return events;
