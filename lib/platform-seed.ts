@@ -46,6 +46,7 @@ export async function ensurePlatformSeed() {
       await ensureOpsContactsDbSeed();
     } catch (err) {
       console.warn('[platform-seed] DB seed failed, falling back to in-memory seed:', err);
+      setEffectiveDataSource('seed');
       ensureGallerySeedStore();
       ensureOpsContactsSeedStore();
     }

@@ -7,7 +7,7 @@ import {
 } from '@/lib/pilot-data-adapter';
 import type { InboxAction } from '@/lib/organizer-schema';
 import type { OrganizerPipelineStage } from '@/lib/organizer-schema';
-import { getActiveOrganizerId } from '@/lib/pilot-config';
+import { getActiveOrganizerId, getEffectiveDataSource, getPilotDataSource } from '@/lib/pilot-config';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
 
 export const dynamic = 'force-dynamic';
@@ -31,6 +31,8 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     ok: true,
+    dataSource: getPilotDataSource(),
+    effectiveDataSource: getEffectiveDataSource(),
     ...data,
   });
 }

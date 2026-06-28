@@ -1,6 +1,5 @@
 // VendorFlow platform database — Neon Postgres in production; scraper uses separate SQLite (data/events.db)
-// Local/prod setup: see docs/DATABASE-NEON.md
-// Push (bootstrap): npm run db:push  |  Migrate (ongoing): npm run db:migrate:deploy
+// Setup: docs/DATABASE-NEON.md  |  Production schema: npm run db:migrate:deploy
 
 generator client {
   provider = "prisma-client-js"
