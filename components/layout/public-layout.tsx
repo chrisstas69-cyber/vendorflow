@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Search, Sparkles } from 'lucide-react';
+import { Search, Sparkles, DollarSign } from 'lucide-react';
 import { RoleSwitcher } from '@/components/layout/role-switcher';
 import { PublicThemeToggle } from '@/components/public/theme-toggle';
 import { useTheme } from '@/contexts/theme-context';
@@ -10,6 +10,7 @@ import { useTheme } from '@/contexts/theme-context';
 const NAV = [
   { href: '/', label: 'Home', icon: Sparkles },
   { href: '/discover', label: 'Discover', icon: Search },
+  { href: '/pricing', label: 'Pricing', icon: DollarSign },
 ];
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {

@@ -7,6 +7,7 @@ import { AppLayout } from '@/components/layout/app-layout';
 import { useVendorPassport } from '@/contexts/vendor-passport-context';
 import { useVendorTheme } from '@/components/vendor/use-vendor-theme';
 import { PassportValidationBanner } from '@/components/vendor/passport/validation-banner';
+import { PassportCompletionMeter } from '@/components/vendor/passport-completion-meter';
 import { PassportGeneralTab } from '@/components/vendor/passport/general-tab';
 import { PassportLogisticsTab } from '@/components/vendor/passport/logistics-tab';
 import { PassportDocumentsTab } from '@/components/vendor/passport/documents-tab';
@@ -83,7 +84,10 @@ export default function VendorPassportPageInner() {
           <FoundersEditionBanner compact />
         </div>
 
-        <div className="mb-6">
+        <div className="mb-6 space-y-4">
+          <div className={`rounded-xl border p-5 ${card}`}>
+            <PassportCompletionMeter validation={validation} />
+          </div>
           <PassportValidationBanner validation={validation} />
         </div>
 

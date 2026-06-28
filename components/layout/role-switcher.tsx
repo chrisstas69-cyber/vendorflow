@@ -12,7 +12,7 @@ const ROLES: { id: UserRole; label: string }[] = [
   { id: 'organizer', label: 'Organizer' },
 ];
 
-type Accent = 'amber' | 'indigo';
+type Accent = 'amber' | 'indigo' | 'teal';
 
 export function RoleSwitcher({
   variant = 'default',
@@ -28,7 +28,9 @@ export function RoleSwitcher({
   const activeBg =
     accent === 'indigo'
       ? 'bg-indigo-600 text-white shadow-sm'
-      : 'bg-amber-400 text-gray-900 shadow-sm';
+      : accent === 'teal'
+        ? 'bg-teal-600 text-white shadow-sm'
+        : 'bg-amber-400 text-gray-900 shadow-sm';
 
   const trackClass =
     variant === 'compact'

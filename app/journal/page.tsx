@@ -5,7 +5,8 @@ import { AppLayout } from '@/components/layout/app-layout';
 import { PaymentUploadDialog } from '@/components/payment-upload-dialog';
 import { useVendorTheme } from '@/components/vendor/use-vendor-theme';
 import { useDemoStore } from '@/contexts/demo-store-context';
-import { TrendingUp, Receipt, Clock, CreditCard, Banknote, Download, Upload, ChevronRight } from 'lucide-react';
+import { deriveJournalInsights } from '@/lib/journal-insights';
+import { TrendingUp, Receipt, Clock, CreditCard, Banknote, Download, Upload, ChevronRight, Lightbulb } from 'lucide-react';
 
 export default function FinancialJournalPage() {
   const { financials, importFinancial } = useDemoStore();
@@ -16,6 +17,17 @@ export default function FinancialJournalPage() {
   const totalExpenses = financials.reduce((sum, f) => sum + f.expenses, 0);
   const totalNetProfit = totalGrossSales - totalExpenses;
   const overallMargin = totalGrossSales > 0 ? Math.round((totalNetProfit / totalGrossSales) * 100) : 0;
+  const insights = deriveJournalInsights(
+    financials.map(f => ({
+      id: f.id,
+      eventName: f.eventName,
+      date: f.date,
+      grossSales: f.grossSales,
+      expenses: f.expenses,
+      netProfit: f.netProfit,
+      margin: f.margin,
+    }))
+  );
 
   return (
     <AppLayout>
@@ -41,6 +53,29 @@ export default function FinancialJournalPage() {
               <div className="text-2xl font-bold">{s.value}</div>
             </div>
           ))}
+        </div>
+
+        <div className={`rounded-2xl border p-5 mb-6 ${card}`}>
+          <h2 className="font-bold mb-4 flex items-center gap-2">
+            <Lightbulb className="h-4 w-4 text-amber-500" /> Insights
+          </h2>
+          <div className="space-y-3">
+            {insights.map(insight => (
+              <div
+                key={insight.id}
+                className={`rounded-xl p-4 ${cardInset} ${
+                  insight.type === 'positive'
+                    ? 'border-l-4 border-emerald-500'
+                    : insight.type === 'warning'
+                      ? 'border-l-4 border-amber-500'
+                      : ''
+                }`}
+              >
+                <div className="font-semibold text-sm">{insight.headline}</div>
+                <p className={`text-sm mt-1 ${muted}`}>{insight.detail}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className={`rounded-2xl border p-5 mb-6 ${card}`}>

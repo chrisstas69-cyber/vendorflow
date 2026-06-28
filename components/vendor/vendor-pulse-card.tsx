@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Calendar, MapPin, TrendingUp, DollarSign } from 'lucide-react';
 import { TierBadge } from '@/components/tier-badge';
+import { WorthItBadge } from '@/components/vendor/worth-it-badge';
 import type { PlatformEvent } from '@/lib/platform-data';
 import { CATEGORY_LABELS } from '@/lib/platform-data';
 
@@ -47,6 +48,10 @@ export function VendorPulseCard({ event, onApply, applying, inPipeline }: Vendor
             <MapPin className="h-3.5 w-3.5 shrink-0" />
             {event.city}, {event.state}
           </span>
+        </div>
+
+        <div className="mb-3">
+          <WorthItBadge event={event} compact />
         </div>
 
         <div className="grid grid-cols-3 gap-2 mb-3 text-center">

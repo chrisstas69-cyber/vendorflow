@@ -14,9 +14,20 @@ interface InboxCounts {
   waitlisted: number;
 }
 
+interface SeasonMetrics {
+  eventCount: number;
+  applicationCount: number;
+  approvedCount: number;
+  docsCompletePct: number;
+  projectedRevenueCents: number;
+  openSlots: number;
+}
+
 interface InboxData {
   items: OrganizerApplicationInboxItem[];
   counts: InboxCounts;
+  displayCounts?: Record<string, number>;
+  seasonMetrics?: SeasonMetrics;
   series: EventSeries[];
   events: PlatformEvent[];
 }
@@ -44,6 +55,8 @@ export function useOrganizerInbox(options?: {
       setData({
         items: json.items,
         counts: json.counts,
+        displayCounts: json.displayCounts,
+        seasonMetrics: json.seasonMetrics,
         series: json.series,
         events: json.events,
       });

@@ -7,6 +7,18 @@ export type OrganizerPipelineStage =
   | 'approved'
   | 'waitlisted';
 
+/** Visual Kanban columns shown on organizer dashboard */
+export type OrganizerDisplayStage =
+  | 'applied'
+  | 'docs'
+  | 'approved'
+  | 'mapped'
+  | 'paid'
+  | 'completed';
+
+export type PaymentStatus = 'none' | 'invoiced' | 'partial' | 'paid';
+export type ContractStatus = 'unsigned' | 'sent' | 'signed';
+
 export type InboxAction = 'accept' | 'waitlist' | 'request_info' | 'reject';
 
 export interface OrganizerApplicationInboxItem {
@@ -29,7 +41,26 @@ export interface OrganizerApplicationInboxItem {
   infoRequested: boolean;
   documentsCount: number;
   requiredForms: string[];
+  uploadedDocTypes: string[];
+  missingDocTypes: string[];
+  boothId?: string;
+  paymentStatus: PaymentStatus;
+  contractStatus: ContractStatus;
+  displayStage: OrganizerDisplayStage;
 }
+
+export const DISPLAY_PIPELINE_COLUMNS: {
+  id: OrganizerDisplayStage;
+  label: string;
+  description: string;
+}[] = [
+  { id: 'applied', label: 'Applied', description: 'New applications' },
+  { id: 'docs', label: 'Docs', description: 'Paperwork & compliance' },
+  { id: 'approved', label: 'Approved', description: 'Confirmed vendors' },
+  { id: 'mapped', label: 'Mapped', description: 'Booth assigned' },
+  { id: 'paid', label: 'Paid', description: 'Deposit received' },
+  { id: 'completed', label: 'Completed', description: 'Event done' },
+];
 
 export const PIPELINE_COLUMNS: {
   id: OrganizerPipelineStage;
@@ -51,6 +82,70 @@ export const SIDEBAR_PIPELINE_STAGES: OrganizerPipelineStage[] = [
 
 export function pipelineStageLabel(stage: OrganizerPipelineStage): string {
   return PIPELINE_COLUMNS.find(c => c.id === stage)?.label ?? stage;
+}
+
+export function missingDocTypes(
+  required: string[],
+  uploaded: string[]
+): string[] {
+  return required.filter(r => !uploaded.includes(r));
+}
+
+export function deriveDisplayStage(input: {
+  pipelineStage: OrganizerPipelineStage;
+  status: 'pending' | 'approved' | 'rejected';
+  requiredForms: string[];
+  uploadedDocTypes: string[];
+  boothId?: string;
+  paymentStatus: PaymentStatus;
+  eventDate?: string;
+  infoRequested?: boolean;
+}): OrganizerDisplayStage {
+  const missing = missingDocTypes(input.requiredForms, input.uploadedDocTypes);
+  const eventPast = input.eventDate ? new Date(input.eventDate) < new Date() : false;
+
+  if (input.status === 'approved') {
+    if (input.paymentStatus === 'paid' && eventPast) return 'completed';
+    if (input.paymentStatus === 'paid' || input.paymentStatus === 'partial') return 'paid';
+    if (input.boothId) return 'mapped';
+    return 'approved';
+  }
+
+  if (input.pipelineStage === 'scraped') return 'applied';
+
+  if (
+    input.pipelineStage === 'reviewing' ||
+    input.infoRequested ||
+    (input.pipelineStage === 'applied' && missing.length > 0)
+  ) {
+    return 'docs';
+  }
+
+  return 'applied';
+}
+
+export function deriveDisplayStageFromItem(
+  item: Pick<
+    OrganizerApplicationInboxItem,
+    | 'pipelineStage'
+    | 'status'
+    | 'requiredForms'
+    | 'uploadedDocTypes'
+    | 'boothId'
+    | 'paymentStatus'
+    | 'infoRequested'
+  > & { eventDate?: string }
+): OrganizerDisplayStage {
+  return deriveDisplayStage({
+    pipelineStage: item.pipelineStage,
+    status: item.status,
+    requiredForms: item.requiredForms,
+    uploadedDocTypes: item.uploadedDocTypes,
+    boothId: item.boothId,
+    paymentStatus: item.paymentStatus,
+    eventDate: item.eventDate,
+    infoRequested: item.infoRequested,
+  });
 }
 
 export function derivePipelineStage(input: {

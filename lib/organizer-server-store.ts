@@ -9,10 +9,15 @@ import {
 } from '@/lib/platform-data';
 import {
   applyInboxAction,
+  deriveDisplayStage,
   derivePipelineStage,
+  missingDocTypes,
+  type ContractStatus,
   type InboxAction,
   type OrganizerApplicationInboxItem,
+  type OrganizerDisplayStage,
   type OrganizerPipelineStage,
+  type PaymentStatus,
 } from '@/lib/organizer-schema';
 
 /** Server-side demo inbox — mirrors seeded data; resets on cold start in serverless */
@@ -41,6 +46,22 @@ function toInboxItem(sub: VendorSubmission): OrganizerApplicationInboxItem {
       infoRequested: sub.infoRequested,
     });
 
+  const uploadedDocTypes = sub.documents.map(d => d.type);
+  const missingDocs = missingDocTypes(sub.requiredForms, uploadedDocTypes);
+  const paymentStatus: PaymentStatus = sub.paymentStatus ?? 'none';
+  const contractStatus: ContractStatus = sub.contractStatus ?? 'unsigned';
+
+  const displayStage = deriveDisplayStage({
+    pipelineStage,
+    status: sub.status,
+    requiredForms: sub.requiredForms,
+    uploadedDocTypes,
+    boothId: sub.boothId,
+    paymentStatus,
+    eventDate: event?.date,
+    infoRequested: sub.infoRequested,
+  });
+
   return {
     id: sub.id,
     submissionId: sub.id,
@@ -61,6 +82,12 @@ function toInboxItem(sub: VendorSubmission): OrganizerApplicationInboxItem {
     infoRequested: sub.infoRequested ?? false,
     documentsCount: sub.documents.length,
     requiredForms: sub.requiredForms,
+    uploadedDocTypes,
+    missingDocTypes: missingDocs,
+    boothId: sub.boothId,
+    paymentStatus,
+    contractStatus,
+    displayStage,
   };
 }
 
@@ -114,7 +141,45 @@ export function getApplicationsInbox(filters: {
     waitlisted: items.filter(i => i.pipelineStage === 'waitlisted').length,
   };
 
-  return { items, counts, series: listSeries(organizerId), events: listOrganizerEvents(organizerId) };
+  const displayCounts = {
+    applied: items.filter(i => i.displayStage === 'applied').length,
+    docs: items.filter(i => i.displayStage === 'docs').length,
+    approved: items.filter(i => i.displayStage === 'approved').length,
+    mapped: items.filter(i => i.displayStage === 'mapped').length,
+    paid: items.filter(i => i.displayStage === 'paid').length,
+    completed: items.filter(i => i.displayStage === 'completed').length,
+  };
+
+  const approvedCount = items.filter(i => i.status === 'approved').length;
+  const docsComplete = items.filter(i => i.missingDocTypes.length === 0).length;
+  const projectedRevenueCents = items
+    .filter(i => i.status === 'approved' || i.displayStage === 'paid' || i.displayStage === 'mapped')
+    .reduce((sum, item) => {
+      const ev = events.find(e => e.id === item.eventId);
+      return sum + (ev?.boothFee ?? 350) * 100;
+    }, 0);
+
+  const seasonMetrics = {
+    eventCount: listOrganizerEvents(organizerId).filter(e =>
+      filters.seriesId ? e.seriesId === filters.seriesId : true
+    ).length,
+    applicationCount: items.length,
+    approvedCount,
+    docsCompletePct: items.length ? Math.round((docsComplete / items.length) * 100) : 0,
+    projectedRevenueCents,
+    openSlots: listOrganizerEvents(organizerId)
+      .filter(e => (filters.seriesId ? e.seriesId === filters.seriesId : true))
+      .reduce((s, e) => s + (e.vendorSlots - e.vendorSlotsFilled), 0),
+  };
+
+  return {
+    items,
+    counts,
+    displayCounts,
+    seasonMetrics,
+    series: listSeries(organizerId),
+    events: listOrganizerEvents(organizerId),
+  };
 }
 
 export function performInboxAction(submissionId: string, action: InboxAction) {

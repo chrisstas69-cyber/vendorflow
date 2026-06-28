@@ -98,6 +98,9 @@ export interface VendorSubmission {
   applicationId?: string;
   setupPhotoUrl?: string;
   shortlisted?: boolean;
+  boothId?: string;
+  paymentStatus?: import('@/lib/organizer-schema').PaymentStatus;
+  contractStatus?: import('@/lib/organizer-schema').ContractStatus;
 }
 
 /** Demo organizer owns seeded events; evt-003 stays claimable for scrape flow */
@@ -328,6 +331,9 @@ export const mockVendorSubmissions: VendorSubmission[] = [
       { id: 'doc-s2', type: 'ce200', fileName: 'CE200_SpringFest.pdf', uploadedAt: '2026-02-11T14:00:00Z' },
       { id: 'doc-s3', type: 'w9', fileName: 'W9_GlowToys.pdf', uploadedAt: '2026-02-11T14:05:00Z' },
     ],
+    boothId: 'A-12',
+    paymentStatus: 'paid',
+    contractStatus: 'signed',
   },
   {
     id: 'sub-002',
@@ -365,6 +371,8 @@ export const mockVendorSubmissions: VendorSubmission[] = [
     requiredForms: ['coi', 'ce200', 'w9'],
     documents: [],
     setupPhotoUrl: STOCK.expoHall,
+    paymentStatus: 'invoiced',
+    contractStatus: 'sent',
   },
   {
     id: 'sub-004',
@@ -384,6 +392,8 @@ export const mockVendorSubmissions: VendorSubmission[] = [
       { id: 'doc-s6', type: 'food-permit', fileName: 'FoodHandler_2026.pdf', uploadedAt: '2026-02-25T15:58:00Z' },
     ],
     setupPhotoUrl: STOCK.foodTrucks,
+    paymentStatus: 'none',
+    contractStatus: 'unsigned',
   },
   {
     id: 'sub-005',
