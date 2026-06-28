@@ -8,8 +8,14 @@ import {
   performInboxAction,
   resetOrganizerServerStore,
 } from '@/lib/organizer-server-store';
-import type { OrganizerPipelineStage } from '@/lib/organizer-schema';
-import { prisma } from '@/lib/prisma';
+import {
+  getApplicationsInboxFromDb,
+  performApplicationActionDb,
+  createApplicationDb,
+  getApplicationByIdFromDb,
+} from '@/lib/organizer-db-store';
+import { resetPilotDbSeed } from '@/lib/pilot-db-seed';
+import type { InboxAction, OrganizerPipelineStage } from '@/lib/organizer-schema';
 
 export interface InboxFilters {
   organizerId?: string;
@@ -23,29 +29,46 @@ export function resolveOrganizerInbox(filters: InboxFilters = {}) {
   return getApplicationsInbox({ ...filters, organizerId });
 }
 
-/** Use in API routes when PILOT_DATA_SOURCE=db may apply */
 export async function resolveOrganizerInboxAsync(filters: InboxFilters = {}) {
   const organizerId = filters.organizerId ?? getActiveOrganizerId();
 
-  if (getPilotDataSource() !== 'db') {
-    return getApplicationsInbox({ ...filters, organizerId });
-  }
-
-  try {
-    const [seriesCount, passportCount] = await Promise.all([
-      prisma.eventSeries.count({ where: { organizerId } }),
-      prisma.vendorPassport.count(),
-    ]);
-
-    if (seriesCount > 0 || passportCount > 0) {
-      const seed = getApplicationsInbox({ ...filters, organizerId });
-      return { ...seed, _meta: { dataSource: 'db' as const } };
-    }
-  } catch {
-    /* fall through to seed */
+  if (getPilotDataSource() === 'db') {
+    return getApplicationsInboxFromDb({ ...filters, organizerId });
   }
 
   return getApplicationsInbox({ ...filters, organizerId });
+}
+
+export async function resolveApplicationActionAsync(submissionId: string, action: InboxAction) {
+  if (getPilotDataSource() === 'db') {
+    return performApplicationActionDb(submissionId, action);
+  }
+  return performInboxAction(submissionId, action);
+}
+
+export async function resolveApplicationByIdAsync(id: string, organizerId?: string) {
+  if (getPilotDataSource() === 'db') {
+    return getApplicationByIdFromDb(id, organizerId);
+  }
+  const inbox = getApplicationsInbox({ organizerId: organizerId ?? getActiveOrganizerId() });
+  return inbox.items.find(i => i.id === id) ?? null;
+}
+
+export async function resolveCreateApplicationAsync(
+  input: Parameters<typeof createApplicationDb>[0]
+) {
+  if (getPilotDataSource() === 'db') {
+    return createApplicationDb(input);
+  }
+  return null;
+}
+
+export async function resetPilotDataAsync() {
+  if (getPilotDataSource() === 'db') {
+    await resetPilotDbSeed();
+    return;
+  }
+  resetOrganizerServerStore();
 }
 
 export { performInboxAction, resetOrganizerServerStore };

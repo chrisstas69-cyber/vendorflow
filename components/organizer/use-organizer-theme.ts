@@ -13,6 +13,10 @@ export function useOrganizerTheme() {
     shell: dark ? 'bg-stone-950 text-stone-100' : 'bg-stone-100 text-stone-900',
     sidebar: dark ? 'bg-stone-900 border-stone-800' : 'bg-white border-stone-200',
     card: dark ? 'bg-stone-900 border-stone-800' : 'bg-white border-stone-200',
+    /** Softer card — shadow instead of heavy border */
+    surface: dark
+      ? 'bg-stone-900 shadow-sm ring-1 ring-stone-800'
+      : 'bg-white shadow-sm ring-1 ring-stone-200/80',
     cardInset: dark ? 'bg-stone-800/50 border-stone-700' : 'bg-stone-50 border-stone-100',
     muted: dark ? 'text-stone-400' : 'text-stone-500',
     heading: dark ? 'text-stone-50' : 'text-stone-900',

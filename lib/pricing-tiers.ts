@@ -34,6 +34,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Everything in Founders',
       'AI vendor matching',
       'Compliance checklists by county',
+      'Operational contact database',
       'Contract templates',
       'Priority support',
     ],

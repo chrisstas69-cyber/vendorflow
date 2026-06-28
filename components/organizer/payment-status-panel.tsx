@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { CreditCard, FileSignature, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useOrganizerTheme } from '@/components/organizer/use-organizer-theme';
-import { DEMO_ORGANIZER_ID } from '@/lib/platform-data';
+import { getActiveOrganizerId } from '@/lib/pilot-config';
 
 interface InvoiceSummary {
   totalInvoicedCents: number;
@@ -14,14 +14,14 @@ interface InvoiceSummary {
   paidCount: number;
 }
 
-export function PaymentStatusPanel() {
-  const { card, muted, heading, sectionTitle, statIcon, btnSecondary } = useOrganizerTheme();
+export function PaymentStatusPanel({ compact }: { compact?: boolean }) {
+  const { surface, muted, heading, sectionTitle, statIcon } = useOrganizerTheme();
   const [summary, setSummary] = useState<InvoiceSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/payments/invoices?organizerId=${DEMO_ORGANIZER_ID}`);
+    const res = await fetch(`/api/payments/invoices?organizerId=${getActiveOrganizerId()}`);
     const data = await res.json();
     const invoices = data.invoices ?? [];
     const totalInvoicedCents = invoices.reduce(
@@ -48,49 +48,64 @@ export function PaymentStatusPanel() {
     load();
   }, [load]);
 
+  const body = loading ? (
+    <div className={`flex items-center gap-2 text-sm ${muted}`}>
+      <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+    </div>
+  ) : summary ? (
+    <div className={`grid gap-3 ${compact ? 'grid-cols-1' : 'sm:grid-cols-3'}`}>
+      <div>
+        <div className={`flex items-center gap-2 text-xs ${muted} mb-1`}>
+          <CreditCard className={`h-4 w-4 ${statIcon}`} /> Invoiced
+        </div>
+        <div className={`text-xl font-bold ${heading}`}>
+          ${(summary.totalInvoicedCents / 100).toLocaleString()}
+        </div>
+      </div>
+      <div>
+        <div className={`flex items-center gap-2 text-xs ${muted} mb-1`}>
+          <CreditCard className={`h-4 w-4 ${statIcon}`} /> Collected
+        </div>
+        <div className="text-xl font-bold text-emerald-600">
+          ${(summary.totalPaidCents / 100).toLocaleString()}
+        </div>
+      </div>
+      <div>
+        <div className={`flex items-center gap-2 text-xs ${muted} mb-1`}>
+          <FileSignature className={`h-4 w-4 ${statIcon}`} /> Outstanding
+        </div>
+        <div className={`text-xl font-bold ${heading}`}>
+          ${(summary.outstandingCents / 100).toLocaleString()}
+        </div>
+      </div>
+    </div>
+  ) : (
+    <p className={`text-sm ${muted}`}>No payment data yet.</p>
+  );
+
+  if (compact) {
+    return (
+      <section className={`rounded-2xl p-5 ${surface}`}>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className={`font-semibold text-sm ${heading}`}>Payments</h3>
+          <Link href="/organizer/invoicing" className="text-xs font-semibold text-teal-600 hover:underline">
+            View all
+          </Link>
+        </div>
+        {body}
+      </section>
+    );
+  }
+
   return (
     <section className="mb-6">
       <div className="flex items-center justify-between mb-3">
         <h2 className={`${sectionTitle} ${heading}`}>Payments &amp; contracts</h2>
-        <Link href="/organizer/invoicing" className={`text-sm font-semibold text-teal-600 hover:underline`}>
+        <Link href="/organizer/invoicing" className="text-sm font-semibold text-teal-600 hover:underline">
           View all →
         </Link>
       </div>
-      <div className={`rounded-xl border p-4 ${card}`}>
-        {loading ? (
-          <div className={`flex items-center gap-2 text-sm ${muted}`}>
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading…
-          </div>
-        ) : summary ? (
-          <div className="grid sm:grid-cols-3 gap-4">
-            <div>
-              <div className={`flex items-center gap-2 text-xs ${muted} mb-1`}>
-                <CreditCard className={`h-4 w-4 ${statIcon}`} /> Invoiced
-              </div>
-              <div className="text-2xl font-bold">${(summary.totalInvoicedCents / 100).toLocaleString()}</div>
-              <div className={`text-xs ${muted}`}>{summary.invoiceCount} invoices</div>
-            </div>
-            <div>
-              <div className={`flex items-center gap-2 text-xs ${muted} mb-1`}>
-                <CreditCard className={`h-4 w-4 ${statIcon}`} /> Collected
-              </div>
-              <div className="text-2xl font-bold text-emerald-600">
-                ${(summary.totalPaidCents / 100).toLocaleString()}
-              </div>
-              <div className={`text-xs ${muted}`}>{summary.paidCount} paid in full</div>
-            </div>
-            <div>
-              <div className={`flex items-center gap-2 text-xs ${muted} mb-1`}>
-                <FileSignature className={`h-4 w-4 ${statIcon}`} /> Outstanding
-              </div>
-              <div className="text-2xl font-bold">${(summary.outstandingCents / 100).toLocaleString()}</div>
-              <div className={`text-xs ${muted}`}>Contracts tracked in demo mode</div>
-            </div>
-          </div>
-        ) : (
-          <p className={`text-sm ${muted}`}>No payment data yet.</p>
-        )}
-      </div>
+      <div className={`rounded-2xl p-4 ${surface}`}>{body}</div>
     </section>
   );
 }

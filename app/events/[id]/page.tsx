@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useDemoStore } from '@/contexts/demo-store-context';
@@ -9,6 +8,8 @@ import { useVendorPassport } from '@/contexts/vendor-passport-context';
 import { PublicLayout } from '@/components/layout/public-layout';
 import { CATEGORY_LABELS } from '@/lib/platform-data';
 import { SetupPhotoUpload } from '@/components/vendor/setup-photo-upload';
+import { TrustGalleryView } from '@/components/gallery/trust-gallery-view';
+import { useGallery } from '@/hooks/use-gallery';
 import { Calendar, MapPin, Users, Clock, Store, ArrowLeft, CheckCircle, Star } from 'lucide-react';
 import { mockVendorPassport } from '@/lib/vendor-passport';
 import { runLongIslandComplianceCheck } from '@/lib/long-island/compliance-check';
@@ -21,8 +22,10 @@ export default function EventDetailPage() {
   const { getEvent, incrementViews, submitVendorApplication } = useDemoStore();
   const { passport, validation } = useVendorPassport();
   const event = getEvent(id);
+  const { items: galleryItems, loading: galleryLoading } = useGallery('event', id, {
+    publicOnly: true,
+  });
 
-  const [activeImage, setActiveImage] = useState(0);
   const [showApply, setShowApply] = useState(false);
   const [form, setForm] = useState({
     vendorName: 'Demo Vendor Co.',
@@ -51,7 +54,8 @@ export default function EventDetailPage() {
     );
   }
 
-  const images = event.galleryUrls.length > 0 ? event.galleryUrls : [event.coverImageUrl];
+  const slotsLeft = event.vendorSlots - event.vendorSlotsFilled;
+  const liCompliance = runLongIslandComplianceCheck(mockVendorPassport, event);
 
   const handleApply = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,9 +63,6 @@ export default function EventDetailPage() {
     setResult(res.message);
     if (res.ok) setShowApply(false);
   };
-
-  const slotsLeft = event.vendorSlots - event.vendorSlotsFilled;
-  const liCompliance = runLongIslandComplianceCheck(mockVendorPassport, event);
 
   return (
     <PublicLayout>
@@ -72,54 +73,35 @@ export default function EventDetailPage() {
           <ArrowLeft className="h-4 w-4" /> All events
         </Link>
 
-        {/* Photo gallery hero */}
-        <div className="rounded-2xl overflow-hidden border public-card mb-6">
-          <div className="relative h-64 md:h-96">
-            <Image
-              src={images[activeImage]}
-              alt={event.name}
-              fill
-              priority
-              className="object-cover"
-              sizes="(max-width:768px) 100vw, 896px"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-            {event.promotionTier !== 'none' && (
-              <div className="absolute top-4 left-4 flex items-center gap-1 px-3 py-1 rounded-full bg-amber-400 text-gray-900 text-xs font-bold">
+        {/* Trust gallery — what it feels like to be there */}
+        <TrustGalleryView
+          entityType="event"
+          items={galleryItems}
+          loading={galleryLoading}
+          title={event.name}
+          overlayTitle={event.name}
+          overlaySubtitle={CATEGORY_LABELS[event.category]}
+          fallbackImageUrl={event.coverImageUrl}
+          showTagFilter
+          className="mb-6"
+          overlayBadge={
+            event.promotionTier !== 'none' ? (
+              <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-amber-400 text-gray-900 text-xs font-bold">
                 <Star className="h-3 w-3" />
                 {event.promotionTier === 'spotlight' ? 'SPONSORED SPOTLIGHT' : 'FEATURED'}
               </div>
-            )}
-            <div className="absolute bottom-4 left-4 right-4">
-              <span className="text-amber-300 text-sm font-medium uppercase">
-                {CATEGORY_LABELS[event.category]}
-              </span>
-              <h1 className="text-2xl md:text-4xl font-bold text-white mt-1">{event.name}</h1>
-            </div>
-          </div>
-          {images.length > 1 && (
-            <div className="flex gap-2 p-3 overflow-x-auto" style={{ background: 'var(--pub-card)' }}>
-              {images.map((url, i) => (
-                <button
-                  key={url}
-                  type="button"
-                  onClick={() => setActiveImage(i)}
-                  className={`relative shrink-0 w-20 h-14 rounded-lg overflow-hidden border-2 ${
-                    i === activeImage ? 'border-amber-400' : 'border-transparent opacity-70'
-                  }`}
-                >
-                  <Image src={url} alt="" fill className="object-cover" sizes="80px" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+            ) : undefined
+          }
+        />
 
         <div className="grid md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-6">
             <div>
               <p className="public-muted mb-4">
-                Hosted by <span className="font-medium public-heading">{event.organizerName}</span>
+                Hosted by{' '}
+                <Link href="/organizers/hempstead-chamber" className="font-medium public-heading hover:underline">
+                  {event.organizerName}
+                </Link>
               </p>
               <p className="public-heading leading-relaxed">{event.description}</p>
             </div>

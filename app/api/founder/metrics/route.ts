@@ -3,6 +3,8 @@ import { getPilotConfigSnapshot, getActiveOrganizerId } from '@/lib/pilot-config
 import { resolveOrganizerInboxAsync } from '@/lib/pilot-data-adapter';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 /** Internal founder traction metrics for the Long Island pilot */
 export async function GET() {
   const pilot = getPilotConfigSnapshot();

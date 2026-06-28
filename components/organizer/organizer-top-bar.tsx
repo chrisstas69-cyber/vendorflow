@@ -13,7 +13,7 @@ interface OrganizerTopBarProps {
 
 export function OrganizerTopBar({ series, events }: OrganizerTopBarProps) {
   const { seriesId, eventId, setSeriesId, setEventId } = useOrganizerContext();
-  const { btnPrimary, btnSecondary, muted, card, divider } = useOrganizerTheme();
+  const { btnPrimary, btnSecondary, muted, surface } = useOrganizerTheme();
 
   const filteredEvents = seriesId
     ? events.filter(e => e.seriesId === seriesId)
@@ -28,7 +28,7 @@ export function OrganizerTopBar({ series, events }: OrganizerTopBarProps) {
   });
 
   return (
-    <div className={`rounded-xl border p-4 mb-6 ${card}`}>
+    <div className={`rounded-2xl p-4 mb-6 ${surface}`}>
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="min-w-0">
           <div className={`text-xs font-medium uppercase tracking-wide ${muted}`}>Current season</div>

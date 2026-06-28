@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  performInboxAction,
-  resetOrganizerServerStore,
+  resetPilotDataAsync,
+  resolveApplicationActionAsync,
+  resolveCreateApplicationAsync,
   resolveOrganizerInboxAsync,
 } from '@/lib/pilot-data-adapter';
 import type { InboxAction } from '@/lib/organizer-schema';
 import type { OrganizerPipelineStage } from '@/lib/organizer-schema';
+import { getActiveOrganizerId } from '@/lib/pilot-config';
+import { ensurePlatformSeed } from '@/lib/platform-seed';
+
+export const dynamic = 'force-dynamic';
 
 /** GET — Applications Pipeline Inbox aggregated for an organizer / event / series */
 export async function GET(req: NextRequest) {
+  await ensurePlatformSeed();
+
   const { searchParams } = new URL(req.url);
   const organizerId = searchParams.get('organizerId') ?? undefined;
   const eventId = searchParams.get('eventId') ?? undefined;
@@ -28,18 +35,43 @@ export async function GET(req: NextRequest) {
   });
 }
 
-/** POST — inbox actions: accept | waitlist | request_info | reject */
+/** POST — inbox actions, create application, or reset seed */
 export async function POST(req: NextRequest) {
+  await ensurePlatformSeed();
+
   const body = await req.json();
-  const { submissionId, action, reset } = body as {
+  const { submissionId, action, reset, create } = body as {
     submissionId?: string;
     action?: InboxAction;
     reset?: boolean;
+    create?: {
+      eventId: string;
+      eventName: string;
+      vendorEmail: string;
+      vendorName: string;
+      category: string;
+      message?: string;
+      requiredForms?: string[];
+    };
   };
 
   if (reset) {
-    resetOrganizerServerStore();
-    return NextResponse.json({ ok: true, message: 'Inbox reset to seed data' });
+    await resetPilotDataAsync();
+    return NextResponse.json({ ok: true, message: 'Pilot data reset to seed' });
+  }
+
+  if (create) {
+    const item = await resolveCreateApplicationAsync({
+      organizerId: getActiveOrganizerId(),
+      ...create,
+    });
+    if (!item) {
+      return NextResponse.json(
+        { ok: false, error: 'Create requires PILOT_DATA_SOURCE=db' },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json({ ok: true, item }, { status: 201 });
   }
 
   if (!submissionId || !action) {
@@ -54,7 +86,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Invalid action' }, { status: 400 });
   }
 
-  const result = performInboxAction(submissionId, action);
+  const result = await resolveApplicationActionAsync(submissionId, action);
   if (!result.ok) {
     return NextResponse.json(result, { status: 404 });
   }

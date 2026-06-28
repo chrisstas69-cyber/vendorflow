@@ -23,7 +23,7 @@ function columnItems(items: OrganizerApplicationInboxItem[], stage: OrganizerDis
 }
 
 export function ApplicationPipelineBoard({ items, onAction }: ApplicationPipelineBoardProps) {
-  const { card, cardInset, muted, heading } = useOrganizerTheme();
+  const { surface, cardInset, muted, heading } = useOrganizerTheme();
 
   const handle = async (id: string, action: InboxAction) => {
     try {
@@ -41,9 +41,9 @@ export function ApplicationPipelineBoard({ items, onAction }: ApplicationPipelin
           return (
             <div
               key={col.id}
-              className={`rounded-xl border min-h-[360px] w-52 shrink-0 flex flex-col ${cardInset}`}
+              className={`rounded-xl min-h-[360px] w-52 shrink-0 flex flex-col ${cardInset}`}
             >
-              <div className={`p-3 border-b ${card}`}>
+              <div className="p-3 border-b border-stone-200/80 dark:border-stone-700">
                 <div className={`font-semibold text-sm ${heading}`}>{col.label}</div>
                 <div className={`text-xs ${muted}`}>{col.description}</div>
                 <div className="text-xs font-medium text-teal-600 mt-1">
@@ -55,7 +55,7 @@ export function ApplicationPipelineBoard({ items, onAction }: ApplicationPipelin
                   <p className={`text-xs text-center py-8 ${muted}`}>Empty</p>
                 ) : (
                   cards.map(item => (
-                    <div key={item.id} className={`rounded-lg border p-3 shadow-sm ${card}`}>
+                    <div key={item.id} className={`rounded-lg p-3 shadow-sm ${surface}`}>
                       <div className="flex gap-2 mb-2">
                         <VendorSetupPreview
                           src={item.setupPhotoUrl}

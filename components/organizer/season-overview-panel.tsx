@@ -12,8 +12,14 @@ export interface SeasonMetrics {
   openSlots: number;
 }
 
-export function SeasonOverviewPanel({ metrics }: { metrics: SeasonMetrics }) {
-  const { card, muted, heading, statIcon, sectionTitle } = useOrganizerTheme();
+export function SeasonOverviewPanel({
+  metrics,
+  compact,
+}: {
+  metrics: SeasonMetrics;
+  compact?: boolean;
+}) {
+  const { surface, muted, heading, statIcon, sectionTitle } = useOrganizerTheme();
 
   const stats = [
     { label: 'Events', value: metrics.eventCount, icon: Calendar },
@@ -29,14 +35,18 @@ export function SeasonOverviewPanel({ metrics }: { metrics: SeasonMetrics }) {
   ];
 
   return (
-    <section className="mb-6">
-      <h2 className={`${sectionTitle} mb-3 ${heading}`}>Season overview</h2>
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+    <section className={compact ? '' : 'mb-6'}>
+      {!compact && <h2 className={`${sectionTitle} mb-3 ${heading}`}>Season overview</h2>}
+      <div
+        className={`grid gap-3 ${
+          compact ? 'grid-cols-3 md:grid-cols-6' : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-6'
+        }`}
+      >
         {stats.map(stat => (
-          <div key={stat.label} className={`rounded-xl border p-4 ${card}`}>
-            <stat.icon className={`h-5 w-5 mb-2 ${statIcon}`} />
-            <div className={`text-xl font-bold ${heading}`}>{stat.value}</div>
-            <div className={`text-xs ${muted}`}>{stat.label}</div>
+          <div key={stat.label} className={`rounded-xl p-3 ${surface}`}>
+            <stat.icon className={`h-4 w-4 mb-1.5 ${statIcon}`} />
+            <div className={`text-lg font-bold ${heading}`}>{stat.value}</div>
+            <div className={`text-[11px] ${muted}`}>{stat.label}</div>
           </div>
         ))}
       </div>

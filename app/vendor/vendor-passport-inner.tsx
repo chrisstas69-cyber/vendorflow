@@ -11,13 +11,15 @@ import { PassportCompletionMeter } from '@/components/vendor/passport-completion
 import { PassportGeneralTab } from '@/components/vendor/passport/general-tab';
 import { PassportLogisticsTab } from '@/components/vendor/passport/logistics-tab';
 import { PassportDocumentsTab } from '@/components/vendor/passport/documents-tab';
-import { CreditCard, Building2, Truck, FileText, RefreshCw, MessageSquare } from 'lucide-react';
+import { CreditCard, Building2, Truck, FileText, RefreshCw, MessageSquare, Images } from 'lucide-react';
 import { InvoicingPanel } from '@/components/invoicing/invoicing-panel';
+import { PassportPortfolioTab } from '@/components/vendor/passport/portfolio-tab';
 import { FoundersEditionBanner } from '@/components/founders/founders-banner';
 
 const TABS = [
   { id: 'general', label: 'General', icon: Building2 },
   { id: 'logistics', label: 'Logistics & Tags', icon: Truck },
+  { id: 'portfolio', label: 'Portfolio', icon: Images },
   { id: 'documents', label: 'Document center', icon: FileText },
   { id: 'invoicing', label: 'Invoicing', icon: CreditCard },
 ] as const;
@@ -110,6 +112,7 @@ export default function VendorPassportPageInner() {
         <div className={`rounded-xl border p-5 md:p-6 ${card}`}>
           {tab === 'general' && <PassportGeneralTab />}
           {tab === 'logistics' && <PassportLogisticsTab />}
+          {tab === 'portfolio' && <PassportPortfolioTab />}
           {tab === 'documents' && <PassportDocumentsTab />}
           {tab === 'invoicing' && (
             <InvoicingPanel role="vendor" vendorEmail={passport.vendorEmail} />

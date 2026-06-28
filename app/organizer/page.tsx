@@ -7,18 +7,24 @@ import { OrganizerTopBar } from '@/components/organizer/organizer-top-bar';
 import { SeasonOverviewPanel } from '@/components/organizer/season-overview-panel';
 import { PaymentStatusPanel } from '@/components/organizer/payment-status-panel';
 import { ComplianceChecklistPanel } from '@/components/organizer/compliance-checklist-panel';
+import { EventTimelineCard } from '@/components/organizer/event-timeline-card';
+import { ActivityFeedPanel } from '@/components/organizer/activity-feed-panel';
+import { AttentionSummary } from '@/components/organizer/attention-summary';
+import { BoothOccupancyCard } from '@/components/organizer/booth-occupancy-card';
+import { OrganizerLoadingState } from '@/components/organizer/organizer-loading-state';
 import { useOrganizerInbox } from '@/hooks/use-organizer-inbox';
 import { useOrganizerContext } from '@/contexts/organizer-context';
 import { useOrganizerTheme } from '@/components/organizer/use-organizer-theme';
 import { usePilotConfig } from '@/hooks/use-pilot-config';
-import { OrganizerPageHeader } from '@/components/organizer/organizer-page-header';
-import { Loader2 } from 'lucide-react';
+import { useActivityFeed } from '@/hooks/use-activity-feed';
 
 export default function OrganizerDashboardPage() {
   const { seriesId, eventId } = useOrganizerContext();
   const { organizer } = usePilotConfig();
-  const { heading, muted, sectionTitle } = useOrganizerTheme();
+  const { heading, sectionTitle } = useOrganizerTheme();
   const [toast, setToast] = useState('');
+  const { reload: reloadActivity } = useActivityFeed({ limit: 1 });
+
   const { data, loading, error, performAction } = useOrganizerInbox({
     seriesId: seriesId ?? undefined,
     eventId: eventId ?? undefined,
@@ -32,50 +38,70 @@ export default function OrganizerDashboardPage() {
   const handleAction = async (submissionId: string, action: Parameters<typeof performAction>[1]) => {
     const msg = await performAction(submissionId, action);
     showToast(msg);
+    reloadActivity();
     return msg;
   };
 
-  const selectedEvent = data?.events.find(e => e.id === eventId);
+  const timelineEventId = eventId ?? data?.events[0]?.id ?? null;
+  const timelineEventName = data?.events.find(e => e.id === timelineEventId)?.name;
+  const mapped = data?.displayCounts?.mapped ?? 0;
+  const approved =
+    (data?.displayCounts?.approved ?? 0) +
+    (data?.displayCounts?.mapped ?? 0) +
+    (data?.displayCounts?.paid ?? 0);
 
   return (
-    <OrganizerLayout>
-      <OrganizerPageHeader
-        title="Season dashboard"
-        description="Your vendor pipeline, compliance, and revenue at a glance."
-      />
-
+    <OrganizerLayout showBanners>
       {toast && (
         <div className="mb-4 px-4 py-2 rounded-lg bg-emerald-100 text-emerald-800 text-sm font-medium">
           {toast}
         </div>
       )}
 
+      {data && <OrganizerTopBar series={data.series} events={data.events} />}
+
       {data && (
-        <OrganizerTopBar series={data.series} events={data.events} />
+        <div className="mb-6">
+          <AttentionSummary items={data.items} displayCounts={data.displayCounts} />
+        </div>
       )}
 
-      {data?.seasonMetrics && <SeasonOverviewPanel metrics={data.seasonMetrics} />}
+      {data?.seasonMetrics && (
+        <div className="mb-6">
+          <SeasonOverviewPanel metrics={data.seasonMetrics} compact />
+        </div>
+      )}
 
-      <PaymentStatusPanel />
+      <div className="mb-6">
+        <EventTimelineCard eventId={timelineEventId} eventName={timelineEventName} />
+      </div>
 
-      <section className="mb-8">
-        <h2 className={`text-lg font-semibold mb-3 ${heading}`}>Vendor pipeline</h2>
-        {loading ? (
-          <div className={`flex items-center justify-center gap-2 py-16 ${muted}`}>
-            <Loader2 className="h-5 w-5 animate-spin" /> Loading pipeline…
-          </div>
-        ) : error ? (
-          <p className="text-red-600 text-sm">{error}</p>
-        ) : data ? (
-          <ApplicationPipelineBoard items={data.items} onAction={handleAction} />
-        ) : null}
-      </section>
+      <div className="grid xl:grid-cols-[1fr_320px] gap-6 mb-8">
+        <section>
+          <h2 className={`${sectionTitle} mb-4 ${heading}`}>Vendor pipeline</h2>
+          {loading ? (
+            <OrganizerLoadingState label="Loading pipeline…" />
+          ) : error ? (
+            <p className="text-red-600 text-sm">{error}</p>
+          ) : data ? (
+            <ApplicationPipelineBoard items={data.items} onAction={handleAction} />
+          ) : null}
+        </section>
 
-      <ComplianceChecklistPanel
-        category={selectedEvent?.category ?? 'festival'}
-        region={organizer.region}
-        uploadedDocTypes={[]}
-      />
+        <aside className="xl:sticky xl:top-24 xl:self-start">
+          <ActivityFeedPanel />
+        </aside>
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-4">
+        <PaymentStatusPanel compact />
+        <ComplianceChecklistPanel
+          compact
+          category={data?.events.find(e => e.id === timelineEventId)?.category ?? 'festival'}
+          region={organizer.region}
+        />
+        <BoothOccupancyCard mapped={mapped} approved={approved} />
+      </div>
     </OrganizerLayout>
   );
 }

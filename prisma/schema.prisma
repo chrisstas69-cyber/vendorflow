@@ -10,6 +10,193 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Organizer tenancy & workflow backbone ───────────────────────────────────
+
+model OrganizerAccount {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  slug         String   @unique
+  name         String
+  email        String   @unique
+  organization String
+  region       String?  // nassau | suffolk | nyc | nj
+  verified     Boolean  @default(false)
+  planId       String   @default("org-founders")
+
+  applications   VendorApplication[]
+  boothMaps      BoothMap[]
+  activityFeed   ActivityFeedItem[]
+  auditLogs      AuditLog[]
+  notifications  Notification[]
+  eventTimelines EventTimeline[]
+  galleryItems   GalleryItem[]
+
+  @@index([slug])
+}
+
+model VendorApplication {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizerId String
+  organizer   OrganizerAccount @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+
+  eventId   String
+  eventName String
+  seriesId  String?
+
+  vendorEmail  String
+  vendorName   String
+  category     String
+  message      String @default("")
+
+  status        String  @default("pending") // pending | approved | rejected
+  pipelineStage String  @default("applied") // scraped | applied | reviewing | approved | waitlisted
+  shortlisted   Boolean @default(false)
+  infoRequested Boolean @default(false)
+
+  requiredForms    String @default("[]") // JSON string[]
+  uploadedDocTypes String @default("[]") // JSON string[]
+  setupPhotoUrl    String?
+  hasInsurance     Boolean @default(false)
+
+  paymentStatus  String @default("none") // none | invoiced | partial | paid
+  contractStatus String @default("unsigned") // unsigned | sent | signed
+
+  passportId String?
+  passport   VendorPassport? @relation(fields: [passportId], references: [id], onDelete: SetNull)
+
+  boothAssignment BoothAssignment?
+  auditLogs       AuditLog[]
+
+  @@index([organizerId, eventId])
+  @@index([organizerId, status])
+  @@index([vendorEmail])
+}
+
+model BoothMap {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizerId String
+  organizer   OrganizerAccount @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  eventId     String
+  name        String @default("Main grid")
+  /// JSON BoothCell[] — label, utilities, optional pre-assignment hints
+  gridJson    String @default("[]")
+
+  assignments BoothAssignment[]
+
+  @@unique([organizerId, eventId])
+}
+
+model BoothAssignment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  boothMapId  String
+  boothMap    BoothMap @relation(fields: [boothMapId], references: [id], onDelete: Cascade)
+  boothLabel  String
+
+  applicationId String?           @unique
+  application   VendorApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  vendorEmail String
+  vendorName  String
+  utilities   String @default("[]") // JSON ('electric' | 'water')[]
+
+  @@unique([boothMapId, boothLabel])
+  @@index([vendorEmail])
+}
+
+model EventTimeline {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizerId  String
+  organizer    OrganizerAccount @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  eventId      String
+  currentStage String @default("planning")
+  /// JSON EventTimelineStageState[]
+  stagesJson   String @default("[]")
+
+  @@unique([organizerId, eventId])
+}
+
+model ActivityFeedItem {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  organizerId String
+  organizer   OrganizerAccount @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+
+  eventType   String // application.submitted | booth.assigned | …
+  actorType   String // organizer | vendor | system
+  actorId     String?
+  actorLabel  String?
+
+  targetType  String // application | booth | contract | payment | event
+  targetId    String?
+  targetLabel String?
+
+  title    String
+  summary  String?
+  metadata String @default("{}")
+  readAt   DateTime?
+  eventId  String?
+
+  @@index([organizerId, createdAt])
+  @@index([organizerId, readAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  organizerId String
+  organizer   OrganizerAccount @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+
+  action     String
+  entityType String
+  entityId   String
+  actorId    String?
+  actorLabel String?
+  beforeJson String?
+  afterJson  String?
+  metadata   String @default("{}")
+
+  applicationId String?
+  application   VendorApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  @@index([organizerId, createdAt])
+  @@index([entityType, entityId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizerId String
+  organizer   OrganizerAccount @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+
+  channel  String @default("in_app") // in_app | email
+  status   String @default("pending") // pending | sent | read | failed
+  eventType String
+  title    String
+  body     String
+  metadata String @default("{}")
+  readAt   DateTime?
+
+  @@index([organizerId, status])
+}
+
 // ─── Vendor Passport ─────────────────────────────────────────────────────────
 
 model VendorPassport {
@@ -49,6 +236,8 @@ model VendorPassport {
 
   documents VendorDocument[]
   invoices  Invoice[]
+  applications VendorApplication[]
+  galleryItems GalleryItem[]
 
   @@index([validationState])
 }
@@ -304,4 +493,160 @@ model AIInsight {
   @@index([scopeType, scopeId, status])
   @@index([insightType, status])
   @@index([expiresAt])
+}
+
+// ─── Trust galleries (events, organizers, vendors) ───────────────────────────
+
+model GalleryItem {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// event | organizer | vendor
+  entityType String
+  /// event id, organizer id, or vendor email
+  entityId   String
+
+  imageUrl  String
+  caption   String?
+  /// JSON GalleryTag[] — crowd, booth, food, setup, branding, family, night, kids-zone
+  tags      String  @default("[]")
+  sortOrder Int     @default(0)
+  isCover   Boolean @default(false)
+  isPublic  Boolean @default(true)
+
+  organizerId String?
+  organizer   OrganizerAccount? @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  passportId  String?
+  passport    VendorPassport?   @relation(fields: [passportId], references: [id], onDelete: Cascade)
+
+  @@index([entityType, entityId])
+  @@index([entityType, entityId, isPublic])
+  @@index([organizerId])
+  @@index([passportId])
+}
+
+// ─── Operational contact intelligence (private — not public directory) ───────
+
+model Jurisdiction {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name   String
+  slug   String @unique
+  county String? // nassau | suffolk
+  town   String?
+  region String @default("long-island") // long-island | nyc | nj
+  state  String @default("NY")
+
+  organizations OpsOrganization[]
+
+  @@index([county, town])
+  @@index([region])
+}
+
+model OpsOrganization {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// chamber | bid | town-office | village-office | parks-rec | market-operator | …
+  type     String
+  name     String
+  website  String?
+  publicPhone String?
+  publicEmail String?
+  address  String?
+
+  jurisdictionId String?
+  jurisdiction   Jurisdiction? @relation(fields: [jurisdictionId], references: [id], onDelete: SetNull)
+  /// JSON string[] — towns/villages covered beyond primary jurisdiction
+  jurisdictionCoverage String @default("[]")
+
+  notes               String @default("")
+  /// JSON string[] — street-fair, festival, farmers-market, …
+  recurringEventTypes String @default("[]")
+  vendorHeavy         Boolean @default(false)
+  fitScore            Int     @default(0) // 0–100 VendorFlow fit
+  internalOnly        Boolean @default(true)
+  /// lead | researching | contacted | meeting-booked | pilot-candidate | active
+  outreachStatus      String  @default("lead")
+  /// internal | organizer-only | approved-vendor | all-paying-clients
+  defaultVisibility   String  @default("internal")
+
+  contacts         OpsContact[]
+  eventProfiles    OrganizationEventProfile[]
+  outreachActivities OutreachActivity[]
+
+  @@index([type])
+  @@index([jurisdictionId])
+  @@index([outreachStatus])
+  @@index([internalOnly])
+}
+
+model OpsContact {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizationId String
+  organization   OpsOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name       String
+  title      String?
+  phone      String?
+  email      String?
+  linkedIn   String?
+  department String?
+  /// email | phone | linkedin
+  preferredContactMethod String @default("email")
+  /// JSON ContactPurposeTag[]
+  purposeTags String @default("[]")
+  /// internal | organizer-only | approved-vendor | all-paying-clients
+  visibility  String @default("organizer-only")
+  notes       String @default("")
+  internalNotes String @default("")
+
+  outreachActivities OutreachActivity[]
+
+  @@index([organizationId])
+  @@index([visibility])
+}
+
+model OrganizationEventProfile {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizationId String
+  organization   OpsOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  eventDistrict      String?
+  /// JSON string[]
+  eventTypes         String @default("[]")
+  seasonality        String?
+  typicalVendorCount Int?
+  notes              String @default("")
+
+  @@index([organizationId])
+}
+
+model OutreachActivity {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  organizationId String?
+  organization   OpsOrganization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contactId      String?
+  contact        OpsContact?        @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  /// call | email | meeting | note | research
+  activityType String
+  summary      String
+  actorLabel   String?
+  metadata     String @default("{}")
+
+  @@index([organizationId, createdAt])
+  @@index([contactId, createdAt])
 }
