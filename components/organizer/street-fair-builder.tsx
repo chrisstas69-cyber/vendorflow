@@ -9,9 +9,10 @@ import {
   type NumberingScheme,
   type StreetFairLayoutDefinition,
 } from '@/lib/booth/street-fair-schema';
-import { createEmptyBlock, createEmptyStreet } from '@/lib/booth/street-fair-generate';
-import { StreetFairPreview } from '@/components/organizer/street-fair-preview';
-import type { BoothSpace } from '@/lib/booth/street-fair-schema';
+import { createEmptyBlock, createEmptyStreet, generateBoothInventory, applyNumberingSchemeToLayout } from '@/lib/booth/street-fair-generate';
+import { StreetFairPreview, buildSpotAssignmentEmail } from '@/components/organizer/street-fair-preview';
+import type { BoothKind, BoothSpace } from '@/lib/booth/street-fair-schema';
+import { Mail, Printer } from 'lucide-react';
 
 interface PoolVendor {
   name: string;
@@ -40,8 +41,16 @@ export function StreetFairBuilder({ eventId }: { eventId: string }) {
     const layoutData = await layoutRes.json();
     const appData = await appRes.json();
 
-    if (layoutData.streetFair) setLayout(layoutData.streetFair);
-    if (layoutData.generatedBooths) setBooths(layoutData.generatedBooths);
+    if (layoutData.streetFair?.streets?.length) {
+      setLayout(layoutData.streetFair);
+    }
+    const nextBooths =
+      layoutData.generatedBooths?.length > 0
+        ? layoutData.generatedBooths
+        : layoutData.streetFair?.streets?.length
+          ? generateBoothInventory(layoutData.streetFair)
+          : [];
+    if (nextBooths.length) setBooths(nextBooths);
 
     const assigned = new Set((layoutData.generatedBooths ?? []).map((b: BoothSpace) => b.vendorEmail).filter(Boolean));
     const approved = (appData.items ?? [])
@@ -80,8 +89,13 @@ export function StreetFairBuilder({ eventId }: { eventId: string }) {
     });
     const data = await res.json();
     if (data.ok) {
-      setBooths(data.generatedBooths ?? booths);
-      showToast('Street layout saved');
+      const regenerated =
+        data.generatedBooths?.length > 0
+          ? data.generatedBooths
+          : generateBoothInventory(layout);
+      setBooths(regenerated);
+      showToast(`Street layout saved — ${regenerated.length} booth spaces`);
+      if (regenerated.length) setStep(3);
     } else {
       showToast(data.error ?? 'Save failed');
     }
@@ -126,7 +140,16 @@ export function StreetFairBuilder({ eventId }: { eventId: string }) {
   };
 
   const updateScheme = (scheme: NumberingScheme) => {
-    setLayout(prev => ({ ...prev, numberingScheme: scheme }));
+    setLayout(prev => applyNumberingSchemeToLayout({ ...prev, numberingScheme: scheme }));
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const emailAssigned = (booth: BoothSpace) => {
+    if (!booth.vendorEmail) return;
+    window.location.href = buildSpotAssignmentEmail(booth);
   };
 
   if (loading) {
@@ -207,7 +230,31 @@ export function StreetFairBuilder({ eventId }: { eventId: string }) {
 
               {street.blocks.map((block, bi) => (
                 <div key={block.id} className="mb-3 pl-3 border-l-2 border-teal-200 dark:border-teal-800">
-                  <div className="grid sm:grid-cols-2 gap-2 mb-2">
+                  <label className={`block text-xs font-semibold mb-1 ${heading}`}>
+                    Block name <span className={`font-normal ${muted}`}>(optional — e.g. Food Row, Block A)</span>
+                    <input
+                      value={block.name ?? ''}
+                      onChange={e => {
+                        const name = e.target.value;
+                        setLayout(prev => ({
+                          ...prev,
+                          streets: prev.streets.map((st, i) =>
+                            i !== si
+                              ? st
+                              : {
+                                  ...st,
+                                  blocks: st.blocks.map((bl, j) =>
+                                    j === bi ? { ...bl, name } : bl
+                                  ),
+                                }
+                          ),
+                        }));
+                      }}
+                      placeholder="Food Row · Artist Alley · Block 1"
+                      className={`w-full mt-1 rounded-lg border px-3 py-2 text-sm ${btnSecondary}`}
+                    />
+                  </label>
+                  <div className="grid sm:grid-cols-2 gap-2 mb-2 mt-2">
                     <input
                       value={block.startIntersection}
                       onChange={e => {
@@ -226,7 +273,7 @@ export function StreetFairBuilder({ eventId }: { eventId: string }) {
                           ),
                         }));
                       }}
-                      placeholder="Start intersection"
+                      placeholder="Start cross street (e.g. Oak Ave)"
                       className={`rounded-lg border px-3 py-2 text-sm ${btnSecondary}`}
                     />
                     <input
@@ -247,7 +294,7 @@ export function StreetFairBuilder({ eventId }: { eventId: string }) {
                           ),
                         }));
                       }}
-                      placeholder="End intersection"
+                      placeholder="End cross street (e.g. Maple St)"
                       className={`rounded-lg border px-3 py-2 text-sm ${btnSecondary}`}
                     />
                   </div>
@@ -287,6 +334,39 @@ export function StreetFairBuilder({ eventId }: { eventId: string }) {
                             }}
                             className={`w-full mt-1 rounded border px-2 py-1 text-sm ${btnSecondary}`}
                           />
+                        </label>
+                        <label className={`text-xs ${muted} block mt-2`}>
+                          Space type
+                          <select
+                            value={side.boothKind ?? 'tent'}
+                            onChange={e => {
+                              const boothKind = e.target.value as BoothKind;
+                              setLayout(prev => ({
+                                ...prev,
+                                streets: prev.streets.map((st, i) =>
+                                  i !== si
+                                    ? st
+                                    : {
+                                        ...st,
+                                        blocks: st.blocks.map((bl, j) =>
+                                          j !== bi
+                                            ? bl
+                                            : {
+                                                ...bl,
+                                                sides: bl.sides.map((s, k) =>
+                                                  k === sidei ? { ...s, boothKind } : s
+                                                ),
+                                              }
+                                        ),
+                                      }
+                                ),
+                              }));
+                            }}
+                            className={`w-full mt-1 rounded border px-2 py-1 text-sm ${btnSecondary}`}
+                          >
+                            <option value="tent">Tents / canopies</option>
+                            <option value="truck">Food trucks</option>
+                          </select>
                         </label>
                         <input
                           value={side.boothSize ?? ''}
@@ -342,7 +422,7 @@ export function StreetFairBuilder({ eventId }: { eventId: string }) {
                   setLayout(prev => ({
                     ...prev,
                     streets: prev.streets.map((st, i) =>
-                      i === si ? { ...st, blocks: [...st.blocks, createEmptyBlock()] } : st
+                      i === si ? { ...st, blocks: [...st.blocks, createEmptyBlock(prev.numberingScheme)] } : st
                     ),
                   }))
                 }
@@ -375,6 +455,16 @@ export function StreetFairBuilder({ eventId }: { eventId: string }) {
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Generate booth inventory
           </button>
+
+          {layout.streets.some(s => s.blocks.length > 0) && (
+            <div className="mt-6">
+              <h3 className={`text-sm font-semibold mb-3 ${heading}`}>Live preview</h3>
+              <StreetFairPreview
+                layout={layout}
+                booths={booths.length ? booths : generateBoothInventory(layout)}
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -415,21 +505,44 @@ export function StreetFairBuilder({ eventId }: { eventId: string }) {
       )}
 
       {step === 3 && (
-        <div className="grid lg:grid-cols-[1fr_280px] gap-6">
-          <StreetFairPreview
-            layout={layout}
-            booths={booths}
-            selectedBoothId={selectedBooth?.id}
-            onSelectBooth={setSelectedBooth}
-          />
-          <div className={`rounded-xl p-4 h-fit ${cardInset}`}>
+        <div className="grid lg:grid-cols-[1fr_300px] gap-6">
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2 no-print">
+              <button
+                type="button"
+                onClick={handlePrint}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold ${btnSecondary}`}
+              >
+                <Printer className="h-4 w-4" /> Print day-of map
+              </button>
+            </div>
+            <StreetFairPreview
+              layout={layout}
+              booths={booths.length ? booths : generateBoothInventory(layout)}
+              selectedBoothId={selectedBooth?.id}
+              onSelectBooth={setSelectedBooth}
+            />
+          </div>
+          <div className={`rounded-xl p-4 h-fit no-print ${cardInset}`}>
             <h3 className={`font-semibold text-sm mb-3 ${heading}`}>Assign vendors</h3>
             {selectedBooth ? (
-              <p className={`text-sm mb-3 ${muted}`}>
-                Selected booth <strong>{selectedBooth.label}</strong> — pick a vendor:
-              </p>
+              <div className="mb-3 space-y-2">
+                <p className={`text-sm ${muted}`}>
+                  Selected spot <strong className={heading}>#{selectedBooth.label}</strong>
+                  {selectedBooth.vendorName ? ` — ${selectedBooth.vendorName}` : ' — empty'}
+                </p>
+                {selectedBooth.vendorEmail && (
+                  <button
+                    type="button"
+                    onClick={() => emailAssigned(selectedBooth)}
+                    className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm ${btnSecondary}`}
+                  >
+                    <Mail className="h-4 w-4" /> Email spot #{selectedBooth.label}
+                  </button>
+                )}
+              </div>
             ) : (
-              <p className={`text-sm mb-3 ${muted}`}>Click a booth in the preview to assign.</p>
+              <p className={`text-sm mb-3 ${muted}`}>Click a spot on the map to assign a vendor.</p>
             )}
             <ul className="space-y-2 max-h-64 overflow-y-auto">
               {pool.length === 0 ? (

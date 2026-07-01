@@ -114,7 +114,7 @@ export async function PUT(req: NextRequest) {
     });
   }
 
-  const map = await updateBoothLayoutDb({
+  const boothMap = await updateBoothLayoutDb({
     organizerId,
     eventId,
     layoutMode,
@@ -122,7 +122,20 @@ export async function PUT(req: NextRequest) {
     grid,
   });
 
-  return NextResponse.json({ ok: true, dataSource: 'db', map });
+  const updated = await getBoothMapFromDb(organizerId, eventId);
+  if (!updated) {
+    return NextResponse.json({ ok: true, dataSource: 'db', layoutMode: layoutMode ?? 'grid' });
+  }
+
+  const payload = await getBoothLayoutResponseDb(updated);
+  return NextResponse.json({
+    ok: true,
+    dataSource: 'db',
+    eventId,
+    mapId: updated.id,
+    name: updated.name,
+    ...payload,
+  });
 }
 
 /** POST — persist booth assignments */

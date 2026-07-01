@@ -1,8 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { Upload, X, FileText, DollarSign, Clock, TrendingUp, CreditCard, Banknote } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Upload, X, FileText, DollarSign, Clock, TrendingUp, CreditCard, Banknote, Link2 } from 'lucide-react';
 import type { FinancialRecord } from '@/lib/mock-data';
+import {
+  formatBookedEventLabel,
+  type VendorBookedEvent,
+} from '@/lib/vendor-booked-events';
 
 interface ParsedTransaction {
   time: string;
@@ -12,6 +16,7 @@ interface ParsedTransaction {
 }
 
 interface ParsedReport {
+  eventId?: string;
   eventName: string;
   date: string;
   transactions: ParsedTransaction[];
@@ -29,8 +34,8 @@ interface PaymentUploadDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onImport: (record: Omit<FinancialRecord, 'id'>) => void;
-  eventName?: string;
-  eventDate?: string;
+  bookedEvents: VendorBookedEvent[];
+  initialEventId?: string;
 }
 
 function parseSquareCSV(text: string): ParsedTransaction[] {
@@ -116,19 +121,61 @@ export function PaymentUploadDialog({
   isOpen,
   onClose,
   onImport,
-  eventName = '',
-  eventDate = '',
+  bookedEvents,
+  initialEventId,
 }: PaymentUploadDialogProps) {
+  const [selectedEventId, setSelectedEventId] = useState('');
   const [parsedData, setParsedData] = useState<ParsedReport | null>(null);
   const [expenses, setExpenses] = useState(0);
   const [error, setError] = useState('');
 
+  const selectedEvent = useMemo(
+    () => bookedEvents.find(e => e.id === selectedEventId),
+    [bookedEvents, selectedEventId]
+  );
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const fallbackId =
+      initialEventId && bookedEvents.some(e => e.id === initialEventId)
+        ? initialEventId
+        : bookedEvents[0]?.id ?? '';
+    const event = bookedEvents.find(e => e.id === fallbackId);
+    setSelectedEventId(fallbackId);
+    setParsedData(null);
+    setError('');
+    setExpenses(event?.boothFee ?? 0);
+  }, [isOpen, initialEventId, bookedEvents]);
+
   if (!isOpen) return null;
+
+  const handleEventChange = (eventId: string) => {
+    setSelectedEventId(eventId);
+    const event = bookedEvents.find(e => e.id === eventId);
+    const nextExpenses = event?.boothFee ?? expenses;
+    if (event?.boothFee != null) setExpenses(event.boothFee);
+    if (parsedData && event) {
+      const metrics = calculateMetrics(parsedData.transactions, nextExpenses);
+      setParsedData({
+        ...parsedData,
+        eventId: event.eventId ?? event.id,
+        eventName: event.name,
+        date: event.date,
+        expenses: nextExpenses,
+        ...metrics,
+      });
+    }
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setError('');
+
+    if (!selectedEvent) {
+      setError('Select a booked event first');
+      return;
+    }
 
     if (!file.name.endsWith('.csv')) {
       setError('Please upload a CSV file');
@@ -146,11 +193,12 @@ export function PaymentUploadDialog({
         }
         const metrics = calculateMetrics(transactions, expenses);
         setParsedData({
-          eventName: eventName || 'Imported Event',
-          date: eventDate || new Date().toISOString().split('T')[0],
+          eventId: selectedEvent.eventId ?? selectedEvent.id,
+          eventName: selectedEvent.name,
+          date: selectedEvent.date || new Date().toISOString().split('T')[0],
           transactions,
-          ...metrics,
           expenses,
+          ...metrics,
         });
       } catch {
         setError('Error parsing CSV file. Please check the format.');
@@ -160,8 +208,9 @@ export function PaymentUploadDialog({
   };
 
   const handleImport = () => {
-    if (!parsedData) return;
+    if (!parsedData || !selectedEvent) return;
     onImport({
+      eventId: parsedData.eventId ?? selectedEvent.eventId ?? selectedEvent.id,
       eventName: parsedData.eventName,
       date: parsedData.date,
       grossSales: parsedData.grossSales,
@@ -202,25 +251,33 @@ export function PaymentUploadDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-text-secondary mb-1">EVENT NAME</label>
-              <input
-                type="text"
-                value={eventName}
-                disabled
-                className="w-full px-3 py-2 border-2 border-border-primary bg-bg-tertiary text-text-secondary"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-text-secondary mb-1">EVENT DATE</label>
-              <input
-                type="text"
-                value={eventDate ? new Date(eventDate).toLocaleDateString() : ''}
-                disabled
-                className="w-full px-3 py-2 border-2 border-border-primary bg-bg-tertiary text-text-secondary"
-              />
-            </div>
+          <div>
+            <label className="block text-xs font-bold text-text-secondary mb-1">BOOKED EVENT</label>
+            {bookedEvents.length === 0 ? (
+              <div className="border-2 border-border-primary bg-bg-tertiary px-3 py-2 text-sm text-text-secondary">
+                No booked events yet. Apply to events and complete payment to link sales here.
+              </div>
+            ) : (
+              <>
+                <select
+                  value={selectedEventId}
+                  onChange={e => handleEventChange(e.target.value)}
+                  className="w-full px-3 py-2 border-2 border-border-primary bg-bg-primary font-medium"
+                >
+                  {bookedEvents.map(event => (
+                    <option key={event.id} value={event.id}>
+                      {formatBookedEventLabel(event)}
+                    </option>
+                  ))}
+                </select>
+                {selectedEvent && (
+                  <div className="flex items-center gap-1.5 mt-2 text-xs text-accent-primary">
+                    <Link2 className="h-3.5 w-3.5" />
+                    Linked to your booking · {selectedEvent.date ? new Date(`${selectedEvent.date}T12:00:00`).toLocaleDateString() : 'Date TBD'}
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           <div>
@@ -243,8 +300,14 @@ export function PaymentUploadDialog({
                 className="flex-1 px-3 py-2 border-2 border-border-primary bg-bg-primary"
                 placeholder="0.00"
                 step="0.01"
+                disabled={!selectedEvent}
               />
             </div>
+            {selectedEvent?.boothFee != null && (
+              <p className="text-xs text-text-secondary mt-1">
+                Booth fee on file: ${selectedEvent.boothFee.toLocaleString()}
+              </p>
+            )}
           </div>
 
           <div>
@@ -257,10 +320,15 @@ export function PaymentUploadDialog({
                 onChange={handleFileUpload}
                 className="hidden"
                 id="csv-upload"
+                disabled={!selectedEvent}
               />
               <label
                 htmlFor="csv-upload"
-                className="inline-block bg-accent-primary hover:bg-accent-secondary border-2 border-black text-black font-bold py-2 px-4 cursor-pointer transition-colors"
+                className={`inline-block border-2 border-black font-bold py-2 px-4 transition-colors ${
+                  selectedEvent
+                    ? 'bg-accent-primary hover:bg-accent-secondary text-black cursor-pointer'
+                    : 'bg-bg-tertiary text-text-secondary cursor-not-allowed'
+                }`}
               >
                 SELECT CSV FILE
               </label>
@@ -277,6 +345,9 @@ export function PaymentUploadDialog({
           {parsedData && (
             <div className="border-2 border-accent-primary bg-bg-primary p-4 space-y-3">
               <div className="font-bold text-sm mb-3">IMPORT PREVIEW</div>
+              <div className="text-xs text-text-secondary mb-2">
+                Saving to <span className="font-bold text-text-primary">{parsedData.eventName}</span>
+              </div>
               <div className="grid grid-cols-3 gap-2">
                 <div className="border-2 border-border-primary bg-bg-secondary p-2">
                   <div className="text-xs text-text-secondary mb-1">GROSS SALES</div>
@@ -324,7 +395,7 @@ export function PaymentUploadDialog({
                 </div>
               </div>
               <div className="text-xs text-text-secondary">
-                {parsedData.transactions.length} transactions imported • Margin: {parsedData.margin}%
+                {parsedData.transactions.length} transactions imported · Margin: {parsedData.margin}%
               </div>
             </div>
           )}
@@ -341,9 +412,9 @@ export function PaymentUploadDialog({
           <button
             type="button"
             onClick={handleImport}
-            disabled={!parsedData}
+            disabled={!parsedData || !selectedEvent}
             className={`flex-1 font-bold py-3 px-4 transition-colors flex items-center justify-center gap-2 ${
-              parsedData
+              parsedData && selectedEvent
                 ? 'bg-accent-primary hover:bg-accent-secondary border-2 border-black text-black'
                 : 'bg-bg-tertiary border-2 border-border-primary text-text-secondary cursor-not-allowed'
             }`}

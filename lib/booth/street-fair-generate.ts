@@ -5,6 +5,7 @@ import type {
   StreetFairLayoutDefinition,
   StreetSegment,
 } from '@/lib/booth/street-fair-schema';
+import { SIDE_PAIRS } from '@/lib/booth/street-fair-schema';
 
 function boothLabel(
   scheme: NumberingScheme,
@@ -32,8 +33,12 @@ function boothLabel(
   return `${side.charAt(0).toUpperCase()}${n}`;
 }
 
-function blockLabel(block: { startIntersection: string; endIntersection: string }): string {
-  return `${block.startIntersection} → ${block.endIntersection}`;
+function blockLabel(block: { name?: string; startIntersection: string; endIntersection: string }): string {
+  if (block.name?.trim()) return block.name.trim();
+  if (block.startIntersection && block.endIntersection) {
+    return `${block.startIntersection} → ${block.endIntersection}`;
+  }
+  return block.startIntersection || block.endIntersection || 'Block';
 }
 
 export function generateBoothInventory(
@@ -60,6 +65,7 @@ export function generateBoothInventory(
             sideId: side.id,
             sideLabel: side.label,
             boothSize: side.boothSize,
+            boothKind: side.boothKind ?? 'tent',
             utilities: side.label === 'odd' || side.label === 'north' || side.label === 'east' ? ['electric'] : [],
             vendorName: assignment?.vendorName,
             vendorEmail: assignment?.vendorEmail,
@@ -91,15 +97,35 @@ export function createEmptyStreet(name: string, secondary = false): StreetSegmen
   };
 }
 
-export function createEmptyBlock(): import('@/lib/booth/street-fair-schema').LayoutBlock {
+export function applyNumberingSchemeToLayout(
+  layout: StreetFairLayoutDefinition
+): StreetFairLayoutDefinition {
+  const [sideA, sideB] = SIDE_PAIRS[layout.numberingScheme];
+  return {
+    ...layout,
+    streets: layout.streets.map(street => ({
+      ...street,
+      blocks: street.blocks.map(block => ({
+        ...block,
+        sides: block.sides.map((side, index) => ({
+          ...side,
+          label: index === 0 ? sideA : sideB,
+        })),
+      })),
+    })),
+  };
+}
+
+export function createEmptyBlock(scheme: NumberingScheme = 'odd-even'): import('@/lib/booth/street-fair-schema').LayoutBlock {
   const id = `blk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const [sideA, sideB] = SIDE_PAIRS[scheme];
   return {
     id,
     startIntersection: '',
     endIntersection: '',
     sides: [
-      { id: `${id}-a`, label: 'odd', boothCount: 6, boothSize: '10×10' },
-      { id: `${id}-b`, label: 'even', boothCount: 6, boothSize: '10×10' },
+      { id: `${id}-a`, label: sideA, boothCount: 6, boothSize: '10×10', boothKind: 'tent' },
+      { id: `${id}-b`, label: sideB, boothCount: 6, boothSize: '10×10', boothKind: 'tent' },
     ],
   };
 }

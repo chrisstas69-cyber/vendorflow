@@ -42,6 +42,7 @@ export interface Application {
 
 export interface FinancialRecord {
   id: string;
+  eventId?: string;
   eventName: string;
   date: string;
   grossSales: number;
@@ -58,6 +59,7 @@ export interface CalendarEvent {
   date: string;
   name: string;
   status: 'booked' | 'completed';
+  eventId?: string;
 }
 
 export const mockEvents: MockEvent[] = [
@@ -279,7 +281,7 @@ export const mockFinancials: FinancialRecord[] = [
 ];
 
 export const mockCalendarEvents: CalendarEvent[] = [
-  { date: '2026-02-14', name: "Valentine's Day Fair", status: 'completed' },
-  { date: '2026-03-15', name: 'Spring Family Festival', status: 'booked' },
-  { date: '2026-03-22', name: 'Kids Carnival Weekend', status: 'booked' },
+  { date: '2026-02-14', name: "Valentine's Day Fair", status: 'completed', eventId: 'cal-valentine-2026' },
+  { date: '2026-03-15', name: 'Spring Family Festival', status: 'booked', eventId: 'evt-001' },
+  { date: '2026-03-22', name: 'Kids Carnival Weekend', status: 'booked', eventId: 'evt-002' },
 ];

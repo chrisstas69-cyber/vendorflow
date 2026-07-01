@@ -6,16 +6,21 @@ export type NumberingScheme = 'odd-even' | 'north-south' | 'east-west' | 'custom
 
 export type SideLabel = 'odd' | 'even' | 'north' | 'south' | 'east' | 'west';
 
+export type BoothKind = 'tent' | 'truck';
+
 export interface BlockSide {
   id: string;
   label: SideLabel;
   boothCount: number;
   boothSize?: string;
   boothPrefix?: string;
+  boothKind?: BoothKind;
 }
 
 export interface LayoutBlock {
   id: string;
+  /** Optional friendly label, e.g. "Food Row" or "Block A — Artist Alley" */
+  name?: string;
   startIntersection: string;
   endIntersection: string;
   sides: BlockSide[];
@@ -44,6 +49,7 @@ export interface BoothSpace {
   sideId: string;
   sideLabel: SideLabel;
   boothSize?: string;
+  boothKind?: BoothKind;
   utilities: ('electric' | 'water')[];
   vendorName?: string;
   vendorEmail?: string;

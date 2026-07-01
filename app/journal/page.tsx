@@ -1,15 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { PaymentUploadDialog } from '@/components/payment-upload-dialog';
 import { useVendorTheme } from '@/components/vendor/use-vendor-theme';
 import { useDemoStore } from '@/contexts/demo-store-context';
+import { getVendorBookedEvents } from '@/lib/vendor-booked-events';
 import { deriveJournalInsights } from '@/lib/journal-insights';
 import { TrendingUp, Receipt, Clock, CreditCard, Banknote, Download, Upload, ChevronRight, Lightbulb } from 'lucide-react';
 
 export default function FinancialJournalPage() {
-  const { financials, importFinancial } = useDemoStore();
+  const { financials, importFinancial, applications } = useDemoStore();
+  const bookedEvents = useMemo(() => getVendorBookedEvents(applications), [applications]);
   const { card, cardInset, muted, btnPrimary, btnSecondary } = useVendorTheme();
   const [showUploadDialog, setShowUploadDialog] = useState(false);
 
@@ -177,8 +179,7 @@ export default function FinancialJournalPage() {
         isOpen={showUploadDialog}
         onClose={() => setShowUploadDialog(false)}
         onImport={importFinancial}
-        eventName="Super Bowl Sunday Bazaar"
-        eventDate="2026-02-01"
+        bookedEvents={bookedEvents}
       />
     </AppLayout>
   );

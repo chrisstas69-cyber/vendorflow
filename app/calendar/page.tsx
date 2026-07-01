@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { PaymentUploadDialog } from '@/components/payment-upload-dialog';
 import { useVendorTheme } from '@/components/vendor/use-vendor-theme';
 import { mockCalendarEvents } from '@/lib/mock-data';
 import { useDemoStore } from '@/contexts/demo-store-context';
+import { getVendorBookedEvents } from '@/lib/vendor-booked-events';
 import {
   ChevronLeft,
   ChevronRight,
@@ -17,7 +18,8 @@ import {
 } from 'lucide-react';
 
 export default function CalendarOpsPage() {
-  const { importFinancial } = useDemoStore();
+  const { importFinancial, applications } = useDemoStore();
+  const bookedEvents = useMemo(() => getVendorBookedEvents(applications), [applications]);
   const { card, cardInset, muted, btnPrimary, btnSecondary } = useVendorTheme();
   const [currentDate, setCurrentDate] = useState(new Date(2026, 2, 1));
   const [selectedDate, setSelectedDate] = useState<string | null>('2026-03-15');
@@ -31,6 +33,12 @@ export default function CalendarOpsPage() {
 
   const getEventForDate = (date: string) => mockCalendarEvents.find(e => e.date === date);
   const selectedEvent = selectedDate ? getEventForDate(selectedDate) : null;
+  const initialImportEventId = useMemo(() => {
+    if (!selectedEvent || !selectedDate) return undefined;
+    return bookedEvents.find(
+      e => e.date === selectedDate && e.name === selectedEvent.name
+    )?.id;
+  }, [bookedEvents, selectedDate, selectedEvent]);
 
   const shiftMonth = (delta: number) => {
     const next = new Date(year, month + delta, 1);
@@ -171,8 +179,8 @@ export default function CalendarOpsPage() {
         isOpen={showUploadDialog}
         onClose={() => setShowUploadDialog(false)}
         onImport={importFinancial}
-        eventName={selectedEvent?.name || ''}
-        eventDate={selectedDate || ''}
+        bookedEvents={bookedEvents}
+        initialEventId={initialImportEventId}
       />
     </AppLayout>
   );

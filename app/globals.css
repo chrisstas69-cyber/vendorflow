@@ -127,3 +127,33 @@ body {
   border-color: var(--pub-border);
   color: var(--pub-text);
 }
+
+/* Street Fair booth map — day-of print */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #street-fair-print-root,
+  #street-fair-print-root * {
+    visibility: visible;
+  }
+
+  #street-fair-print-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: white !important;
+    color: black !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .street-fair-block {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
