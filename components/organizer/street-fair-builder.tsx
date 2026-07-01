@@ -12,6 +12,8 @@ import {
 import { createEmptyBlock, createEmptyStreet, generateBoothInventory, applyNumberingSchemeToLayout } from '@/lib/booth/street-fair-generate';
 import { StreetFairPreview, buildSpotAssignmentEmail } from '@/components/organizer/street-fair-preview';
 import { buildBulkSpotAssignmentEmail } from '@/lib/booth/bulk-spot-email';
+import { hasPlanFeature } from '@/lib/plan-gating';
+import { useOrganizerPlanId } from '@/lib/hooks/use-plan-id';
 import type { BoothKind, BoothSpace } from '@/lib/booth/street-fair-schema';
 import { Mail, Printer } from 'lucide-react';
 
@@ -23,6 +25,8 @@ interface PoolVendor {
 
 export function StreetFairBuilder({ eventId }: { eventId: string }) {
   const { surface, muted, heading, btnPrimary, btnSecondary, cardInset } = useOrganizerTheme();
+  const organizerPlanId = useOrganizerPlanId();
+  const canBulkEmail = hasPlanFeature(organizerPlanId, 'bulk_booth_email');
   const [layout, setLayout] = useState<StreetFairLayoutDefinition>(DEFAULT_STREET_FAIR_LAYOUT);
   const [booths, setBooths] = useState<BoothSpace[]>([]);
   const [pool, setPool] = useState<PoolVendor[]>([]);
@@ -518,14 +522,17 @@ export function StreetFairBuilder({ eventId }: { eventId: string }) {
               </button>
               <button
                 type="button"
+                disabled={!canBulkEmail}
+                title={canBulkEmail ? undefined : 'Upgrade to Organizer Pro for bulk booth emails'}
                 onClick={() => {
+                  if (!canBulkEmail) return;
                   const assigned = (booths.length ? booths : generateBoothInventory(layout)).filter(
                     b => b.vendorEmail
                   );
                   const mailto = buildBulkSpotAssignmentEmail(assigned, eventId);
                   if (mailto) window.location.href = mailto;
                 }}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold ${btnSecondary}`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold ${btnSecondary} disabled:opacity-40`}
               >
                 <Mail className="h-4 w-4" /> Email all assigned
               </button>

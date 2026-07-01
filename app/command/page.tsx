@@ -7,7 +7,7 @@ import { VendorFormSections } from '@/components/vendor/vendor-form-sections';
 import { VendorSetupPreview } from '@/components/vendor/vendor-setup-preview';
 import { SetupPhotoUpload } from '@/components/vendor/setup-photo-upload';
 import { useVendorTheme } from '@/components/vendor/use-vendor-theme';
-import { useDemoStore } from '@/contexts/demo-store-context';
+import { useVendorApplications } from '@/contexts/vendor-applications-context';
 import type { Application } from '@/lib/mock-data';
 import { missingDocuments, splitRequiredForms, type DocumentType } from '@/lib/documents';
 import {
@@ -25,11 +25,6 @@ const STEPS = [
   { key: 'paid', label: 'Paid' },
   { key: 'booked', label: 'Booked' },
 ] as const;
-
-function mockFileName(type: DocumentType, eventName: string) {
-  const slug = eventName.replace(/\s+/g, '_').slice(0, 20);
-  return `${type.toUpperCase()}_${slug}.pdf`;
-}
 
 function ApplicationCard({
   application,
@@ -165,7 +160,7 @@ function ApplicationCard({
 }
 
 export default function CommandCenterPage() {
-  const { applications, uploadApplicationDocument, updateApplication, updateSetupPhoto } = useDemoStore();
+  const { applications, refresh } = useVendorApplications();
   const { card, muted } = useVendorTheme();
   const [toast, setToast] = useState('');
 
@@ -174,20 +169,27 @@ export default function CommandCenterPage() {
     setTimeout(() => setToast(''), 4000);
   };
 
-  const handleUpload = (appId: string, type: DocumentType) => {
-    const app = applications.find(a => a.id === appId);
-    if (!app) return;
-    const result = uploadApplicationDocument(appId, type, mockFileName(type, app.eventName));
-    showToast(result.message);
+  const patchApplication = async (appId: string, body: Record<string, unknown>) => {
+    const res = await fetch(`/api/vendors/applications/${appId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (data.ok) await refresh();
+    return data;
   };
 
-  const handleMarkPaid = (appId: string) => {
-    updateApplication(appId, {
-      paid: true,
-      status: 'paid',
-      microStatus: 'Payment confirmed — awaiting booth assignment',
-    });
-    showToast('Payment recorded (demo)');
+  const handleUpload = async (appId: string, type: DocumentType) => {
+    const app = applications.find(a => a.id === appId);
+    if (!app) return;
+    const data = await patchApplication(appId, { uploadDocType: type });
+    showToast(data.ok ? `${type.toUpperCase()} uploaded` : data.error ?? 'Upload failed');
+  };
+
+  const handleMarkPaid = async (appId: string) => {
+    const data = await patchApplication(appId, { markPaid: true });
+    showToast(data.ok ? 'Payment recorded' : data.error ?? 'Update failed');
   };
 
   const needsAction = applications.filter(a => {
@@ -257,9 +259,9 @@ export default function CommandCenterPage() {
                 key={app.id}
                 application={app}
                 onUpload={handleUpload}
-                onSetupPhoto={(id, url) => {
-                  updateSetupPhoto(id, url);
-                  showToast(url ? 'Setup photo saved' : 'Setup photo removed');
+                onSetupPhoto={async (id, url) => {
+                  const data = await patchApplication(id, { setupPhotoUrl: url });
+                  showToast(data.ok ? (url ? 'Setup photo saved' : 'Setup photo removed') : 'Save failed');
                 }}
                 onMarkPaid={handleMarkPaid}
                 card={card}

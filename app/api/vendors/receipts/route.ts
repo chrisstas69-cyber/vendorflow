@@ -2,19 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
 import { getEffectiveDataSource } from '@/lib/pilot-config';
 import { prisma } from '@/lib/prisma';
-import { DEMO_VENDOR_EMAIL } from '@/lib/vendor-passport';
-import { verifySession, sessionCookieName } from '@/lib/auth/session';
-
-function resolveEmail(req: NextRequest) {
-  const token = req.cookies.get(sessionCookieName())?.value;
-  const session = token ? verifySession(token) : null;
-  if (session?.role === 'vendor') return session.email;
-  return DEMO_VENDOR_EMAIL;
-}
+import { resolveVendorEmail } from '@/lib/auth/resolve-vendor-email';
 
 export async function GET(req: NextRequest) {
   await ensurePlatformSeed();
-  const vendorEmail = resolveEmail(req);
+  const vendorEmail = resolveVendorEmail(req);
   const rows = await prisma.vendorReceipt.findMany({
     where: { vendorEmail },
     orderBy: { createdAt: 'desc' },
@@ -46,7 +38,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   await ensurePlatformSeed();
-  const vendorEmail = resolveEmail(req);
+  const vendorEmail = resolveVendorEmail(req);
   const body = await req.json();
   const passport = await prisma.vendorPassport.findUnique({
     where: { vendorEmail },

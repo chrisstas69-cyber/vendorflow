@@ -6,14 +6,15 @@ import {
   setVendorPlan,
 } from '@/lib/subscription-store';
 import { getActiveOrganizerId } from '@/lib/pilot-config';
+import { resolveVendorEmail } from '@/lib/auth/resolve-vendor-email';
 import { DEMO_VENDOR_EMAIL } from '@/lib/vendor-passport';
 
 export async function GET(req: NextRequest) {
   await ensurePlatformSeed();
   const { searchParams } = new URL(req.url);
-  const vendorEmail = searchParams.get('vendorEmail') ?? DEMO_VENDOR_EMAIL;
+  const vendorEmail = searchParams.get('vendorEmail') ?? resolveVendorEmail(req);
   const summary = await getSubscriptionSummary(vendorEmail);
-  return NextResponse.json({ ok: true, ...summary });
+  return NextResponse.json({ ok: true, summary });
 }
 
 /** POST { role, planId, email? } — skeleton plan selection (billing via Stripe when keys added) */
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'planId required' }, { status: 400 });
   }
   if (role === 'vendor') {
-    await setVendorPlan(body.email ?? DEMO_VENDOR_EMAIL, planId);
+    await setVendorPlan(body.email ?? resolveVendorEmail(req), planId);
   } else {
     await setOrganizerPlan(getActiveOrganizerId(), planId);
   }

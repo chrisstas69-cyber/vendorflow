@@ -4,9 +4,9 @@ import {
   createSessionPayload,
   sessionCookieName,
   signSession,
-  verifySession,
 } from '@/lib/auth/session';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
+import { ensurePassportForEmail } from '@/lib/vendor-applications-store';
 
 /** GET — verify magic link token and set session cookie */
 export async function GET(req: NextRequest) {
@@ -27,6 +27,10 @@ export async function GET(req: NextRequest) {
     where: { id: row.id },
     data: { usedAt: new Date() },
   });
+
+  if (row.role === 'vendor') {
+    await ensurePassportForEmail(row.email);
+  }
 
   const session = signSession(createSessionPayload(row.email, row.role as 'vendor' | 'organizer'));
   const dest = row.role === 'organizer' ? '/organizer' : '/pulse';

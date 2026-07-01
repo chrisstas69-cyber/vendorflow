@@ -3,11 +3,16 @@
 import { useEffect, useState } from 'react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { useVendorTheme } from '@/components/vendor/use-vendor-theme';
+import { hasPlanFeature } from '@/lib/plan-gating';
+import { useVendorPlanId } from '@/lib/hooks/use-plan-id';
+import { PlanGate } from '@/components/vendor/plan-gate';
 import type { VendorIntelSummary } from '@/lib/intel/vendor-intel-summary';
 import { Shield, AlertTriangle, DollarSign, MessageSquare, FileText } from 'lucide-react';
 
 export default function IntelligencePage() {
   const { card, cardInset, muted } = useVendorTheme();
+  const planId = useVendorPlanId();
+  const canAdvanced = hasPlanFeature(planId, 'advanced_intel');
   const [summary, setSummary] = useState<VendorIntelSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -79,19 +84,21 @@ export default function IntelligencePage() {
           </div>
         </div>
 
-        <div className={`rounded-2xl border p-5 mb-6 ${card}`}>
-          <h2 className="font-bold mb-4 flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-amber-500" /> Your earnings history
-          </h2>
-          <div className="grid sm:grid-cols-3 gap-3">
-            {summary.earningsPeer.map(item => (
-              <div key={item.label} className={`rounded-xl p-4 text-center ${cardInset}`}>
-                <div className={`text-xs ${muted} mb-1`}>{item.label}</div>
-                <div className="text-2xl font-bold text-amber-600">{item.value}</div>
-              </div>
-            ))}
+        <PlanGate feature="advanced_intel" allowed={canAdvanced}>
+          <div className={`rounded-2xl border p-5 mb-6 ${card}`}>
+            <h2 className="font-bold mb-4 flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-amber-500" /> Your earnings history
+            </h2>
+            <div className="grid sm:grid-cols-3 gap-3">
+              {summary.earningsPeer.map(item => (
+                <div key={item.label} className={`rounded-xl p-4 text-center ${cardInset}`}>
+                  <div className={`text-xs ${muted} mb-1`}>{item.label}</div>
+                  <div className="text-2xl font-bold text-amber-600">{item.value}</div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        </PlanGate>
 
         <div className={`rounded-2xl border p-5 mb-6 ${card}`}>
           <h2 className="font-bold mb-4 flex items-center gap-2">

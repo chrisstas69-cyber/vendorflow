@@ -7,15 +7,17 @@ import { TierBadge } from '@/components/tier-badge';
 import { WorthItBadge } from '@/components/vendor/worth-it-badge';
 import type { PlatformEvent } from '@/lib/platform-data';
 import { CATEGORY_LABELS } from '@/lib/platform-data';
+import { ApplicationStatusBadge } from '@/components/vendor/application-status-badge';
 
 interface VendorPulseCardProps {
   event: PlatformEvent;
   onApply?: (event: PlatformEvent) => void;
   applying?: boolean;
   inPipeline?: boolean;
+  applicationStatus?: string;
 }
 
-export function VendorPulseCard({ event, onApply, applying, inPipeline }: VendorPulseCardProps) {
+export function VendorPulseCard({ event, onApply, applying, inPipeline, applicationStatus }: VendorPulseCardProps) {
   const totalFees = event.boothFee + event.permitFee;
 
   return (
@@ -50,8 +52,9 @@ export function VendorPulseCard({ event, onApply, applying, inPipeline }: Vendor
           </span>
         </div>
 
-        <div className="mb-3">
+        <div className="mb-3 flex items-center gap-2 flex-wrap">
           <WorthItBadge event={event} compact />
+          {applicationStatus && <ApplicationStatusBadge status={applicationStatus} />}
         </div>
 
         <div className="grid grid-cols-3 gap-2 mb-3 text-center">
@@ -88,7 +91,7 @@ export function VendorPulseCard({ event, onApply, applying, inPipeline }: Vendor
           className="mt-auto w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-semibold text-sm bg-amber-400 hover:bg-amber-500 text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <DollarSign className="h-4 w-4" />
-          {inPipeline ? 'In your pipeline' : applying ? 'Adding…' : 'Add to pipeline'}
+          {inPipeline ? 'Applied' : applying ? 'Submitting…' : 'Apply now'}
         </button>
       </div>
     </div>

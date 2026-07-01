@@ -5,6 +5,9 @@ import { CheckSquare, Download, Plus, Printer, Trash2 } from 'lucide-react';
 import { useVendorTheme } from '@/components/vendor/use-vendor-theme';
 import { useEventDebrief } from '@/contexts/event-debrief-context';
 import { debriefsToCsv, downloadCsv, printLogbook } from '@/lib/event-debrief-export';
+import { hasPlanFeature } from '@/lib/plan-gating';
+import { useVendorPlanId } from '@/lib/hooks/use-plan-id';
+import { PlanGate } from '@/components/vendor/plan-gate';
 import type { ChecklistItem } from '@/lib/event-debrief-schema';
 
 interface SetupChecklistProps {
@@ -133,8 +136,10 @@ export function SetupChecklist({
 export function EventLogbookExport() {
   const { btnSecondary } = useVendorTheme();
   const { debriefs } = useEventDebrief();
+  const planId = useVendorPlanId();
+  const canExport = hasPlanFeature(planId, 'journal_analytics');
 
-  return (
+  const buttons = (
     <div className="flex gap-2">
       <button
         type="button"
@@ -154,5 +159,11 @@ export function EventLogbookExport() {
         <Printer className="h-4 w-4" /> Print book
       </button>
     </div>
+  );
+
+  return (
+    <PlanGate feature="journal_analytics" allowed={canExport}>
+      {buttons}
+    </PlanGate>
   );
 }

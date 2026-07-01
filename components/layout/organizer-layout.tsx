@@ -16,6 +16,8 @@ import {
   BookUser,
 } from 'lucide-react';
 import { RoleSwitcher } from '@/components/layout/role-switcher';
+import { AuthNav } from '@/components/layout/auth-nav';
+import { AuthNudgeBanner } from '@/components/layout/auth-nudge-banner';
 import { PublicThemeToggle } from '@/components/public/theme-toggle';
 import { useOrganizerTheme } from '@/components/organizer/use-organizer-theme';
 import { FoundersEditionBanner } from '@/components/founders/founders-banner';
@@ -101,9 +103,12 @@ export function OrganizerLayout({
           </div>
           <div className="flex items-center gap-2">
             <PublicThemeToggle compact />
+            <AuthNav accent="teal" compact />
             <RoleSwitcher variant="compact" accent="teal" />
           </div>
         </header>
+
+        <AuthNudgeBanner audience="organizer" />
 
         <div className={`lg:hidden overflow-x-auto border-b px-2 py-2 flex gap-1 ${t.sidebar} ${t.divider}`}>
           {NAV.map(({ href, label, match }) => (

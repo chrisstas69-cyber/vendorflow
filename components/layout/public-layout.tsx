@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Search, Sparkles, DollarSign } from 'lucide-react';
 import { RoleSwitcher } from '@/components/layout/role-switcher';
+import { AuthNav } from '@/components/layout/auth-nav';
 import { PublicThemeToggle } from '@/components/public/theme-toggle';
 import { useTheme } from '@/contexts/theme-context';
 
@@ -50,6 +51,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
           <div className="flex items-center gap-2 shrink-0">
             <PublicThemeToggle compact />
+            <AuthNav accent="amber" compact />
             <RoleSwitcher variant="compact" accent="amber" />
           </div>
         </div>

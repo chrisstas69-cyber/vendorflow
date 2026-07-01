@@ -243,6 +243,34 @@ export async function performApplicationActionDb(
     eventId: app.eventId,
   });
 
+  try {
+    const { queueEmail } = await import('@/lib/email-queue');
+    const org = await prisma.organizerAccount.findUnique({ where: { id: app.organizerId } });
+    const templateId =
+      action === 'accept'
+        ? 'application_approved'
+        : action === 'reject'
+          ? 'application_rejected'
+          : action === 'request_info'
+            ? 'info_requested'
+            : null;
+    if (templateId) {
+      await queueEmail({
+        templateId,
+        toEmail: app.vendorEmail,
+        applicationId: app.id,
+        organizerId: app.organizerId,
+        vars: {
+          vendorName: app.vendorName,
+          eventName: app.eventName,
+          organizerName: org?.organization,
+        },
+      });
+    }
+  } catch {
+    /* optional */
+  }
+
   await writeAuditLog({
     organizerId: app.organizerId,
     action: `application.${action}`,
@@ -270,6 +298,16 @@ export async function createApplicationDb(input: {
   setupPhotoUrl?: string;
 }) {
   await ensurePilotDbSeed();
+  const passport = await prisma.vendorPassport.upsert({
+    where: { vendorEmail: input.vendorEmail.toLowerCase().trim() },
+    create: {
+      vendorEmail: input.vendorEmail.toLowerCase().trim(),
+      businessName: input.vendorName,
+      contactName: input.vendorName,
+    },
+    update: {},
+  });
+
   const app = await prisma.vendorApplication.create({
     data: {
       organizerId: input.organizerId,
@@ -284,6 +322,7 @@ export async function createApplicationDb(input: {
       status: 'pending',
       hasInsurance: input.hasInsurance ?? false,
       setupPhotoUrl: input.setupPhotoUrl ?? null,
+      passportId: passport.id,
     },
     include: { boothAssignment: true },
   });

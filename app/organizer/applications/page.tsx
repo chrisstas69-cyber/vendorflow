@@ -228,7 +228,16 @@ export default function OrganizerApplicationsPage() {
             .then(msg => showToast(msg))
             .catch(e => showToast(e instanceof Error ? e.message : 'Request failed'));
         }}
-        onSendCe200={() => showToast('CE200 workflow — email integration pending')}
+        onSendCe200={id => {
+          void fetch('/api/organizer/applications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ submissionId: id, action: 'send_ce200' }),
+          })
+            .then(r => r.json())
+            .then(data => showToast(data.message ?? (data.ok ? 'CE200 queued' : data.error)))
+            .catch(e => showToast(e instanceof Error ? e.message : 'CE200 failed'));
+        }}
         onToggleShortlist={id => void toggleShortlist(id)}
         onToast={showToast}
         onSaveNote={async (submissionId, note) => {

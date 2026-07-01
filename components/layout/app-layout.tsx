@@ -13,8 +13,11 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@/contexts/theme-context';
 import { RoleSwitcher } from '@/components/layout/role-switcher';
+import { AuthNav } from '@/components/layout/auth-nav';
+import { AuthNudgeBanner } from '@/components/layout/auth-nudge-banner';
 import { PublicThemeToggle } from '@/components/public/theme-toggle';
 import { VendorPlanBadge } from '@/components/vendor/vendor-plan-badge';
+import { useVendorEmail } from '@/lib/hooks/use-vendor-email';
 
 const NAV = [
   { href: '/pulse', icon: Activity, label: 'Find Events' },
@@ -29,6 +32,7 @@ const NAV = [
 export function AppLayout({ children, title }: { children: React.ReactNode; title?: string }) {
   const pathname = usePathname();
   const { mode } = useTheme();
+  const { isSignedIn } = useVendorEmail();
   const dark = mode === 'night';
 
   const shell = dark ? 'bg-gray-950 text-gray-100' : 'bg-gray-50 text-gray-900';
@@ -84,9 +88,12 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
           <div className="hidden lg:block text-sm font-semibold">Vendor Hub</div>
           <div className="flex items-center gap-2">
             <PublicThemeToggle compact />
+            <AuthNav accent="amber" compact />
             <RoleSwitcher variant="compact" accent="amber" />
           </div>
         </header>
+
+        <AuthNudgeBanner audience="vendor" />
 
         <div className={`lg:hidden overflow-x-auto border-b px-2 py-2 flex gap-1 ${sidebar}`}>
           {NAV.map(({ href, label }) => (
@@ -113,7 +120,9 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
               : 'bg-amber-50 text-amber-800 border-amber-100'
           }`}
         >
-          Demo vendor tools — mock data active
+          {isSignedIn
+            ? 'Signed in — your applications and journal sync to your account'
+            : 'Demo mode — sign in to save your data across devices'}
         </div>
 
         {title && (

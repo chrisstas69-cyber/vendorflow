@@ -10,6 +10,7 @@ import {
 } from '@/lib/vendor-passport-store';
 import { loadPassportFromDb, persistPassportToDb } from '@/lib/vendor-passport-db';
 import { DEMO_VENDOR_EMAIL, validatePassport, type VendorPassport } from '@/lib/vendor-passport';
+import { resolveVendorEmail } from '@/lib/auth/resolve-vendor-email';
 
 async function hydratePassport(vendorEmail: string): Promise<VendorPassport> {
   const fromDb = await loadPassportFromDb(vendorEmail);
@@ -25,7 +26,7 @@ async function hydratePassport(vendorEmail: string): Promise<VendorPassport> {
 /** GET — read passport + validation for vendorEmail (defaults to demo vendor) */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const vendorEmail = searchParams.get('vendorEmail') ?? DEMO_VENDOR_EMAIL;
+  const vendorEmail = searchParams.get('vendorEmail') ?? resolveVendorEmail(req);
 
   const passport = await hydratePassport(vendorEmail);
   const validation = validatePassport(passport);
@@ -74,7 +75,7 @@ export async function POST(req: NextRequest) {
 /** PUT — partial update */
 export async function PUT(req: NextRequest) {
   const body = await req.json();
-  const vendorEmail = (body.vendorEmail as string) ?? DEMO_VENDOR_EMAIL;
+  const vendorEmail = (body.vendorEmail as string) ?? resolveVendorEmail(req);
 
   const { vendorEmail: _omit, ...patch } = body;
   const passport = updatePassport(vendorEmail, patch);
@@ -87,7 +88,7 @@ export async function PUT(req: NextRequest) {
 /** DELETE — remove passport */
 export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const vendorEmail = searchParams.get('vendorEmail') ?? DEMO_VENDOR_EMAIL;
+  const vendorEmail = searchParams.get('vendorEmail') ?? resolveVendorEmail(req);
 
   if (vendorEmail === DEMO_VENDOR_EMAIL) {
     return NextResponse.json({ ok: false, error: 'Cannot delete demo passport' }, { status: 403 });

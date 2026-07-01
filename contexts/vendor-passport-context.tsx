@@ -15,6 +15,7 @@ import {
   type PassportValidation,
   type VendorPassport,
 } from '@/lib/vendor-passport';
+import { useVendorEmail } from '@/lib/hooks/use-vendor-email';
 import type { DocumentType } from '@/lib/documents';
 
 const STORAGE_KEY = 'vendorflow-passport-v1';
@@ -73,6 +74,7 @@ export function VendorPassportProvider({ children }: { children: React.ReactNode
   const [ready, setReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const [passport, setPassport] = useState<VendorPassport>(mockVendorPassport);
+  const { vendorEmail, isSignedIn } = useVendorEmail();
 
   const validation = useMemo(() => validatePassport(passport), [passport]);
 
@@ -82,23 +84,23 @@ export function VendorPassportProvider({ children }: { children: React.ReactNode
   }, []);
 
   const refreshFromServer = useCallback(async () => {
-    const res = await fetch(`/api/vendors/passport?vendorEmail=${encodeURIComponent(DEMO_VENDOR_EMAIL)}`);
+    const res = await fetch(`/api/vendors/passport?vendorEmail=${encodeURIComponent(vendorEmail)}`);
     const data = await res.json();
     if (data.ok && data.passport) {
       applyPassport(data.passport);
     }
-  }, [applyPassport]);
+  }, [applyPassport, vendorEmail]);
 
   useEffect(() => {
     const local = readLocal();
-    if (local) {
+    if (local && !isSignedIn) {
       setPassport(local);
       syncToServer(local).catch(() => {});
-    } else {
+    } else if (!isSignedIn) {
       syncToServer(mockVendorPassport).catch(() => {});
     }
     refreshFromServer().finally(() => setReady(true));
-  }, [refreshFromServer]);
+  }, [refreshFromServer, vendorEmail, isSignedIn]);
 
   const persist = useCallback(
     async (patch: Partial<VendorPassport>) => {
@@ -163,7 +165,7 @@ export function VendorPassportProvider({ children }: { children: React.ReactNode
   const value = useMemo(
     () => ({
       ready,
-      vendorEmail: DEMO_VENDOR_EMAIL,
+      vendorEmail,
       passport,
       validation,
       saving,
@@ -176,6 +178,7 @@ export function VendorPassportProvider({ children }: { children: React.ReactNode
     }),
     [
       ready,
+      vendorEmail,
       passport,
       validation,
       saving,

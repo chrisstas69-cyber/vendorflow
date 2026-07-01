@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { FinancialRecord } from '@/lib/mock-data';
-import { DEMO_VENDOR_EMAIL } from '@/lib/vendor-passport';
+import { useVendorEmail } from '@/lib/hooks/use-vendor-email';
 import {
   financialFromRecord,
   recordFromFinancial,
@@ -40,9 +40,10 @@ function writeLocal(items: VendorFinancialRecord[]) {
 export function VendorFinancialProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [records, setRecords] = useState<VendorFinancialRecord[]>([]);
+  const { vendorEmail } = useVendorEmail();
 
   const refresh = useCallback(async () => {
-    const res = await fetch(`/api/vendors/financials?vendorEmail=${encodeURIComponent(DEMO_VENDOR_EMAIL)}`);
+    const res = await fetch(`/api/vendors/financials?vendorEmail=${encodeURIComponent(vendorEmail)}`);
     const data = await res.json();
     if (data.ok && Array.isArray(data.items)) {
       const local = readLocal();
@@ -59,13 +60,13 @@ export function VendorFinancialProvider({ children }: { children: React.ReactNod
       setRecords(merged);
       writeLocal(merged);
     }
-  }, []);
+  }, [vendorEmail]);
 
   useEffect(() => {
     const local = readLocal();
     if (local.length) setRecords(local);
     refresh().finally(() => setReady(true));
-  }, [refresh]);
+  }, [refresh, vendorEmail]);
 
   const upsertFinancial = useCallback(
     async (record: Omit<FinancialRecord, 'id'>, source: 'import' | 'quick-log' = 'import') => {
@@ -73,12 +74,12 @@ export function VendorFinancialProvider({ children }: { children: React.ReactNod
       const res = await fetch('/api/vendors/financials', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vendorEmail: DEMO_VENDOR_EMAIL, financial: input }),
+        body: JSON.stringify({ vendorEmail, financial: input }),
       });
       const data = await res.json();
       const saved: VendorFinancialRecord = data.financial ?? {
         id: `fin-${Date.now()}`,
-        vendorEmail: DEMO_VENDOR_EMAIL,
+        vendorEmail,
         ...input,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -93,7 +94,7 @@ export function VendorFinancialProvider({ children }: { children: React.ReactNod
       });
       return recordFromFinancial(saved);
     },
-    []
+    [vendorEmail]
   );
 
   const financials = useMemo(() => records.map(recordFromFinancial), [records]);

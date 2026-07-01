@@ -17,7 +17,7 @@ import {
   type EventDebriefRecord,
 } from '@/lib/event-debrief-schema';
 import { getPriorYearDebriefs } from '@/lib/event-debrief-export';
-import { DEMO_VENDOR_EMAIL } from '@/lib/vendor-passport';
+import { useVendorEmail } from '@/lib/hooks/use-vendor-email';
 
 const DEBRIEF_STORAGE_KEY = 'vendorflow-debriefs-v1';
 const CHECKLIST_TEMPLATE_KEY = 'vendorflow-checklist-template-v1';
@@ -100,6 +100,7 @@ export function EventDebriefProvider({ children }: { children: React.ReactNode }
   const [saving, setSaving] = useState(false);
   const [debriefs, setDebriefs] = useState<EventDebriefRecord[]>([]);
   const [checklistTemplate, setChecklistTemplate] = useState<ChecklistItem[]>(buildDefaultChecklist());
+  const { vendorEmail } = useVendorEmail();
 
   const applyDebriefs = useCallback((items: EventDebriefRecord[]) => {
     setDebriefs(items);
@@ -108,7 +109,7 @@ export function EventDebriefProvider({ children }: { children: React.ReactNode }
 
   const refreshFromServer = useCallback(async () => {
     const res = await fetch(
-      `/api/vendors/debriefs?vendorEmail=${encodeURIComponent(DEMO_VENDOR_EMAIL)}`
+      `/api/vendors/debriefs?vendorEmail=${encodeURIComponent(vendorEmail)}`
     );
     const data = await res.json();
     if (data.ok && Array.isArray(data.items)) {
@@ -116,20 +117,20 @@ export function EventDebriefProvider({ children }: { children: React.ReactNode }
       const merged = mergeDebriefLists(data.items as EventDebriefRecord[], local);
       applyDebriefs(merged);
     }
-  }, [applyDebriefs]);
+  }, [applyDebriefs, vendorEmail]);
 
   useEffect(() => {
     setChecklistTemplate(readChecklistTemplate());
     const local = readLocalDebriefs();
     if (local.length) setDebriefs(local);
     refreshFromServer().finally(() => setReady(true));
-  }, [refreshFromServer]);
+  }, [refreshFromServer, vendorEmail]);
 
   const upsertDebriefFn = useCallback(
     async (input: EventDebriefInput) => {
       setSaving(true);
       try {
-        const saved = await postDebrief(DEMO_VENDOR_EMAIL, input);
+        const saved = await postDebrief(vendorEmail, input);
         setDebriefs(prev => {
           const key = debriefKey(input.eventName, input.eventDate);
           const next = prev.filter(
@@ -144,7 +145,7 @@ export function EventDebriefProvider({ children }: { children: React.ReactNode }
         setSaving(false);
       }
     },
-    []
+    [vendorEmail]
   );
 
   const updateChecklist = useCallback(
@@ -201,7 +202,7 @@ export function EventDebriefProvider({ children }: { children: React.ReactNode }
       const now = new Date().toISOString();
       return {
         id: `draft-${opts.eventDate}`,
-        vendorEmail: DEMO_VENDOR_EMAIL,
+        vendorEmail,
         eventId: opts.eventId,
         applicationId: opts.applicationId,
         eventName: opts.eventName,

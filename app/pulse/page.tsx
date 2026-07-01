@@ -3,14 +3,20 @@
 import { useMemo, useState } from 'react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { VendorPulseCard } from '@/components/vendor/vendor-pulse-card';
+import { OnboardingChecklist } from '@/components/vendor/onboarding-checklist';
 import { useDemoStore } from '@/contexts/demo-store-context';
+import { useVendorPassport } from '@/contexts/vendor-passport-context';
+import { useVendorApplications } from '@/contexts/vendor-applications-context';
+import { submitVendorApplicationToOrganizer } from '@/lib/vendor-apply-api';
 import type { AlphaTier } from '@/lib/mock-data';
 import { CATEGORY_LABELS, type EventCategory } from '@/lib/platform-data';
 import { Filter, X } from 'lucide-react';
 import { useTheme } from '@/contexts/theme-context';
 
 export default function EventPulsePage() {
-  const { publishedEvents, applications, applyToEvent } = useDemoStore();
+  const { publishedEvents } = useDemoStore();
+  const { passport } = useVendorPassport();
+  const { applications, refresh, getPublicStatus } = useVendorApplications();
   const { mode } = useTheme();
   const dark = mode === 'night';
   const sidebar = dark ? 'border-gray-800 bg-gray-900/50' : 'border-gray-200 bg-white';
@@ -42,31 +48,31 @@ export default function EventPulsePage() {
       return a.dudRisk - b.dudRisk;
     });
 
-  const handleApply = (event: (typeof publishedEvents)[0]) => {
+  const handleApply = async (event: (typeof publishedEvents)[0]) => {
+    if (pipelineIds.has(event.id)) return;
     setApplyingId(event.id);
-    const result = applyToEvent({
-      id: event.id,
-      name: event.name,
-      date: event.date,
-      location: event.location,
-      tier: event.tier,
-      alphaScore: event.alphaScore,
-      familyDensity: event.familyDensity,
-      footTraffic: event.footTraffic,
-      boothFee: event.boothFee,
-      permitFee: event.permitFee,
-      roiMin: event.roiMin,
-      roiMax: event.roiMax,
-      dudRisk: event.dudRisk,
-      tags: event.tags,
-      description: event.description,
-    });
-    setMessage(result.message);
-    setApplyingId(null);
+    setMessage('');
+    try {
+      const result = await submitVendorApplicationToOrganizer(event, {
+        vendorEmail: passport.vendorEmail,
+        vendorName: passport.businessName || passport.contactName || 'Vendor',
+        category: event.category,
+        message: `Interested in ${event.name} via Event Pulse`,
+        hasInsurance: passport.documents.some(d => d.type === 'coi'),
+        setupPhotoUrl: passport.setupPhotoUrl,
+      });
+      setMessage(result.message);
+      if (result.ok) await refresh();
+    } catch {
+      setMessage('Network error — try again');
+    } finally {
+      setApplyingId(null);
+    }
   };
 
   return (
     <AppLayout>
+      <OnboardingChecklist />
       <div className="flex flex-col lg:flex-row min-h-0">
         {showFilters && (
           <aside className={`w-full lg:w-72 border-b lg:border-b-0 lg:border-r p-4 shrink-0 ${sidebar}`}>
@@ -137,7 +143,7 @@ export default function EventPulsePage() {
             <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 text-sm">
               <div className="font-semibold mb-1">{filteredEvents.length} events match</div>
               <div className="text-gray-600 dark:text-gray-400 text-xs">
-                {pipelineIds.size} in your pipeline
+                {pipelineIds.size} application{pipelineIds.size === 1 ? '' : 's'} submitted
               </div>
             </div>
           </aside>
@@ -149,7 +155,7 @@ export default function EventPulsePage() {
               <div>
                 <h1 className="text-2xl font-bold">Find your next event</h1>
                 <p className={`text-sm mt-1 ${muted}`}>
-                  Browse fairs, car shows, festivals &amp; markets — add good fits to your pipeline
+                  Apply directly — submissions land in the organizer inbox
                 </p>
               </div>
               {!showFilters && (
@@ -177,6 +183,7 @@ export default function EventPulsePage() {
                 onApply={handleApply}
                 applying={applyingId === event.id}
                 inPipeline={pipelineIds.has(event.id)}
+                applicationStatus={getPublicStatus(event.id)}
               />
             ))}
           </div>

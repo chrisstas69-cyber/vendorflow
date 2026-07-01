@@ -32,6 +32,10 @@ export function inboxItemToVendorSubmission(item: OrganizerApplicationInboxItem)
     boothId: item.boothId,
     paymentStatus: item.paymentStatus,
     contractStatus: item.contractStatus,
+    ce200SentAt:
+      item.contractStatus !== 'unsigned'
+        ? item.submittedAt
+        : undefined,
     applicationId: item.id,
     internalNotes: item.internalNotes,
   };

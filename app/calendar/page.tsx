@@ -10,9 +10,11 @@ import { QuickLogSaleDialog } from '@/components/quick-log-sale-dialog';
 import { useVendorTheme } from '@/components/vendor/use-vendor-theme';
 import { mockCalendarEvents } from '@/lib/mock-data';
 import { useDemoStore } from '@/contexts/demo-store-context';
+import { useVendorApplications } from '@/contexts/vendor-applications-context';
 import { useEventDebrief } from '@/contexts/event-debrief-context';
 import { useVendorFinancial } from '@/contexts/vendor-financial-context';
 import { getVendorBookedEvents } from '@/lib/vendor-booked-events';
+import { ApplicationStatusBadge } from '@/components/vendor/application-status-badge';
 import {
   ChevronLeft,
   ChevronRight,
@@ -21,7 +23,9 @@ import {
 } from 'lucide-react';
 
 export default function CalendarOpsPage() {
-  const { applications } = useDemoStore();
+  const { applications: demoApps } = useDemoStore();
+  const { applications: dbApps, getPublicStatus } = useVendorApplications();
+  const applications = dbApps.length > 0 ? dbApps : demoApps;
   const { upsertFinancial } = useVendorFinancial();
   const { getOrCreateDebriefDraft, getDebriefForEvent, upsertDebrief, mergeFinancial } =
     useEventDebrief();
@@ -182,11 +186,16 @@ export default function CalendarOpsPage() {
                     {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                   </div>
                   <h3 className="font-bold text-lg mt-1">{selectedEvent.name}</h3>
-                  <span className={`inline-block mt-2 text-xs font-semibold px-2 py-1 rounded-full ${
-                    selectedEvent.status === 'completed' ? 'bg-green-500/15 text-green-700' : 'bg-amber-500/15 text-amber-700'
-                  }`}>
-                    {selectedEvent.status}
-                  </span>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <span className={`inline-block text-xs font-semibold px-2 py-1 rounded-full ${
+                      selectedEvent.status === 'completed' ? 'bg-green-500/15 text-green-700' : 'bg-amber-500/15 text-amber-700'
+                    }`}>
+                      {selectedEvent.status}
+                    </span>
+                    {selectedBooked?.eventId && getPublicStatus(selectedBooked.eventId) && (
+                      <ApplicationStatusBadge status={getPublicStatus(selectedBooked.eventId)} />
+                    )}
+                  </div>
                 </div>
 
                 <PriorYearPanel eventName={selectedEvent.name} eventDate={selectedDate} />

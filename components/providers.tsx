@@ -7,6 +7,7 @@ import { EventDebriefProvider } from '@/contexts/event-debrief-context';
 import { VendorFinancialProvider } from '@/contexts/vendor-financial-context';
 import { RoleProvider } from '@/contexts/role-context';
 import { VendorPassportProvider } from '@/contexts/vendor-passport-context';
+import { VendorApplicationsProvider } from '@/contexts/vendor-applications-context';
 import { OrganizerProvider } from '@/contexts/organizer-context';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -18,7 +19,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <DemoStoreProvider>
               <VendorFinancialProvider>
                 <EventDebriefProvider>
-                  <VendorPassportProvider>{children}</VendorPassportProvider>
+                  <VendorApplicationsProvider>
+                    <VendorPassportProvider>{children}</VendorPassportProvider>
+                  </VendorApplicationsProvider>
                 </EventDebriefProvider>
               </VendorFinancialProvider>
             </DemoStoreProvider>

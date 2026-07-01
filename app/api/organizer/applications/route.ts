@@ -9,6 +9,7 @@ import type { InboxAction } from '@/lib/organizer-schema';
 import type { OrganizerPipelineStage } from '@/lib/organizer-schema';
 import { getActiveOrganizerId, getEffectiveDataSource, getPilotDataSource } from '@/lib/pilot-config';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
+import { sendCe200FromDb } from '@/lib/vendor-applications-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { submissionId, action, reset, create } = body as {
     submissionId?: string;
-    action?: InboxAction;
+    action?: InboxAction | 'send_ce200';
     reset?: boolean;
     create?: {
       eventId: string;
@@ -75,7 +76,38 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    try {
+      const { queueEmail } = await import('@/lib/email-queue');
+      const { PILOT_ORGANIZER } = await import('@/lib/pilot-config');
+      await queueEmail({
+        templateId: 'application_received',
+        toEmail: create.vendorEmail,
+        applicationId: item.id,
+        organizerId: getActiveOrganizerId(),
+        vars: {
+          vendorName: create.vendorName,
+          eventName: create.eventName,
+          organizerName: PILOT_ORGANIZER.organization,
+        },
+      });
+    } catch {
+      /* queue optional */
+    }
+
     return NextResponse.json({ ok: true, item }, { status: 201 });
+  }
+
+  if (action === 'send_ce200' && submissionId) {
+    const result = await sendCe200FromDb(submissionId);
+    if (!result.ok) {
+      return NextResponse.json(result, { status: 404 });
+    }
+    return NextResponse.json({
+      ok: true,
+      application: result.application,
+      message: 'CE200 queued — email sends when RESEND_API_KEY is set',
+    });
   }
 
   if (!submissionId || !action) {
@@ -86,11 +118,11 @@ export async function POST(req: NextRequest) {
   }
 
   const valid: InboxAction[] = ['accept', 'waitlist', 'request_info', 'reject'];
-  if (!valid.includes(action)) {
+  if (!valid.includes(action as InboxAction)) {
     return NextResponse.json({ ok: false, error: 'Invalid action' }, { status: 400 });
   }
 
-  const result = await resolveApplicationActionAsync(submissionId, action);
+  const result = await resolveApplicationActionAsync(submissionId, action as InboxAction);
   if (!result.ok) {
     return NextResponse.json(result, { status: 404 });
   }
