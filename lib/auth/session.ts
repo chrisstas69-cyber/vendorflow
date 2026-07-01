@@ -66,6 +66,23 @@ export function buildMagicLinkUrl(token: string, origin: string): string {
   return `${origin.replace(/\/$/, '')}/api/auth/verify?token=${encodeURIComponent(token)}`;
 }
 
+/** Prefer env, then request Origin/Host — avoids localhost links in production. */
+export function resolveAppOrigin(headers: Headers): string {
+  const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (fromEnv) return fromEnv.replace(/\/$/, '');
+
+  const origin = headers.get('origin')?.trim();
+  if (origin) return origin.replace(/\/$/, '');
+
+  const host = headers.get('x-forwarded-host') ?? headers.get('host');
+  if (host) {
+    const proto = headers.get('x-forwarded-proto') ?? 'https';
+    return `${proto}://${host}`.replace(/\/$/, '');
+  }
+
+  return 'http://localhost:3002';
+}
+
 export function canSendEmail(): boolean {
   return Boolean(process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY);
 }

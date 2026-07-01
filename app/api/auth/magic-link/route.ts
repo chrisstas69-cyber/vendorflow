@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   buildMagicLinkUrl,
   canSendEmail,
-  createSessionPayload,
   generateMagicToken,
   magicLinkExpiresAt,
-  sessionCookieName,
-  signSession,
+  resolveAppOrigin,
   type AuthRole,
 } from '@/lib/auth/session';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
@@ -30,8 +28,7 @@ export async function POST(req: NextRequest) {
     data: { email, role, token, expiresAt: magicLinkExpiresAt() },
   });
 
-  const origin = req.headers.get('origin') ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3002';
-  const link = buildMagicLinkUrl(token, origin);
+  const link = buildMagicLinkUrl(token, resolveAppOrigin(req.headers));
 
   if (canSendEmail() && process.env.RESEND_API_KEY) {
     try {
