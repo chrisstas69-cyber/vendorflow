@@ -173,10 +173,12 @@ export function buildApplicationDetail(
       };
     }),
     history,
-    internalNotes: sub.infoRequested
-      ? ['Info requested — awaiting vendor reply']
-      : sub.shortlisted
-        ? ['Shortlisted by organizer']
-        : [],
+    internalNotes: sub.internalNotes
+      ? sub.internalNotes.split('\n').filter(Boolean)
+      : sub.infoRequested
+        ? ['Info requested — awaiting vendor reply']
+        : sub.shortlisted
+          ? ['Shortlisted by organizer']
+          : [],
   };
 }

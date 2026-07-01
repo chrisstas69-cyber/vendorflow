@@ -28,6 +28,8 @@ export interface CheckoutSessionRequest {
   successUrl: string;
   cancelUrl: string;
   payerEmail?: string;
+  amountCents?: number;
+  description?: string;
 }
 
 export interface CheckoutSessionResult {

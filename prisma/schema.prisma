@@ -67,6 +67,8 @@ model VendorApplication {
   paymentStatus  String @default("none") // none | invoiced | partial | paid
   contractStatus String @default("unsigned") // unsigned | sent | signed
 
+  internalNotes String @default("")
+
   passportId String?
   passport   VendorPassport? @relation(fields: [passportId], references: [id], onDelete: SetNull)
 
@@ -226,6 +228,7 @@ model VendorPassport {
   complianceScore Int       @default(0)
   insuranceExpiry DateTime?
   setupPhotoUrl   String?
+  planId          String    @default("vendor-free")
 
   // Trailer & booth logistics
   vehicleType      String  @default("tent-only") // tent-only | van | trailer | food-truck | other
@@ -243,6 +246,8 @@ model VendorPassport {
   applications VendorApplication[]
   galleryItems GalleryItem[]
   debriefs     EventDebrief[]
+  financials   VendorFinancial[]
+  receipts     VendorReceipt[]
 
   @@index([validationState])
 }
@@ -290,6 +295,63 @@ model EventDebrief {
   @@unique([vendorEmail, eventName, eventDate])
   @@index([vendorEmail, eventDate])
   @@index([vendorPassportId])
+}
+
+model VendorFinancial {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vendorPassportId String?
+  passport         VendorPassport? @relation(fields: [vendorPassportId], references: [id], onDelete: Cascade)
+  vendorEmail      String
+
+  eventId   String?
+  eventName String
+  eventDate String
+
+  grossSalesCents Int
+  expensesCents   Int
+  netProfitCents  Int
+  marginBps       Int
+  breakEvenHour   String?
+  bestHour        String?
+  cashPercent     Int?
+  cardPercent     Int?
+  source          String @default("import")
+
+  @@unique([vendorEmail, eventName, eventDate])
+  @@index([vendorEmail, eventDate])
+}
+
+model VendorReceipt {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  vendorPassportId String?
+  passport         VendorPassport? @relation(fields: [vendorPassportId], references: [id], onDelete: Cascade)
+  vendorEmail      String
+
+  category    String
+  amountCents Int    @default(0)
+  fileName    String?
+  imageData   String?
+  notes       String @default("")
+
+  @@index([vendorEmail])
+}
+
+model MagicLinkToken {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  email     String
+  role      String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  @@index([email])
 }
 
 model VendorDocument {

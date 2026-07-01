@@ -1,35 +1,60 @@
-# VendorFlow OS — Project Map
+# VendorFlow OS — Project Map (v3)
 
-## Repos (unified here)
+## Architecture
 
-| Path | Role |
-|------|------|
-| `app/` | Next.js UI + API routes |
-| `lib/scraper/` | 28 NY/NJ event scrapers |
-| `lib/db.ts` | SQLite event store |
-| `lib/airtable.ts` | Airtable REST client |
-| `airtable/` | File 3/4 scripts + FIELD_CONTRACT |
-
-## External references
-
-- **NotebookLM:** [VendorFlow OS doctrine](https://notebooklm.google.com/notebook/f460b011-4aaa-4e57-b8d1-7d2661a94d28)
-- **Figma Make:** [Build VendorFlow OS v2](https://www.figma.com/make/e5a0Y0ayLc6Th6M3exIC6M/Build-VendorFlow-OS-v2)
+```
+Public discover     →  SQLite scraper (data/events.db) + mockPlatformEvents
+Organizer pilot     →  Neon Postgres (Prisma) when PILOT_DATA_SOURCE=db
+Vendor logbook      →  EventDebrief + VendorFinancial + VendorReceipt (Postgres)
+Vendor demo cache   →  localStorage + API sync
+Auth                →  Magic link (/login) → session cookie
+Payments            →  Stripe emulator OR live Stripe when STRIPE_SECRET_KEY set
+```
 
 ## Screen map
 
-| Route | Screen | Data source |
-|-------|--------|-------------|
-| `/` | Event Pulse | SQLite `events` |
-| `/intelligence` | Vendor Intelligence | Airtable `Event_Leads` |
-| `/command` | Command Center | Airtable `Event_Leads` |
-| `/calendar` | Calendar Ops | SQLite week view |
-| `/journal` | Financial Journal | Airtable `Event_History` |
-| `/events/scrape` | Run scrapers | SQLite |
-| `/setup` | API keys | `.env.local` |
+| Route | Screen | Data |
+|-------|--------|------|
+| `/discover` | Event discovery | SQLite + platform events |
+| `/events/[id]` | Event detail + apply | Apply → `POST /api/organizer/applications` |
+| `/login` | Magic-link auth | `MagicLinkToken` in Postgres |
+| `/pulse` | Vendor find events | Demo store (local) |
+| `/calendar` | Booked events, weather, checklist, log | EventDebrief + Open-Meteo |
+| `/journal` | Ledger + logbook export | VendorFinancial + EventDebrief |
+| `/intelligence` | Dud risk from your history | `/api/intel/summary` |
+| `/command` | Vendor paperwork pipeline | Demo store |
+| `/vendor` | Passport | Prisma VendorPassport |
+| `/organizer` | Dashboard pipeline | Prisma applications |
+| `/organizer/applications` | Inbox + internal notes | VendorApplication |
+| `/organizer/booths` | Grid + Street Fair + bulk email | BoothMap |
+| `/organizer/contacts` | Ops directory | OpsOrganization |
+| `/pricing` | Plan selection | `/api/subscription` |
 
-## Airtable setup
+## API highlights
 
-```bash
-npm run airtable:setup   # creates tables if base is empty
-npm run airtable:verify  # checks schema + connection
-```
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/pilot` | DB mode health |
+| `POST /api/organizer/applications` `{ create }` | Vendor apply → inbox |
+| `POST /api/auth/magic-link` | Request sign-in |
+| `GET /api/auth/verify?token=` | Complete sign-in |
+| `GET/POST /api/vendors/debriefs` | Event logbook |
+| `GET/POST /api/vendors/financials` | Journal ledger |
+| `GET/POST /api/vendors/receipts` | Receipt vault uploads |
+| `GET /api/intel/summary` | Vendor intel from logbook |
+| `POST /api/subscription` | Plan skeleton |
+| `POST /api/payments/checkout` | Invoice pay (emulator or Stripe) |
+
+## Legacy (API only, no UI)
+
+- Airtable `/api/pipeline`, `/api/history` — cron engines; not used by current UI
+
+## Repo layout
+
+| Path | Role |
+|------|------|
+| `app/` | Next.js pages + API routes |
+| `lib/` | Business logic, Prisma stores, pilot adapter |
+| `prisma/` | Postgres schema + migrations |
+| `contexts/` | React providers (auth, debrief, financials) |
+| `docs/DATABASE-NEON.md` | Operator cutover guide |

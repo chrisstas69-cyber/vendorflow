@@ -1,20 +1,41 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { useVendorTheme } from '@/components/vendor/use-vendor-theme';
-import { Shield, AlertTriangle, DollarSign, MessageSquare, FileText, TrendingUp } from 'lucide-react';
+import type { VendorIntelSummary } from '@/lib/intel/vendor-intel-summary';
+import { Shield, AlertTriangle, DollarSign, MessageSquare, FileText } from 'lucide-react';
 
 export default function IntelligencePage() {
-  const { card, cardInset, muted, btnPrimary, btnSecondary } = useVendorTheme();
-  const trustScore = 87;
-  const dudRisk = 12;
+  const { card, cardInset, muted } = useVendorTheme();
+  const [summary, setSummary] = useState<VendorIntelSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/intel/summary')
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) setSummary(data.summary);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading || !summary) {
+    return (
+      <AppLayout>
+        <div className="max-w-5xl mx-auto p-6 text-sm text-gray-500">Loading intel from your logbook…</div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
       <div className="max-w-5xl mx-auto p-4 md:p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Intel</h1>
-          <p className={`text-sm mt-1 ${muted}`}>Trust scores, risk analysis, and what vendors like you earn</p>
+          <p className={`text-sm mt-1 ${muted}`}>
+            From your passport, logbook, and event history — not generic demo numbers
+          </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-4 mb-6">
@@ -23,14 +44,11 @@ export default function IntelligencePage() {
               <Shield className="h-8 w-8 text-amber-500" />
               <div>
                 <div className={`text-sm ${muted}`}>Trust score</div>
-                <div className="text-4xl font-bold text-amber-500">{trustScore}</div>
+                <div className="text-4xl font-bold text-amber-500">{summary.trustScore}</div>
               </div>
             </div>
-            <div className="h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
-              <div className="h-full bg-amber-400 rounded-full" style={{ width: `${trustScore}%` }} />
-            </div>
-            <p className={`text-xs mt-2 ${muted}`}>
-              24 completed events · 3 verified reviews · 100% payment history
+            <p className={`text-xs ${muted}`}>
+              {summary.completedEvents} logged events · passport + debrief data
             </p>
           </div>
 
@@ -39,13 +57,10 @@ export default function IntelligencePage() {
               <AlertTriangle className="h-8 w-8 text-red-500" />
               <div>
                 <div className={`text-sm ${muted}`}>Dud risk</div>
-                <div className="text-4xl font-bold text-red-500">{dudRisk}%</div>
+                <div className="text-4xl font-bold text-red-500">{summary.dudRisk}%</div>
               </div>
             </div>
-            <div className="h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
-              <div className="h-full bg-red-400 rounded-full" style={{ width: `${dudRisk}%` }} />
-            </div>
-            <p className={`text-xs mt-2 ${muted}`}>Low risk · 0 disputed fees · 0 canceled events</p>
+            <p className={`text-xs ${muted}`}>Based on margins, crowd ratings, and rain days in your log</p>
           </div>
         </div>
 
@@ -54,11 +69,7 @@ export default function IntelligencePage() {
             <AlertTriangle className="h-4 w-4 text-amber-500" /> Risk breakdown
           </h2>
           <div className="grid sm:grid-cols-3 gap-3">
-            {[
-              { label: 'Organizer reliability', value: '95%', note: 'Verified track record' },
-              { label: 'Fee transparency', value: '100%', note: 'All fees disclosed' },
-              { label: 'Cancellation history', value: '8%', note: '2 of 25 canceled' },
-            ].map(item => (
+            {summary.riskBreakdown.map(item => (
               <div key={item.label} className={`rounded-xl p-4 ${cardInset}`}>
                 <div className={`text-xs ${muted} mb-1`}>{item.label}</div>
                 <div className="text-xl font-bold text-green-600">{item.value}</div>
@@ -70,48 +81,13 @@ export default function IntelligencePage() {
 
         <div className={`rounded-2xl border p-5 mb-6 ${card}`}>
           <h2 className="font-bold mb-4 flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-amber-500" /> Vendors like you earned
+            <DollarSign className="h-4 w-4 text-amber-500" /> Your earnings history
           </h2>
           <div className="grid sm:grid-cols-3 gap-3">
-            {[
-              { label: 'Average net', value: '$1,245' },
-              { label: 'Top performer', value: '$2,840' },
-              { label: 'Median ROI', value: '325%' },
-            ].map(item => (
+            {summary.earningsPeer.map(item => (
               <div key={item.label} className={`rounded-xl p-4 text-center ${cardInset}`}>
                 <div className={`text-xs ${muted} mb-1`}>{item.label}</div>
                 <div className="text-2xl font-bold text-amber-600">{item.value}</div>
-              </div>
-            ))}
-          </div>
-          <p className={`text-xs mt-3 ${muted}`}>47 toy vendors at similar events · last 90 days</p>
-        </div>
-
-        <div className={`rounded-2xl border p-5 mb-6 ${card}`}>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" /> Field reports
-            </h2>
-            <span className={`text-xs ${muted}`}>Last 30 days</span>
-          </div>
-          <div className="space-y-3">
-            {[
-              { vendor: 'ToyVendor_23', event: 'Spring Family Festival', tier: 'S-Tier', profit: '$2,150', comment: 'Foot traffic as advertised. Sold out by 2pm.' },
-              { vendor: 'FunTimes_Vendor', event: 'Kids Carnival Weekend', tier: 'A-Tier', profit: '$1,620', comment: 'Dense family crowd, great margins.' },
-              { vendor: 'PlayZone_Solo', event: 'Community Market Days', tier: 'B-Tier', profit: '$780', comment: 'Slower morning, picked up after lunch.' },
-            ].map(report => (
-              <div key={report.vendor} className={`rounded-xl p-4 ${cardInset}`}>
-                <div className="flex justify-between mb-1">
-                  <div>
-                    <div className="font-semibold text-sm">{report.vendor}</div>
-                    <div className={`text-xs ${muted}`}>{report.event}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-bold text-amber-600">{report.tier}</div>
-                    <div className="text-xs font-semibold">{report.profit}</div>
-                  </div>
-                </div>
-                <p className="text-sm">{report.comment}</p>
               </div>
             ))}
           </div>
@@ -119,27 +95,33 @@ export default function IntelligencePage() {
 
         <div className={`rounded-2xl border p-5 mb-6 ${card}`}>
           <h2 className="font-bold mb-4 flex items-center gap-2">
-            <FileText className="h-4 w-4" /> Organizer transparency
+            <MessageSquare className="h-4 w-4" /> Field reports (your logbook)
           </h2>
-          <div className="space-y-2">
-            {['Fee structure published', 'Refund policy clear', 'Historical data available', 'Setup time confirmed'].map(
-              label => (
-                <div key={label} className={`flex justify-between rounded-lg px-3 py-2 ${cardInset}`}>
-                  <span className="text-sm">{label}</span>
-                  <span className="text-sm font-semibold text-green-600">Yes</span>
+          <div className="space-y-3">
+            {summary.fieldReports.length ? summary.fieldReports.map(report => (
+              <div key={`${report.eventName}-${report.date}`} className={`rounded-xl p-4 ${cardInset}`}>
+                <div className="flex justify-between mb-1">
+                  <div>
+                    <div className="font-semibold text-sm">{report.eventName}</div>
+                    <div className={`text-xs ${muted}`}>{report.date}{report.weather ? ` · ${report.weather}` : ''}</div>
+                  </div>
+                  <div className="text-sm font-bold text-amber-600">${report.profit.toLocaleString()}</div>
                 </div>
-              )
+                <p className="text-sm">{report.notes}</p>
+              </div>
+            )) : (
+              <p className={`text-sm ${muted}`}>Log events on Calendar or Journal to build field reports.</p>
             )}
           </div>
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-3">
-          <button type="button" className={`rounded-xl py-3 px-4 ${btnPrimary}`}>
-            Event chat
-          </button>
-          <button type="button" className={`rounded-xl py-3 px-4 border ${btnSecondary}`}>
-            Submit after-action report
-          </button>
+        <div className={`rounded-2xl border p-5 ${card}`}>
+          <h2 className="font-bold mb-4 flex items-center gap-2">
+            <FileText className="h-4 w-4" /> Tip
+          </h2>
+          <p className={`text-sm ${muted}`}>
+            Dud risk drops when you log weather, crowd, and money after every fair. Your logbook powers this page.
+          </p>
         </div>
       </div>
     </AppLayout>

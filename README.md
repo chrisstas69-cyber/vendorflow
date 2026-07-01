@@ -1,10 +1,10 @@
 # VendorFlow OS
 
-Event vendor intelligence for NY/NJ street fair operators — discovery, pipeline, deadlines, and profit tracking.
+Three-sided marketplace for Long Island street fairs — **organizer pilot** (Neon Postgres) + **vendor hub** (logbook, journal, intel).
 
-> **Repository:** This repo is **VendorFlow only**. The separate NY/NJ event scanner lives in [`ny-nj-event-tracker`](https://github.com/chrisstas69-cyber/ny-nj-event-tracker) on branch `main`.
-
-**Production:** https://vendorflow-mu.vercel.app
+**Production:** https://vendorflow-mu.vercel.app  
+**Repo:** [`vendorflow`](https://github.com/chrisstas69-cyber/vendorflow)  
+**Event scraper (separate):** [`ny-nj-event-tracker`](https://github.com/chrisstas69-cyber/ny-nj-event-tracker)
 
 ## Quick start
 
@@ -16,42 +16,37 @@ npm run dev
 
 Open **http://localhost:3002**
 
-## Setup (required)
+## Environment (production)
 
-1. Go to **http://localhost:3002/setup**
-2. Add **Airtable PAT** (starts with `pat`) and **Base ID** (starts with `app`)
-3. Run schema setup:
+See `docs/DATABASE-NEON.md` for Neon cutover. Key vars:
 
-```bash
-npm run airtable:setup
-npm run airtable:verify
-```
+| Variable | Purpose |
+|----------|---------|
+| `DATABASE_URL` / `DIRECT_URL` | Neon Postgres |
+| `PILOT_DATA_SOURCE=db` | Durable organizer + vendor logbook data |
+| `AUTH_SECRET` | Magic-link session signing |
+| `RESEND_API_KEY` + `RESEND_FROM` | Email magic links (optional — dev shows link on screen) |
+| `STRIPE_SECRET_KEY` | Live checkout (optional — emulator without it) |
+| `CLAUDE_API_KEY` | AI assistant + intel |
 
-4. In Airtable, add automation: daily 8 AM → paste `airtable/file3_airtable_deadline_engine.js`
+## Main routes
 
-See `airtable/AIRTABLE-SETUP.md` for full instructions.
+| Audience | Routes |
+|----------|--------|
+| **Public** | `/discover`, `/events/[id]`, `/pricing`, `/login` |
+| **Vendor** | `/pulse`, `/calendar`, `/journal`, `/intelligence`, `/command`, `/vendor` |
+| **Organizer** | `/organizer`, `/organizer/applications`, `/organizer/booths`, `/organizer/contacts` |
 
-## Screens
+## Health check
 
-| Route | Purpose |
-|-------|---------|
-| `/` | Event Pulse — scraped events, add to pipeline |
-| `/intelligence` | Graded leads (S/A/B/C) |
-| `/command` | Deadline queue |
-| `/calendar` | This week's events |
-| `/journal` | Post-event profit log |
-| `/events/scrape` | Run scrapers |
+`GET /api/pilot` — shows `effectiveDataSource` (`seed` vs `db`).
 
-## Optional
+## Deploy
 
-Google Sheets + email digest — configure at `/setup` when ready.
+Vercel runs `scripts/vercel-build.mjs` (migrate + build). Push to `main` to deploy.
 
-## Deploy (Vercel)
+## Docs
 
-Set env vars: `AIRTABLE_PAT`, `AIRTABLE_BASE_ID`, `CRON_SECRET`
-
-Cron jobs: scrape 6 AM, engines 8 AM (see `vercel.json`).
-
-## Project map
-
-See `PROJECT-MAP.md`
+- `PROJECT-MAP.md` — architecture map  
+- `docs/DATABASE-NEON.md` — Postgres pilot  
+- `DEPLOYMENT.md` — Vercel env

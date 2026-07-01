@@ -54,6 +54,8 @@ export async function POST(req: NextRequest) {
       category: string;
       message?: string;
       requiredForms?: string[];
+      hasInsurance?: boolean;
+      setupPhotoUrl?: string;
     };
   };
 
@@ -69,7 +71,7 @@ export async function POST(req: NextRequest) {
     });
     if (!item) {
       return NextResponse.json(
-        { ok: false, error: 'Create requires PILOT_DATA_SOURCE=db' },
+        { ok: false, error: 'Could not create application' },
         { status: 400 }
       );
     }

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   resolveApplicationByIdAsync,
-  resolveCreateApplicationAsync,
+  resolveAppendInternalNoteAsync,
 } from '@/lib/pilot-data-adapter';
-import { getActiveOrganizerId, getEffectiveDataSource } from '@/lib/pilot-config';
+import { getActiveOrganizerId } from '@/lib/pilot-config';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
 
 export const dynamic = 'force-dynamic';
@@ -22,24 +22,41 @@ export async function GET(
   return NextResponse.json({ ok: true, item });
 }
 
-/** PATCH — update application fields (db mode) */
+/** PATCH — update application fields */
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   await ensurePlatformSeed();
-
-  if (getEffectiveDataSource() !== 'db') {
-    return NextResponse.json(
-      { ok: false, error: 'Application updates require PILOT_DATA_SOURCE=db' },
-      { status: 400 }
-    );
-  }
-
   const body = await req.json();
-  const { prisma } = await import('@/lib/prisma');
   const organizerId = getActiveOrganizerId();
 
+  if (body.appendInternalNote) {
+    const item = await resolveAppendInternalNoteAsync(params.id, String(body.appendInternalNote));
+    if (!item) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+    return NextResponse.json({ ok: true, item });
+  }
+
+  const { getEffectiveDataSource } = await import('@/lib/pilot-config');
+  if (getEffectiveDataSource() !== 'db') {
+    const { appendInternalNoteSeed } = await import('@/lib/organizer-server-store');
+    if (body.shortlisted !== undefined) {
+      const { getServerSubmissions, syncServerSubmissions } = await import('@/lib/organizer-server-store');
+      const subs = getServerSubmissions();
+      const idx = subs.findIndex(s => s.id === params.id);
+      if (idx >= 0) {
+        subs[idx] = { ...subs[idx], shortlisted: body.shortlisted };
+        syncServerSubmissions(subs);
+      }
+    }
+    if (body.appendInternalNote) {
+      appendInternalNoteSeed(params.id, body.appendInternalNote);
+    }
+    const item = await resolveApplicationByIdAsync(params.id, organizerId);
+    return NextResponse.json({ ok: true, item });
+  }
+
+  const { prisma } = await import('@/lib/prisma');
   const existing = await prisma.vendorApplication.findFirst({
     where: { id: params.id, organizerId },
   });
@@ -56,6 +73,7 @@ export async function PATCH(
       ...(body.uploadedDocTypes !== undefined
         ? { uploadedDocTypes: JSON.stringify(body.uploadedDocTypes) }
         : {}),
+      ...(body.internalNotes !== undefined ? { internalNotes: body.internalNotes } : {}),
     },
     include: { boothAssignment: true },
   });

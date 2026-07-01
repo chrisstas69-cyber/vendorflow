@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import type { PaymentProviderAdapter } from '@/lib/payments/adapters/base';
 import { stripeConnectEmulator } from '@/lib/payments/adapters/stripe-connect-emulator';
+import { isStripeLiveConfigured, stripeLiveAdapter } from '@/lib/payments/adapters/stripe-live';
 import { parseMilestones } from '@/lib/payments/contract-engine';
 import type { CheckoutSessionRequest, InvoiceStatus, PaymentMilestone } from '@/lib/payments/types';
 
@@ -10,6 +11,7 @@ const adapters = new Map<string, PaymentProviderAdapter>([
 ]);
 
 export function getPaymentAdapter(provider = 'stripe-emulator'): PaymentProviderAdapter {
+  if (isStripeLiveConfigured()) return stripeLiveAdapter;
   return adapters.get(provider) ?? stripeConnectEmulator;
 }
 
@@ -65,7 +67,11 @@ export async function createCheckout(params: CheckoutSessionRequest & { provider
   }
 
   const adapter = getPaymentAdapter(params.provider);
-  const session = await adapter.createCheckoutSession(params);
+  const session = await adapter.createCheckoutSession({
+    ...params,
+    amountCents,
+    description: invoice.invoiceNumber,
+  });
 
   const payment = await prisma.payment.create({
     data: {

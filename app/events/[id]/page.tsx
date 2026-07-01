@@ -12,6 +12,7 @@ import { TrustGalleryView } from '@/components/gallery/trust-gallery-view';
 import { useGallery } from '@/hooks/use-gallery';
 import { Calendar, MapPin, Users, Clock, Store, ArrowLeft, CheckCircle, Star } from 'lucide-react';
 import { mockVendorPassport } from '@/lib/vendor-passport';
+import { submitVendorApplicationToOrganizer } from '@/lib/vendor-apply-api';
 import { runLongIslandComplianceCheck } from '@/lib/long-island/compliance-check';
 import { FoundersEditionBanner } from '@/components/founders/founders-banner';
 import { LocalComplianceAlert } from '@/components/founders/local-compliance-alert';
@@ -35,6 +36,7 @@ export default function EventDetailPage() {
     hasInsurance: true,
     setupPhotoUrl: undefined as string | undefined,
   });
+  const [applying, setApplying] = useState(false);
   const [result, setResult] = useState('');
 
   useEffect(() => {
@@ -57,11 +59,14 @@ export default function EventDetailPage() {
   const slotsLeft = event.vendorSlots - event.vendorSlotsFilled;
   const liCompliance = runLongIslandComplianceCheck(mockVendorPassport, event);
 
-  const handleApply = (e: React.FormEvent) => {
+  const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = submitVendorApplication({ eventId: event.id, ...form });
-    setResult(res.message);
-    if (res.ok) setShowApply(false);
+    setApplying(true);
+    const local = submitVendorApplication({ eventId: event.id, ...form });
+    const remote = await submitVendorApplicationToOrganizer(event, form);
+    setResult(remote.ok ? remote.message : remote.message || local.message);
+    setApplying(false);
+    if (remote.ok || local.ok) setShowApply(false);
   };
 
   return (

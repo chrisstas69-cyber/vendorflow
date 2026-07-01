@@ -88,6 +88,7 @@ function toInboxItem(sub: VendorSubmission): OrganizerApplicationInboxItem {
     paymentStatus,
     contractStatus,
     displayStage,
+    internalNotes: sub.internalNotes,
   };
 }
 
@@ -219,6 +220,59 @@ export function performInboxAction(submissionId: string, action: InboxAction) {
   }
 
   return { ok: true as const, item: toInboxItem(updated) };
+}
+
+export function createApplicationSeed(input: {
+  eventId: string;
+  eventName: string;
+  vendorEmail: string;
+  vendorName: string;
+  category: string;
+  message?: string;
+  requiredForms?: string[];
+  hasInsurance?: boolean;
+  setupPhotoUrl?: string;
+}) {
+  const id = `sub-${Date.now()}`;
+  const sub: VendorSubmission = {
+    id,
+    eventId: input.eventId,
+    eventName: input.eventName,
+    vendorName: input.vendorName,
+    vendorEmail: input.vendorEmail,
+    category: input.category,
+    message: input.message ?? '',
+    status: 'pending',
+    pipelineStage: 'applied',
+    submittedAt: new Date().toISOString(),
+    hasInsurance: input.hasInsurance ?? false,
+    documents: input.hasInsurance
+      ? [{
+          id: `doc-${Date.now()}`,
+          type: 'coi',
+          fileName: `COI_${input.vendorName.replace(/\s+/g, '_')}.pdf`,
+          uploadedAt: new Date().toISOString(),
+        }]
+      : [],
+    requiredForms: (input.requiredForms ?? ['coi', 'w9']) as import('@/lib/documents').DocumentType[],
+    setupPhotoUrl: input.setupPhotoUrl,
+    shortlisted: false,
+    infoRequested: false,
+    applicationId: id,
+  };
+  submissions.unshift(sub);
+  return toInboxItem(sub);
+}
+
+export function appendInternalNoteSeed(submissionId: string, note: string) {
+  const idx = submissions.findIndex(s => s.id === submissionId);
+  if (idx < 0) return null;
+  const existing = submissions[idx].internalNotes ?? '';
+  submissions[idx] = {
+    ...submissions[idx],
+    internalNotes: existing ? `${existing}\n${note}` : note,
+  };
+  return toInboxItem(submissions[idx]);
 }
 
 export function upsertSubmission(sub: VendorSubmission) {

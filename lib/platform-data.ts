@@ -101,6 +101,7 @@ export interface VendorSubmission {
   boothId?: string;
   paymentStatus?: import('@/lib/organizer-schema').PaymentStatus;
   contractStatus?: import('@/lib/organizer-schema').ContractStatus;
+  internalNotes?: string;
 }
 
 /** Demo organizer owns seeded events; evt-003 stays claimable for scrape flow */

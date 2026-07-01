@@ -6,10 +6,12 @@ import { PaymentUploadDialog } from '@/components/payment-upload-dialog';
 import { EventDebriefPanel } from '@/components/vendor/event-debrief-panel';
 import { PriorYearPanel } from '@/components/vendor/prior-year-panel';
 import { SetupChecklist } from '@/components/vendor/setup-checklist';
+import { QuickLogSaleDialog } from '@/components/quick-log-sale-dialog';
 import { useVendorTheme } from '@/components/vendor/use-vendor-theme';
 import { mockCalendarEvents } from '@/lib/mock-data';
 import { useDemoStore } from '@/contexts/demo-store-context';
 import { useEventDebrief } from '@/contexts/event-debrief-context';
+import { useVendorFinancial } from '@/contexts/vendor-financial-context';
 import { getVendorBookedEvents } from '@/lib/vendor-booked-events';
 import {
   ChevronLeft,
@@ -19,7 +21,8 @@ import {
 } from 'lucide-react';
 
 export default function CalendarOpsPage() {
-  const { importFinancial, applications } = useDemoStore();
+  const { applications } = useDemoStore();
+  const { upsertFinancial } = useVendorFinancial();
   const { getOrCreateDebriefDraft, getDebriefForEvent, upsertDebrief, mergeFinancial } =
     useEventDebrief();
   const bookedEvents = useMemo(() => getVendorBookedEvents(applications), [applications]);
@@ -27,6 +30,7 @@ export default function CalendarOpsPage() {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 2, 1));
   const [selectedDate, setSelectedDate] = useState<string | null>('2026-03-15');
   const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [showQuickLog, setShowQuickLog] = useState(false);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -88,8 +92,13 @@ export default function CalendarOpsPage() {
     await upsertDebrief({ ...base, checklist: items });
   };
 
-  const handleImport = async (record: Parameters<typeof importFinancial>[0]) => {
-    const created = importFinancial(record);
+  const handleImport = async (record: Parameters<typeof upsertFinancial>[0]) => {
+    const created = await upsertFinancial(record, 'import');
+    await mergeFinancial(created);
+  };
+
+  const handleQuickLog = async (record: Parameters<typeof upsertFinancial>[0]) => {
+    const created = await upsertFinancial(record, 'quick-log');
     await mergeFinancial(created);
   };
 
@@ -205,7 +214,7 @@ export default function CalendarOpsPage() {
                 <button type="button" onClick={() => setShowUploadDialog(true)} className={`w-full rounded-xl py-3 flex items-center justify-center gap-2 ${btnPrimary}`}>
                   <Upload className="h-4 w-4" /> Import sales data
                 </button>
-                <button type="button" className={`w-full rounded-xl py-3 flex items-center justify-center gap-2 border ${btnSecondary}`}>
+                <button type="button" onClick={() => setShowQuickLog(true)} className={`w-full rounded-xl py-3 flex items-center justify-center gap-2 border ${btnSecondary}`}>
                   <DollarSign className="h-4 w-4" /> Quick log sale
                 </button>
               </div>
@@ -222,6 +231,13 @@ export default function CalendarOpsPage() {
         isOpen={showUploadDialog}
         onClose={() => setShowUploadDialog(false)}
         onImport={handleImport}
+        bookedEvents={bookedEvents}
+        initialEventId={initialImportEventId}
+      />
+      <QuickLogSaleDialog
+        isOpen={showQuickLog}
+        onClose={() => setShowQuickLog(false)}
+        onSave={handleQuickLog}
         bookedEvents={bookedEvents}
         initialEventId={initialImportEventId}
       />

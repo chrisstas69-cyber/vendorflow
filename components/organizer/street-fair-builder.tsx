@@ -11,6 +11,7 @@ import {
 } from '@/lib/booth/street-fair-schema';
 import { createEmptyBlock, createEmptyStreet, generateBoothInventory, applyNumberingSchemeToLayout } from '@/lib/booth/street-fair-generate';
 import { StreetFairPreview, buildSpotAssignmentEmail } from '@/components/organizer/street-fair-preview';
+import { buildBulkSpotAssignmentEmail } from '@/lib/booth/bulk-spot-email';
 import type { BoothKind, BoothSpace } from '@/lib/booth/street-fair-schema';
 import { Mail, Printer } from 'lucide-react';
 
@@ -514,6 +515,19 @@ export function StreetFairBuilder({ eventId }: { eventId: string }) {
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold ${btnSecondary}`}
               >
                 <Printer className="h-4 w-4" /> Print day-of map
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const assigned = (booths.length ? booths : generateBoothInventory(layout)).filter(
+                    b => b.vendorEmail
+                  );
+                  const mailto = buildBulkSpotAssignmentEmail(assigned, eventId);
+                  if (mailto) window.location.href = mailto;
+                }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold ${btnSecondary}`}
+              >
+                <Mail className="h-4 w-4" /> Email all assigned
               </button>
             </div>
             <StreetFairPreview

@@ -231,6 +231,15 @@ export default function OrganizerApplicationsPage() {
         onSendCe200={() => showToast('CE200 workflow — email integration pending')}
         onToggleShortlist={id => void toggleShortlist(id)}
         onToast={showToast}
+        onSaveNote={async (submissionId, note) => {
+          const res = await fetch(`/api/organizer/applications/${submissionId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ appendInternalNote: note }),
+          });
+          if (!res.ok) throw new Error('Save failed');
+          await reload();
+        }}
       />
     </OrganizerLayout>
   );

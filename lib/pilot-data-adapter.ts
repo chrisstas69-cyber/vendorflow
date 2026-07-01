@@ -7,6 +7,8 @@ import {
   getApplicationsInbox,
   performInboxAction,
   resetOrganizerServerStore,
+  createApplicationSeed,
+  appendInternalNoteSeed,
 } from '@/lib/organizer-server-store';
 import {
   getApplicationsInboxFromDb,
@@ -60,7 +62,22 @@ export async function resolveCreateApplicationAsync(
   if (getEffectiveDataSource() === 'db') {
     return createApplicationDb(input);
   }
-  return null;
+  return createApplicationSeed(input);
+}
+
+export async function resolveAppendInternalNoteAsync(submissionId: string, note: string) {
+  if (getEffectiveDataSource() === 'db') {
+    const { prisma } = await import('@/lib/prisma');
+    const existing = await prisma.vendorApplication.findUnique({ where: { id: submissionId } });
+    if (!existing) return null;
+    const merged = existing.internalNotes ? `${existing.internalNotes}\n${note}` : note;
+    await prisma.vendorApplication.update({
+      where: { id: submissionId },
+      data: { internalNotes: merged },
+    });
+    return getApplicationByIdFromDb(submissionId);
+  }
+  return appendInternalNoteSeed(submissionId, note);
 }
 
 export async function resetPilotDataAsync() {

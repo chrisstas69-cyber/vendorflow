@@ -95,8 +95,9 @@ function toInboxItem(
     missingDocTypes: missingDocs,
     boothId,
     paymentStatus,
-    contractStatus,
+    contractStatus: contractStatus,
     displayStage,
+    internalNotes: app.internalNotes || undefined,
   };
 }
 
@@ -265,6 +266,8 @@ export async function createApplicationDb(input: {
   category: string;
   message?: string;
   requiredForms?: string[];
+  hasInsurance?: boolean;
+  setupPhotoUrl?: string;
 }) {
   await ensurePilotDbSeed();
   const app = await prisma.vendorApplication.create({
@@ -279,6 +282,8 @@ export async function createApplicationDb(input: {
       requiredForms: JSON.stringify(input.requiredForms ?? ['coi', 'w9']),
       pipelineStage: 'applied',
       status: 'pending',
+      hasInsurance: input.hasInsurance ?? false,
+      setupPhotoUrl: input.setupPhotoUrl ?? null,
     },
     include: { boothAssignment: true },
   });

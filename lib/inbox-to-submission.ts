@@ -33,6 +33,7 @@ export function inboxItemToVendorSubmission(item: OrganizerApplicationInboxItem)
     paymentStatus: item.paymentStatus,
     contractStatus: item.contractStatus,
     applicationId: item.id,
+    internalNotes: item.internalNotes,
   };
 }
 

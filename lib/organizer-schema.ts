@@ -47,6 +47,7 @@ export interface OrganizerApplicationInboxItem {
   paymentStatus: PaymentStatus;
   contractStatus: ContractStatus;
   displayStage: OrganizerDisplayStage;
+  internalNotes?: string;
 }
 
 export const DISPLAY_PIPELINE_COLUMNS: {

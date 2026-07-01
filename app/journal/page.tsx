@@ -5,15 +5,18 @@ import { AppLayout } from '@/components/layout/app-layout';
 import { PaymentUploadDialog } from '@/components/payment-upload-dialog';
 import { EventDebriefPanel } from '@/components/vendor/event-debrief-panel';
 import { EventLogbookExport } from '@/components/vendor/setup-checklist';
+import { ReceiptVaultPanel } from '@/components/vendor/receipt-vault-panel';
 import { useVendorTheme } from '@/components/vendor/use-vendor-theme';
 import { useDemoStore } from '@/contexts/demo-store-context';
 import { useEventDebrief } from '@/contexts/event-debrief-context';
+import { useVendorFinancial } from '@/contexts/vendor-financial-context';
 import { getVendorBookedEvents } from '@/lib/vendor-booked-events';
 import { TrendingUp, Receipt, Clock, CreditCard, Banknote, Upload, ChevronRight, Lightbulb, BookOpen, Cloud } from 'lucide-react';
 import { deriveJournalInsights } from '@/lib/journal-insights';
 
 export default function FinancialJournalPage() {
-  const { financials, importFinancial, applications } = useDemoStore();
+  const { applications } = useDemoStore();
+  const { financials, upsertFinancial } = useVendorFinancial();
   const { debriefs, getDebriefForEvent, mergeFinancial } = useEventDebrief();
   const bookedEvents = useMemo(() => getVendorBookedEvents(applications), [applications]);
   const { card, cardInset, muted, btnPrimary } = useVendorTheme();
@@ -36,8 +39,8 @@ export default function FinancialJournalPage() {
     }))
   );
 
-  const handleImport = async (record: Parameters<typeof importFinancial>[0]) => {
-    const created = importFinancial(record);
+  const handleImport = async (record: Parameters<typeof upsertFinancial>[0]) => {
+    const created = await upsertFinancial(record, 'import');
     await mergeFinancial(created);
   };
 
@@ -190,28 +193,7 @@ export default function FinancialJournalPage() {
           </div>
         </div>
 
-        <div className={`rounded-2xl border p-5 mb-6 ${card}`}>
-          <h2 className="font-bold mb-4">Receipt vault</h2>
-          <div className="grid sm:grid-cols-3 gap-3">
-            {[
-              { category: 'Booth fees', count: 3, total: 775 },
-              { category: 'Permits', count: 2, total: 75 },
-              { category: 'Inventory', count: 8, total: 1450 },
-              { category: 'Gas & mileage', count: 6, total: 180 },
-              { category: 'Supplies', count: 4, total: 95 },
-              { category: 'Insurance', count: 1, total: 850 },
-            ].map(cat => (
-              <div key={cat.category} className={`rounded-xl p-3 hover:ring-1 hover:ring-amber-400/50 cursor-pointer ${cardInset}`}>
-                <div className="flex justify-between items-start">
-                  <span className="text-sm font-semibold">{cat.category}</span>
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
-                </div>
-                <div className={`text-xs ${muted}`}>{cat.count} receipts</div>
-                <div className="text-lg font-bold mt-1">${cat.total.toLocaleString()}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <ReceiptVaultPanel />
 
         <div className="grid md:grid-cols-2 gap-4">
           <div className={`rounded-2xl border p-4 ${card}`}>

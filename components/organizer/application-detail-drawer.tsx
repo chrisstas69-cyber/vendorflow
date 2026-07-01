@@ -34,6 +34,7 @@ export interface ApplicationDetailDrawerProps {
   onSendCe200: (id: string) => void;
   onToggleShortlist: (id: string) => void;
   onToast: (msg: string) => void;
+  onSaveNote?: (submissionId: string, note: string) => Promise<void>;
 }
 
 const DOC_STATUS_STYLE = {
@@ -53,6 +54,7 @@ export function ApplicationDetailDrawer({
   onSendCe200,
   onToggleShortlist,
   onToast,
+  onSaveNote,
 }: ApplicationDetailDrawerProps) {
   const { surface, muted, heading, btnPrimary, btnSecondary, cardInset } = useOrganizerTheme();
   const [note, setNote] = useState('');
@@ -271,8 +273,18 @@ export function ApplicationDetailDrawer({
             <button
               type="button"
               disabled={!note.trim()}
-              onClick={() => {
-                onToast('Note saved (pilot — not persisted)');
+              onClick={async () => {
+                const text = note.trim();
+                if (onSaveNote) {
+                  try {
+                    await onSaveNote(submission.id, text);
+                    onToast('Note saved');
+                  } catch {
+                    onToast('Could not save note');
+                  }
+                } else {
+                  onToast('Note saved (pilot — not persisted)');
+                }
                 setNote('');
               }}
               className={`mt-2 px-3 py-1.5 text-sm font-semibold rounded-lg disabled:opacity-50 ${btnSecondary}`}
