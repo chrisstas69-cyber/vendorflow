@@ -1,26 +1,29 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { PaymentUploadDialog } from '@/components/payment-upload-dialog';
+import { EventDebriefPanel } from '@/components/vendor/event-debrief-panel';
+import { PriorYearPanel } from '@/components/vendor/prior-year-panel';
+import { SetupChecklist } from '@/components/vendor/setup-checklist';
 import { useVendorTheme } from '@/components/vendor/use-vendor-theme';
 import { mockCalendarEvents } from '@/lib/mock-data';
 import { useDemoStore } from '@/contexts/demo-store-context';
+import { useEventDebrief } from '@/contexts/event-debrief-context';
 import { getVendorBookedEvents } from '@/lib/vendor-booked-events';
 import {
   ChevronLeft,
   ChevronRight,
-  Sun,
-  CheckSquare,
   DollarSign,
   Upload,
-  Cloud,
 } from 'lucide-react';
 
 export default function CalendarOpsPage() {
   const { importFinancial, applications } = useDemoStore();
+  const { getOrCreateDebriefDraft, getDebriefForEvent, upsertDebrief, mergeFinancial } =
+    useEventDebrief();
   const bookedEvents = useMemo(() => getVendorBookedEvents(applications), [applications]);
-  const { card, cardInset, muted, btnPrimary, btnSecondary } = useVendorTheme();
+  const { card, muted, btnPrimary, btnSecondary } = useVendorTheme();
   const [currentDate, setCurrentDate] = useState(new Date(2026, 2, 1));
   const [selectedDate, setSelectedDate] = useState<string | null>('2026-03-15');
   const [showUploadDialog, setShowUploadDialog] = useState(false);
@@ -33,12 +36,62 @@ export default function CalendarOpsPage() {
 
   const getEventForDate = (date: string) => mockCalendarEvents.find(e => e.date === date);
   const selectedEvent = selectedDate ? getEventForDate(selectedDate) : null;
-  const initialImportEventId = useMemo(() => {
+  const selectedBooked = useMemo(() => {
     if (!selectedEvent || !selectedDate) return undefined;
     return bookedEvents.find(
       e => e.date === selectedDate && e.name === selectedEvent.name
-    )?.id;
+    );
   }, [bookedEvents, selectedDate, selectedEvent]);
+
+  const initialImportEventId = selectedBooked?.id;
+
+  const savedDebrief = selectedEvent && selectedDate
+    ? getDebriefForEvent(selectedEvent.name, selectedDate)
+    : undefined;
+
+  const [checklist, setChecklist] = useState(() => {
+    if (!selectedEvent || !selectedDate) return [];
+    return getOrCreateDebriefDraft({
+      eventId: selectedBooked?.eventId,
+      applicationId: selectedBooked?.applicationId,
+      eventName: selectedEvent.name,
+      eventDate: selectedDate,
+      status: selectedEvent.status,
+    }).checklist;
+  });
+
+  useEffect(() => {
+    if (!selectedEvent || !selectedDate) return;
+    const d =
+      savedDebrief ??
+      getOrCreateDebriefDraft({
+        eventId: selectedBooked?.eventId,
+        applicationId: selectedBooked?.applicationId,
+        eventName: selectedEvent.name,
+        eventDate: selectedDate,
+        status: selectedEvent.status,
+      });
+    setChecklist(d.checklist);
+  }, [selectedEvent, selectedDate, selectedBooked, savedDebrief, getOrCreateDebriefDraft]);
+
+  const persistChecklist = async (items: typeof checklist) => {
+    if (!selectedEvent || !selectedDate) return;
+    const base =
+      savedDebrief ??
+      getOrCreateDebriefDraft({
+        eventId: selectedBooked?.eventId,
+        applicationId: selectedBooked?.applicationId,
+        eventName: selectedEvent.name,
+        eventDate: selectedDate,
+        status: selectedEvent.status,
+      });
+    await upsertDebrief({ ...base, checklist: items });
+  };
+
+  const handleImport = async (record: Parameters<typeof importFinancial>[0]) => {
+    const created = importFinancial(record);
+    await mergeFinancial(created);
+  };
 
   const shiftMonth = (delta: number) => {
     const next = new Date(year, month + delta, 1);
@@ -53,7 +106,7 @@ export default function CalendarOpsPage() {
       <div className="max-w-5xl mx-auto p-4 md:p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Calendar</h1>
-          <p className={`text-sm mt-1 ${muted}`}>Booked events, weather, and day-of checklists</p>
+          <p className={`text-sm mt-1 ${muted}`}>Booked events, weather, checklists, and your event log</p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -127,37 +180,27 @@ export default function CalendarOpsPage() {
                   </span>
                 </div>
 
-                {selectedEvent.status === 'booked' && (
-                  <div className={`rounded-2xl border p-4 ${card}`}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Cloud className="h-4 w-4 text-sky-500" />
-                      <span className="font-semibold text-sm">Weather</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Sun className="h-10 w-10 text-yellow-500" />
-                      <div className="text-right">
-                        <div className="text-2xl font-bold">72°</div>
-                        <div className={`text-xs ${muted}`}>Clear · 5% rain</div>
-                      </div>
-                    </div>
-                    <div className="mt-3 text-xs text-green-600 font-medium">Ideal conditions</div>
-                  </div>
-                )}
+                <PriorYearPanel eventName={selectedEvent.name} eventDate={selectedDate} />
 
                 <div className={`rounded-2xl border p-4 ${card}`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <CheckSquare className="h-4 w-4" />
-                    <span className="font-semibold text-sm">Setup checklist</span>
-                  </div>
-                  <div className="space-y-2">
-                    {['Load vehicle', 'Confirm booth location', 'Setup canopy & table', 'Display inventory', 'Test card reader'].map(item => (
-                      <label key={item} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer ${cardInset}`}>
-                        <input type="checkbox" className="rounded" />
-                        <span className="text-sm">{item}</span>
-                      </label>
-                    ))}
-                  </div>
+                  <SetupChecklist
+                    debriefId={savedDebrief?.id}
+                    checklist={checklist}
+                    onChange={items => {
+                      setChecklist(items);
+                      persistChecklist(items);
+                    }}
+                  />
                 </div>
+
+                <EventDebriefPanel
+                  eventId={selectedBooked?.eventId ?? selectedEvent.eventId}
+                  applicationId={selectedBooked?.applicationId}
+                  eventName={selectedEvent.name}
+                  eventDate={selectedDate}
+                  status={selectedEvent.status}
+                  compact={selectedEvent.status === 'booked'}
+                />
 
                 <button type="button" onClick={() => setShowUploadDialog(true)} className={`w-full rounded-xl py-3 flex items-center justify-center gap-2 ${btnPrimary}`}>
                   <Upload className="h-4 w-4" /> Import sales data
@@ -178,7 +221,7 @@ export default function CalendarOpsPage() {
       <PaymentUploadDialog
         isOpen={showUploadDialog}
         onClose={() => setShowUploadDialog(false)}
-        onImport={importFinancial}
+        onImport={handleImport}
         bookedEvents={bookedEvents}
         initialEventId={initialImportEventId}
       />

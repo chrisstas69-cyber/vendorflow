@@ -72,7 +72,7 @@ interface PlatformStore {
   downloadVendorPacket: (submissionId: string) => void;
   createEvent: (event: Omit<PlatformEvent, 'id' | 'slug' | 'views' | 'saves' | 'vendorSlotsFilled'>) => PlatformEvent;
   claimEvent: (eventId: string) => void;
-  importFinancial: (record: Omit<FinancialRecord, 'id'>) => void;
+  importFinancial: (record: Omit<FinancialRecord, 'id'>) => FinancialRecord;
   incrementViews: (eventId: string) => void;
   resetDemo: () => void;
 }
@@ -512,7 +512,9 @@ export function DemoStoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const importFinancial = useCallback((record: Omit<FinancialRecord, 'id'>) => {
-    setFinancials(prev => [{ ...record, id: `fin-${Date.now()}` }, ...prev]);
+    const created = { ...record, id: `fin-${Date.now()}` };
+    setFinancials(prev => [created, ...prev]);
+    return created;
   }, []);
 
   const incrementViews = useCallback((eventId: string) => {
