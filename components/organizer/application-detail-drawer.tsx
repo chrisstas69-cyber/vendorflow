@@ -310,7 +310,7 @@ export function ApplicationDetailDrawer({
             >
               <AlertCircle className="h-4 w-4" /> Request doc
             </button>
-            {!submission.ce200SentAt && submission.requiredForms.includes('ce200') && (
+            {!submission.ce200SentAt && submission.requiredForms?.includes('ce200') && (
               <button
                 type="button"
                 onClick={() => onSendCe200(submission.id)}

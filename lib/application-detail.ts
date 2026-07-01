@@ -89,9 +89,13 @@ export function buildApplicationDetail(
   sub: VendorSubmission,
   allSubmissions: VendorSubmission[]
 ): ApplicationDetailView {
-  const uploaded = sub.documents.map(d => d.type);
-  const missing = missingDocTypes(sub.requiredForms, uploaded) as DocumentType[];
+  const requiredForms = sub.requiredForms ?? [];
+  const documents = sub.documents ?? [];
+  const uploaded = documents.map(d => d.type);
+  const missing = missingDocTypes(requiredForms, uploaded) as DocumentType[];
   const mock = MOCK_PASSPORT[sub.vendorEmail] ?? {};
+  const message = sub.message ?? '';
+  const category = sub.category ?? '';
 
   const history: ApplicationHistoryEntry[] = allSubmissions
     .filter(s => s.vendorEmail === sub.vendorEmail && s.id !== sub.id)
@@ -115,7 +119,7 @@ export function buildApplicationDetail(
     });
   }
 
-  const expiringSoon = sub.documents.filter(d => {
+  const expiringSoon = documents.filter(d => {
     const age = Date.now() - new Date(d.uploadedAt).getTime();
     return age > 330 * 24 * 60 * 60 * 1000 && age < 365 * 24 * 60 * 60 * 1000;
   }).length;
@@ -126,7 +130,7 @@ export function buildApplicationDetail(
     missing,
     docSummary: {
       received: uploaded.length,
-      total: sub.requiredForms.length,
+      total: requiredForms.length,
       expiringSoon,
     },
     snapshot: {
@@ -149,22 +153,22 @@ export function buildApplicationDetail(
       eventId: sub.eventId,
       submittedAt: sub.submittedAt,
       boothRequest: sub.boothId ? `Booth ${sub.boothId}` : '10×10 standard (requested)',
-      specialRequirements: sub.message.includes('electric')
+      specialRequirements: message.includes('electric')
         ? 'Electric hookup requested'
-        : sub.category.toLowerCase().includes('food')
+        : category.toLowerCase().includes('food')
           ? 'Health dept permit required'
           : undefined,
-      description: sub.message,
+      description: message,
       hasInsurance: sub.hasInsurance,
     },
-    documents: sub.requiredForms.map(type => {
+    documents: requiredForms.map(type => {
       const t = type as DocumentType;
-      const doc = sub.documents.find(d => d.type === t);
+      const doc = documents.find(d => d.type === t);
       return {
         type: t,
         label: DOCUMENT_LABELS[t] ?? t,
         fileName: doc?.fileName,
-        status: docStatus(t, sub.documents, missing),
+        status: docStatus(t, documents, missing),
         uploadedAt: doc?.uploadedAt,
       };
     }),

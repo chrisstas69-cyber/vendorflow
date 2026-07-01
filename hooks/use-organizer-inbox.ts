@@ -53,7 +53,7 @@ export function useOrganizerInbox(options?: {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to load inbox');
       setData({
-        items: json.items,
+        items: Array.isArray(json.items) ? json.items : [],
         counts: json.counts,
         displayCounts: json.displayCounts,
         seasonMetrics: json.seasonMetrics,

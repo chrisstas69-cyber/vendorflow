@@ -135,11 +135,18 @@ export default function OrganizerApplicationsPage() {
           filtered.map(sub => {
             const detail = buildApplicationDetail(sub, submissions);
             return (
-              <button
+              <div
                 key={sub.id}
-                type="button"
+                role="button"
+                tabIndex={0}
                 onClick={() => setSelected(sub)}
-                className={`w-full text-left rounded-xl border overflow-hidden transition-shadow hover:shadow-md hover:ring-2 hover:ring-teal-500/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${card}`}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setSelected(sub);
+                  }
+                }}
+                className={`w-full text-left rounded-xl border overflow-hidden transition-shadow hover:shadow-md hover:ring-2 hover:ring-teal-500/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 cursor-pointer ${card}`}
               >
                 <div className="grid md:grid-cols-[140px_1fr_auto] gap-0 items-stretch">
                   <div className="relative bg-stone-100 dark:bg-stone-800 min-h-[120px]">
@@ -204,7 +211,7 @@ export default function OrganizerApplicationsPage() {
                     <ChevronRight className="h-5 w-5" />
                   </div>
                 </div>
-              </button>
+              </div>
             );
           })
         )}

@@ -9,7 +9,7 @@ export function PilotModeBanner() {
   const { enabled, dataSource, organizer, loading } = usePilotConfig();
   const { card, muted } = useOrganizerTheme();
 
-  if (loading || !enabled) return null;
+  if (loading || !enabled || !organizer?.organization) return null;
 
   return (
     <div

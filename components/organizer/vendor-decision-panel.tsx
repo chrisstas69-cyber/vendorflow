@@ -66,7 +66,7 @@ export function VendorDecisionPanel({ vendorEmail, eventId, vendorName }: Vendor
       <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3">{match.label}</p>
 
       <ul className="space-y-1.5 mb-3">
-        {match.rules.map(rule => (
+        {match.rules?.map(rule => (
           <li key={rule.id} className="flex items-start gap-2 text-sm">
             <span className={rule.passed ? 'text-green-600' : 'text-red-500'}>
               {rule.passed ? '✓' : '✗'}

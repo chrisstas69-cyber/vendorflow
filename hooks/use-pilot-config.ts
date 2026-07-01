@@ -33,12 +33,12 @@ export function usePilotConfig(): PilotConfigState {
       .then(r => r.json())
       .then(data => {
         if (data.ok) {
-          setState({
-            enabled: data.enabled,
-            dataSource: data.dataSource,
-            organizer: data.organizer,
+          setState(s => ({
+            enabled: data.enabled ?? true,
+            dataSource: data.dataSource ?? 'seed',
+            organizer: data.organizer ?? s.organizer,
             loading: false,
-          });
+          }));
         } else {
           setState(s => ({ ...s, loading: false }));
         }

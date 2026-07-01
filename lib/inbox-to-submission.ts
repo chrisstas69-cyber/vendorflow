@@ -4,17 +4,17 @@ import type { DocumentType } from '@/lib/documents';
 
 /** Map API inbox item → VendorSubmission shape for drawer/detail helpers */
 export function inboxItemToVendorSubmission(item: OrganizerApplicationInboxItem): VendorSubmission {
-  const requiredForms = item.requiredForms as DocumentType[];
-  const uploaded = item.uploadedDocTypes as DocumentType[];
+  const requiredForms = (item.requiredForms ?? []) as DocumentType[];
+  const uploaded = (item.uploadedDocTypes ?? []) as DocumentType[];
 
   return {
     id: item.submissionId || item.id,
     eventId: item.eventId,
     eventName: item.eventName,
-    vendorName: item.vendorName,
-    vendorEmail: item.vendorEmail,
-    category: item.category,
-    message: item.message,
+    vendorName: item.vendorName ?? 'Vendor',
+    vendorEmail: item.vendorEmail ?? '',
+    category: item.category ?? 'General',
+    message: item.message ?? '',
     status: item.status,
     pipelineStage: item.pipelineStage,
     infoRequested: item.infoRequested,
