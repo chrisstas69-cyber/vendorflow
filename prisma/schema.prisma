@@ -242,8 +242,54 @@ model VendorPassport {
   invoices  Invoice[]
   applications VendorApplication[]
   galleryItems GalleryItem[]
+  debriefs     EventDebrief[]
 
   @@index([validationState])
+}
+
+model EventDebrief {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vendorPassportId String?
+  passport         VendorPassport? @relation(fields: [vendorPassportId], references: [id], onDelete: Cascade)
+  vendorEmail      String
+
+  eventId       String?
+  applicationId String?
+  eventName     String
+  eventDate     String
+  status        String @default("booked")
+
+  notes               String @default("")
+  issues              String @default("")
+  bringNextTime       String @default("")
+  missedOpportunities String @default("")
+  topSellers          String @default("")
+  crowdRating         Int?
+
+  weatherSummary   String?
+  weatherHighF     Int?
+  weatherLowF      Int?
+  weatherPrecipPct Int?
+  weatherCondition String?
+
+  checklistJson String @default("[]")
+
+  grossSalesCents Int?
+  expensesCents   Int?
+  netProfitCents  Int?
+  marginBps       Int?
+  breakEvenHour   String?
+  bestHour        String?
+  cashPercent     Int?
+  cardPercent     Int?
+  financialId     String?
+
+  @@unique([vendorEmail, eventName, eventDate])
+  @@index([vendorEmail, eventDate])
+  @@index([vendorPassportId])
 }
 
 model VendorDocument {

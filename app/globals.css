@@ -157,3 +157,11 @@ body {
     page-break-inside: avoid;
   }
 }
+
+/* Event logbook print (Phase 3 — opened in new window) */
+@media print {
+  #event-logbook-print-root,
+  #event-logbook-print-root * {
+    visibility: visible;
+  }
+}
