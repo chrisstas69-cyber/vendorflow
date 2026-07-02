@@ -156,6 +156,21 @@ body {
     break-inside: avoid;
     page-break-inside: avoid;
   }
+
+  .street-fair-booth-chip {
+    min-width: 3.25rem !important;
+    min-height: 3.75rem !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .street-fair-booth-vendor-name {
+    display: block !important;
+    overflow: visible !important;
+    white-space: normal !important;
+    word-break: break-word;
+    max-width: 4.5rem;
+  }
 }
 
 /* Event logbook print (Phase 3 — opened in new window) */

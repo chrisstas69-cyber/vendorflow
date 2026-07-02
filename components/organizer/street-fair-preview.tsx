@@ -14,6 +14,13 @@ interface StreetFairPreviewProps {
   printMode?: boolean;
 }
 
+function sortBoothsByLabel(a: BoothSpace, b: BoothSpace): number {
+  const na = parseInt(a.label, 10);
+  const nb = parseInt(b.label, 10);
+  if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+  return a.label.localeCompare(b.label, undefined, { numeric: true });
+}
+
 function BoothChip({
   booth,
   selected,
@@ -35,7 +42,7 @@ function BoothChip({
           ? `${booth.label} — ${booth.vendorName}`
           : `${booth.label} — empty ${isTruck ? 'truck' : 'tent'} space`
       }
-      className={`group relative flex flex-col items-center justify-center border-2 text-center transition-all ${
+      className={`street-fair-booth-chip group relative flex flex-col items-center justify-center border-2 text-center transition-all ${
         isTruck ? 'min-w-[4.5rem] min-h-[3.5rem]' : 'min-w-[3rem] min-h-[3.5rem]'
       } ${
         selected
@@ -49,14 +56,13 @@ function BoothChip({
               : 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100'
       }`}
     >
-      <span className="text-xs font-bold font-mono leading-none">{booth.label}</span>
-      {filled && (
-        <span className="text-[9px] leading-tight mt-0.5 line-clamp-2 px-0.5 opacity-90">
+      <span className="text-xs font-bold font-mono leading-none print:text-sm">{booth.label}</span>
+      {filled ? (
+        <span className="street-fair-booth-vendor-name text-[9px] leading-tight mt-0.5 line-clamp-2 px-0.5 opacity-90 print:line-clamp-none print:text-[10px] print:font-semibold print:mt-1 print:px-1">
           {booth.vendorName}
         </span>
-      )}
-      {!filled && (
-        <span className="text-[8px] uppercase tracking-wide opacity-60 mt-0.5">
+      ) : (
+        <span className="text-[8px] uppercase tracking-wide opacity-60 mt-0.5 print:hidden">
           {isTruck ? 'truck' : 'tent'}
         </span>
       )}
@@ -142,6 +148,7 @@ export function StreetFairPreview({
   const { cardInset, muted, heading } = useOrganizerTheme();
   const total = countBoothsInLayout(layout);
   const assigned = booths.filter(b => b.vendorName).length;
+  const assignedBooths = booths.filter(b => b.vendorName).sort(sortBoothsByLabel);
   const [sideA, sideB] = sidePairLabels(layout.numberingScheme);
 
   if (!layout.streets?.length) {
@@ -252,7 +259,7 @@ export function StreetFairPreview({
         ))}
       </div>
 
-      {/* Legend */}
+      {/* Legend — screen only */}
       <div className={`flex flex-wrap gap-4 text-xs no-print ${muted}`}>
         <span className="flex items-center gap-1.5">
           <span className="w-4 h-4 bg-amber-50 border-2 border-amber-200 rounded-sm" /> Empty tent
@@ -267,6 +274,22 @@ export function StreetFairPreview({
           <span className="w-8 h-2 bg-neutral-950 rounded-sm" /> Cross street
         </span>
       </div>
+
+      {/* Vendor roster — print only, sorted by booth number */}
+      {assignedBooths.length > 0 && (
+        <div className="hidden print:block mt-6 pt-4 border-t-2 border-black break-inside-avoid">
+          <h2 className="text-sm font-bold mb-3 uppercase tracking-wide">Vendor assignments</h2>
+          <div className="text-sm leading-relaxed columns-2 gap-8">
+            {assignedBooths.map(booth => (
+              <div key={booth.id} className="mb-1.5 break-inside-avoid">
+                <span className="font-bold">{booth.label})</span>{' '}
+                {booth.vendorName}
+                {booth.boothKind === 'truck' ? ' (truck)' : ''}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
