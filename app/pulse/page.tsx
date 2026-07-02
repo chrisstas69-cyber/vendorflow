@@ -1,16 +1,18 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { AppLayout } from '@/components/layout/app-layout';
 import { VendorPulseCard } from '@/components/vendor/vendor-pulse-card';
 import { OnboardingChecklist } from '@/components/vendor/onboarding-checklist';
+import { VendorEmptyState } from '@/components/vendor/vendor-empty-state';
 import { useDemoStore } from '@/contexts/demo-store-context';
 import { useVendorPassport } from '@/contexts/vendor-passport-context';
 import { useVendorApplications } from '@/contexts/vendor-applications-context';
 import { submitVendorApplicationToOrganizer } from '@/lib/vendor-apply-api';
 import type { AlphaTier } from '@/lib/mock-data';
 import { CATEGORY_LABELS, type EventCategory } from '@/lib/platform-data';
-import { Filter, X } from 'lucide-react';
+import { Filter, Search, X } from 'lucide-react';
 import { useTheme } from '@/contexts/theme-context';
 
 export default function EventPulsePage() {
@@ -30,7 +32,8 @@ export default function EventPulsePage() {
   const [selectedTiers, setSelectedTiers] = useState<AlphaTier[]>(['S', 'A', 'B', 'C']);
   const [category, setCategory] = useState<EventCategory | 'all'>('all');
   const [sortBy, setSortBy] = useState<'roi' | 'family' | 'risk'>('roi');
-  const [message, setMessage] = useState('');
+  const [search, setSearch] = useState('');
+  const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
   const [applyingId, setApplyingId] = useState<string | null>(null);
 
   const toggleTier = (tier: AlphaTier) => {
@@ -42,6 +45,15 @@ export default function EventPulsePage() {
   const filteredEvents = publishedEvents
     .filter(event => selectedTiers.includes(event.tier))
     .filter(event => category === 'all' || event.category === category)
+    .filter(event => {
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      return (
+        event.name.toLowerCase().includes(q) ||
+        event.city.toLowerCase().includes(q) ||
+        event.tags.some(t => t.toLowerCase().includes(q))
+      );
+    })
     .sort((a, b) => {
       if (sortBy === 'roi') return b.roiMax - a.roiMax;
       if (sortBy === 'family') return b.familyDensity - a.familyDensity;
@@ -51,7 +63,7 @@ export default function EventPulsePage() {
   const handleApply = async (event: (typeof publishedEvents)[0]) => {
     if (pipelineIds.has(event.id)) return;
     setApplyingId(event.id);
-    setMessage('');
+    setMessage(null);
     try {
       const result = await submitVendorApplicationToOrganizer(event, {
         vendorEmail: passport.vendorEmail,
@@ -61,10 +73,10 @@ export default function EventPulsePage() {
         hasInsurance: passport.documents.some(d => d.type === 'coi'),
         setupPhotoUrl: passport.setupPhotoUrl,
       });
-      setMessage(result.message);
+      setMessage({ text: result.message, ok: result.ok });
       if (result.ok) await refresh();
     } catch {
-      setMessage('Network error — try again');
+      setMessage({ text: 'Network error — try again', ok: false });
     } finally {
       setApplyingId(null);
     }
@@ -86,6 +98,20 @@ export default function EventPulsePage() {
             </div>
 
             <div className="mb-5">
+              <div className={`text-xs font-medium mb-2 ${muted}`}>Search</div>
+              <div className="relative">
+                <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${muted}`} />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Name, city, tag…"
+                  className={`w-full pl-9 pr-3 py-2 rounded-lg border text-sm ${dark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}
+                />
+              </div>
+            </div>
+
+            <div className="mb-5">
               <div className={`text-xs font-medium mb-2 ${muted}`}>Event type</div>
               <select
                 value={category}
@@ -100,7 +126,7 @@ export default function EventPulsePage() {
             </div>
 
             <div className="mb-5">
-              <div className="text-xs font-medium text-gray-500 mb-2">Quality tier</div>
+              <div className={`text-xs font-medium mb-2 ${muted}`}>Quality tier</div>
               <div className="space-y-1">
                 {(['S', 'A', 'B', 'C'] as AlphaTier[]).map(tier => (
                   <label key={tier} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer text-sm">
@@ -111,7 +137,7 @@ export default function EventPulsePage() {
                       className="rounded"
                     />
                     Tier {tier}
-                    <span className="ml-auto text-gray-400 text-xs">
+                    <span className={`ml-auto text-xs ${muted}`}>
                       {publishedEvents.filter(e => e.tier === tier).length}
                     </span>
                   </label>
@@ -120,7 +146,7 @@ export default function EventPulsePage() {
             </div>
 
             <div className="mb-5">
-              <div className="text-xs font-medium text-gray-500 mb-2">Sort by</div>
+              <div className={`text-xs font-medium mb-2 ${muted}`}>Sort by</div>
               <div className="space-y-1">
                 {[
                   { value: 'roi', label: 'Best ROI' },
@@ -142,7 +168,7 @@ export default function EventPulsePage() {
 
             <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 text-sm">
               <div className="font-semibold mb-1">{filteredEvents.length} events match</div>
-              <div className="text-gray-600 dark:text-gray-400 text-xs">
+              <div className={`text-xs ${muted}`}>
                 {pipelineIds.size} application{pipelineIds.size === 1 ? '' : 's'} submitted
               </div>
             </div>
@@ -169,24 +195,53 @@ export default function EventPulsePage() {
               )}
             </div>
             {message && (
-              <div className="mt-3 px-3 py-2 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-sm font-medium">
-                {message}
+              <div
+                className={`mt-3 px-3 py-2 rounded-lg text-sm font-medium ${
+                  message.ok
+                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200'
+                    : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+                }`}
+              >
+                {message.text}
               </div>
             )}
           </div>
 
-          <div className="p-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {filteredEvents.map(event => (
-              <VendorPulseCard
-                key={event.id}
-                event={event}
-                onApply={handleApply}
-                applying={applyingId === event.id}
-                inPipeline={pipelineIds.has(event.id)}
-                applicationStatus={getPublicStatus(event.id)}
+          {filteredEvents.length === 0 ? (
+            <div className="p-4">
+              <VendorEmptyState
+                icon={Search}
+                title="No events match your filters"
+                description="Try clearing search, widening tier filters, or switching event type."
+                action={
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearch('');
+                      setCategory('all');
+                      setSelectedTiers(['S', 'A', 'B', 'C']);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-amber-500 text-gray-900 text-sm font-semibold hover:bg-amber-600"
+                  >
+                    Reset filters
+                  </button>
+                }
               />
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="p-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {filteredEvents.map(event => (
+                <VendorPulseCard
+                  key={event.id}
+                  event={event}
+                  onApply={handleApply}
+                  applying={applyingId === event.id}
+                  inPipeline={pipelineIds.has(event.id)}
+                  applicationStatus={getPublicStatus(event.id)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </AppLayout>

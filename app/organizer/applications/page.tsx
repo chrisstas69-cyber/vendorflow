@@ -7,23 +7,37 @@ import { VendorSetupPreview } from '@/components/vendor/vendor-setup-preview';
 import { ApplicationDetailDrawer } from '@/components/organizer/application-detail-drawer';
 import { DocumentCompletenessBadge } from '@/components/organizer/document-completeness-badge';
 import { OrganizerLoadingState } from '@/components/organizer/organizer-loading-state';
+import { OrganizerEmptyState } from '@/components/organizer/organizer-empty-state';
 import { buildApplicationDetail } from '@/lib/application-detail';
 import { inboxItemsToSubmissions } from '@/lib/inbox-to-submission';
 import { useOrganizerInbox } from '@/hooks/use-organizer-inbox';
 import { useOrganizerTheme } from '@/components/organizer/use-organizer-theme';
-import { ArrowRight, ChevronRight, Star } from 'lucide-react';
+import { ArrowRight, ChevronRight, Inbox, Star, AlertTriangle } from 'lucide-react';
 import type { VendorSubmission } from '@/lib/platform-data';
+
+type InboxView = 'all' | 'pending' | 'approved' | 'rejected' | 'shortlisted';
 
 export default function OrganizerApplicationsPage() {
   const { data, loading, error, reload, performAction } = useOrganizerInbox();
   const { card, muted, heading, pageTitle, btnPrimary, btnSecondary } = useOrganizerTheme();
   const [toast, setToast] = useState('');
-  const [view, setView] = useState<'all' | 'shortlisted'>('all');
+  const [view, setView] = useState<InboxView>('all');
   const [selected, setSelected] = useState<VendorSubmission | null>(null);
 
   const submissions = useMemo(
     () => inboxItemsToSubmissions(data?.items ?? []),
     [data?.items]
+  );
+
+  const counts = useMemo(
+    () => ({
+      all: submissions.length,
+      pending: submissions.filter(s => s.status === 'pending').length,
+      approved: submissions.filter(s => s.status === 'approved').length,
+      rejected: submissions.filter(s => s.status === 'rejected').length,
+      shortlisted: submissions.filter(s => s.shortlisted).length,
+    }),
+    [submissions]
   );
 
   const showToast = (msg: string) => {
@@ -33,10 +47,11 @@ export default function OrganizerApplicationsPage() {
 
   const filtered = useMemo(() => {
     if (view === 'shortlisted') return submissions.filter(s => s.shortlisted);
+    if (view === 'pending') return submissions.filter(s => s.status === 'pending');
+    if (view === 'approved') return submissions.filter(s => s.status === 'approved');
+    if (view === 'rejected') return submissions.filter(s => s.status === 'rejected');
     return submissions;
   }, [submissions, view]);
-
-  const shortlistedCount = submissions.filter(s => s.shortlisted).length;
 
   const patchApplication = async (id: string, body: Record<string, unknown>) => {
     const res = await fetch(`/api/organizer/applications/${id}`, {
@@ -72,6 +87,14 @@ export default function OrganizerApplicationsPage() {
     }
   };
 
+  const viewTabs: { id: InboxView; label: string; count: number }[] = [
+    { id: 'all', label: 'All', count: counts.all },
+    { id: 'pending', label: 'Pending', count: counts.pending },
+    { id: 'approved', label: 'Approved', count: counts.approved },
+    { id: 'rejected', label: 'Rejected', count: counts.rejected },
+    { id: 'shortlisted', label: 'Shortlisted', count: counts.shortlisted },
+  ];
+
   if (loading) {
     return (
       <OrganizerLayout>
@@ -83,7 +106,20 @@ export default function OrganizerApplicationsPage() {
   if (error) {
     return (
       <OrganizerLayout>
-        <p className="text-red-600 text-sm">{error}</p>
+        <OrganizerEmptyState
+          icon={AlertTriangle}
+          title="Couldn't load applications"
+          description={error}
+          action={
+            <button
+              type="button"
+              onClick={() => void reload()}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold ${btnPrimary}`}
+            >
+              Retry
+            </button>
+          }
+        />
       </OrganizerLayout>
     );
   }
@@ -105,32 +141,67 @@ export default function OrganizerApplicationsPage() {
         </Link>
       </div>
 
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        {[
+          { label: 'Pending review', value: counts.pending, accent: 'text-amber-600' },
+          { label: 'Approved', value: counts.approved, accent: 'text-emerald-600' },
+          { label: 'Rejected', value: counts.rejected, accent: 'text-red-600' },
+          { label: 'Shortlisted', value: counts.shortlisted, accent: 'text-teal-600' },
+        ].map(stat => (
+          <div key={stat.label} className={`rounded-xl border p-3 ${card}`}>
+            <div className={`text-2xl font-bold ${stat.accent}`}>{stat.value}</div>
+            <div className={`text-xs ${muted}`}>{stat.label}</div>
+          </div>
+        ))}
+      </div>
+
       {toast && (
         <div className="mb-4 px-4 py-2 rounded-lg bg-emerald-100 text-emerald-800 text-sm font-medium">
           {toast}
         </div>
       )}
 
-      <div className="flex gap-2 mb-6">
-        {(['all', 'shortlisted'] as const).map(v => (
+      <div className="flex flex-wrap gap-2 mb-6">
+        {viewTabs.map(tab => (
           <button
-            key={v}
+            key={tab.id}
             type="button"
-            onClick={() => setView(v)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium capitalize ${
-              view === v ? btnPrimary : btnSecondary
+            onClick={() => setView(tab.id)}
+            className={`px-3 py-2 rounded-lg text-sm font-medium ${
+              view === tab.id ? btnPrimary : btnSecondary
             }`}
           >
-            {v === 'shortlisted' ? `Shortlisted (${shortlistedCount})` : `All (${submissions.length})`}
+            {tab.label} ({tab.count})
           </button>
         ))}
       </div>
 
       <div className="space-y-3">
         {filtered.length === 0 ? (
-          <p className={muted}>
-            {view === 'shortlisted' ? 'No shortlisted vendors yet — star the setups you like.' : 'No applications yet.'}
-          </p>
+          <OrganizerEmptyState
+            icon={view === 'shortlisted' ? Star : Inbox}
+            title={
+              view === 'shortlisted'
+                ? 'No shortlisted vendors yet'
+                : view === 'pending'
+                  ? 'Inbox is clear'
+                  : 'No applications in this view'
+            }
+            description={
+              view === 'shortlisted'
+                ? 'Star the booth setups you like — they show up here for quick comparison.'
+                : view === 'all'
+                  ? 'When vendors apply from Pulse or event pages, they appear here.'
+                  : 'Try another filter or check the pipeline board.'
+            }
+            action={
+              view === 'all' ? (
+                <Link href="/pulse" className={`inline-block px-4 py-2 rounded-lg text-sm font-semibold ${btnPrimary}`}>
+                  Preview vendor Pulse
+                </Link>
+              ) : undefined
+            }
+          />
         ) : (
           filtered.map(sub => {
             const detail = buildApplicationDetail(sub, submissions);
