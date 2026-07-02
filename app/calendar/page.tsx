@@ -8,7 +8,6 @@ import { PriorYearPanel } from '@/components/vendor/prior-year-panel';
 import { SetupChecklist } from '@/components/vendor/setup-checklist';
 import { QuickLogSaleDialog } from '@/components/quick-log-sale-dialog';
 import { useVendorTheme } from '@/components/vendor/use-vendor-theme';
-import { mockCalendarEvents } from '@/lib/mock-data';
 import { useDemoStore } from '@/contexts/demo-store-context';
 import { useVendorApplications } from '@/contexts/vendor-applications-context';
 import { useEventDebrief } from '@/contexts/event-debrief-context';
@@ -42,7 +41,9 @@ export default function CalendarOpsPage() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-  const getEventForDate = (date: string) => mockCalendarEvents.find(e => e.date === date);
+  // The grid is driven by bookedEvents, which merges DB applications with the
+  // demo calendar — one source of truth shared with the Journal import dialog.
+  const getEventForDate = (date: string) => bookedEvents.find(e => e.date === date);
   const selectedEvent = selectedDate ? getEventForDate(selectedDate) : null;
   const selectedBooked = useMemo(() => {
     if (!selectedEvent || !selectedDate) return undefined;
@@ -110,7 +111,7 @@ export default function CalendarOpsPage() {
     const next = new Date(year, month + delta, 1);
     setCurrentDate(next);
     const prefix = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
-    const evt = mockCalendarEvents.find(e => e.date.startsWith(prefix));
+    const evt = bookedEvents.find(e => e.date.startsWith(prefix));
     setSelectedDate(evt?.date ?? null);
   };
 

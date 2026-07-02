@@ -4,7 +4,7 @@ import {
   type Application,
   type CalendarEvent,
 } from '@/lib/mock-data';
-import { mockPlatformEvents } from '@/lib/platform-data';
+import { findEventById } from '@/lib/event-lookup';
 
 export interface VendorBookedEvent {
   id: string;
@@ -20,10 +20,8 @@ const CONFIRMED_STATUSES = new Set<Application['status']>(['paid', 'booked']);
 
 function resolveEventDate(eventId?: string, eventName?: string): string {
   if (eventId) {
-    const mock = mockEvents.find(e => e.id === eventId);
-    if (mock) return mock.date;
-    const platform = mockPlatformEvents.find(e => e.id === eventId);
-    if (platform) return platform.date;
+    const found = findEventById(eventId);
+    if (found) return found.date;
   }
   const calendar = mockCalendarEvents.find(e => e.name === eventName);
   return calendar?.date ?? '';

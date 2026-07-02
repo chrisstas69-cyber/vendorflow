@@ -18,6 +18,7 @@ import {
 } from '@/lib/event-debrief-schema';
 import { getPriorYearDebriefs } from '@/lib/event-debrief-export';
 import { useVendorEmail } from '@/lib/hooks/use-vendor-email';
+import { useIsVendorSurface } from '@/lib/hooks/use-vendor-surface';
 
 const DEBRIEF_STORAGE_KEY = 'vendorflow-debriefs-v1';
 const CHECKLIST_TEMPLATE_KEY = 'vendorflow-checklist-template-v1';
@@ -101,6 +102,7 @@ export function EventDebriefProvider({ children }: { children: React.ReactNode }
   const [debriefs, setDebriefs] = useState<EventDebriefRecord[]>([]);
   const [checklistTemplate, setChecklistTemplate] = useState<ChecklistItem[]>(buildDefaultChecklist());
   const { vendorEmail } = useVendorEmail();
+  const isVendorSurface = useIsVendorSurface();
 
   const applyDebriefs = useCallback((items: EventDebriefRecord[]) => {
     setDebriefs(items);
@@ -108,9 +110,7 @@ export function EventDebriefProvider({ children }: { children: React.ReactNode }
   }, []);
 
   const refreshFromServer = useCallback(async () => {
-    const res = await fetch(
-      `/api/vendors/debriefs?vendorEmail=${encodeURIComponent(vendorEmail)}`
-    );
+    const res = await fetch('/api/vendors/debriefs');
     const data = await res.json();
     if (data.ok && Array.isArray(data.items)) {
       const local = readLocalDebriefs();
@@ -120,11 +120,12 @@ export function EventDebriefProvider({ children }: { children: React.ReactNode }
   }, [applyDebriefs, vendorEmail]);
 
   useEffect(() => {
+    if (!isVendorSurface) return;
     setChecklistTemplate(readChecklistTemplate());
     const local = readLocalDebriefs();
     if (local.length) setDebriefs(local);
     refreshFromServer().finally(() => setReady(true));
-  }, [refreshFromServer, vendorEmail]);
+  }, [refreshFromServer, vendorEmail, isVendorSurface]);
 
   const upsertDebriefFn = useCallback(
     async (input: EventDebriefInput) => {

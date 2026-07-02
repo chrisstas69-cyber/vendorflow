@@ -17,7 +17,6 @@ import { AuthNav } from '@/components/layout/auth-nav';
 import { AuthNudgeBanner } from '@/components/layout/auth-nudge-banner';
 import { PublicThemeToggle } from '@/components/public/theme-toggle';
 import { VendorPlanBadge } from '@/components/vendor/vendor-plan-badge';
-import { useVendorEmail } from '@/lib/hooks/use-vendor-email';
 
 const NAV = [
   { href: '/pulse', icon: Activity, label: 'Find Events' },
@@ -32,7 +31,6 @@ const NAV = [
 export function AppLayout({ children, title }: { children: React.ReactNode; title?: string }) {
   const pathname = usePathname();
   const { mode } = useTheme();
-  const { isSignedIn } = useVendorEmail();
   const dark = mode === 'night';
 
   const shell = dark ? 'bg-gray-950 text-gray-100' : 'bg-gray-50 text-gray-900';
@@ -111,18 +109,6 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
               {label}
             </Link>
           ))}
-        </div>
-
-        <div
-          className={`border-b px-4 py-1.5 text-xs text-center ${
-            dark
-              ? 'bg-amber-950/30 text-amber-300 border-amber-900/50'
-              : 'bg-amber-50 text-amber-800 border-amber-100'
-          }`}
-        >
-          {isSignedIn
-            ? 'Signed in — your applications and journal sync to your account'
-            : 'Demo mode — sign in to save your data across devices'}
         </div>
 
         {title && (

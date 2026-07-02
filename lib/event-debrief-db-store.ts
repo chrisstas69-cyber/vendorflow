@@ -136,6 +136,7 @@ export async function listDebriefsDb(vendorEmail: string): Promise<EventDebriefR
   const rows = await prisma.eventDebrief.findMany({
     where: { vendorEmail },
     orderBy: { eventDate: 'desc' },
+    take: 500,
   });
   return rows.map(rowToRecord);
 }

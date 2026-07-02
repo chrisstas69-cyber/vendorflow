@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { listInvoices, serializeInvoice } from '@/lib/payments/payment-service';
+import { getSessionFromRequest } from '@/lib/auth/guards';
 import { prisma } from '@/lib/prisma';
 import {
   BOOTH_FEE_TEMPLATE_BODY,
@@ -7,13 +8,18 @@ import {
   parseMilestones,
 } from '@/lib/payments/contract-engine';
 
-/** GET — list invoices */
+/** GET — list invoices. Vendors see only their own; organizer/demo can filter. */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
+  const session = getSessionFromRequest(req);
+  const vendorEmail =
+    session?.role === 'vendor'
+      ? session.email
+      : searchParams.get('vendorEmail') ?? undefined;
   const invoices = await listInvoices({
     organizerId: searchParams.get('organizerId') ?? undefined,
-    vendorEmail: searchParams.get('vendorEmail') ?? undefined,
-    vendorPassportId: searchParams.get('vendorPassportId') ?? undefined,
+    vendorEmail,
+    vendorPassportId: session?.role === 'vendor' ? undefined : searchParams.get('vendorPassportId') ?? undefined,
     status: searchParams.get('status') ?? undefined,
   });
   return NextResponse.json({ ok: true, invoices: invoices.map(serializeInvoice) });

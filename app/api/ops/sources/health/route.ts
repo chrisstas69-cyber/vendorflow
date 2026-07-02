@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
 import { getOpsSourceHealth } from '@/lib/ops-contacts-store';
 import { resolveViewerRole } from '@/lib/ops-contacts-schema';
+import { canUseInternalViewer } from '@/lib/auth/guards';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,7 @@ export async function GET(req: NextRequest) {
     await ensurePlatformSeed();
     const { searchParams } = new URL(req.url);
     const viewer = resolveViewerRole(searchParams.get('viewerRole'));
-    if (viewer !== 'internal') {
+    if (viewer !== 'internal' || !canUseInternalViewer(req)) {
       return NextResponse.json({ ok: false, error: 'Internal access only' }, { status: 403 });
     }
 

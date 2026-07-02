@@ -16,6 +16,7 @@ import {
   type VendorPassport,
 } from '@/lib/vendor-passport';
 import { useVendorEmail } from '@/lib/hooks/use-vendor-email';
+import { useIsVendorSurface } from '@/lib/hooks/use-vendor-surface';
 import type { DocumentType } from '@/lib/documents';
 
 const STORAGE_KEY = 'vendorflow-passport-v1';
@@ -75,6 +76,7 @@ export function VendorPassportProvider({ children }: { children: React.ReactNode
   const [saving, setSaving] = useState(false);
   const [passport, setPassport] = useState<VendorPassport>(mockVendorPassport);
   const { vendorEmail, isSignedIn } = useVendorEmail();
+  const isVendorSurface = useIsVendorSurface();
 
   const validation = useMemo(() => validatePassport(passport), [passport]);
 
@@ -92,15 +94,13 @@ export function VendorPassportProvider({ children }: { children: React.ReactNode
   }, [applyPassport, vendorEmail]);
 
   useEffect(() => {
+    if (!isVendorSurface) return;
     const local = readLocal();
     if (local && !isSignedIn) {
       setPassport(local);
-      syncToServer(local).catch(() => {});
-    } else if (!isSignedIn) {
-      syncToServer(mockVendorPassport).catch(() => {});
     }
     refreshFromServer().finally(() => setReady(true));
-  }, [refreshFromServer, vendorEmail, isSignedIn]);
+  }, [refreshFromServer, vendorEmail, isSignedIn, isVendorSurface]);
 
   const persist = useCallback(
     async (patch: Partial<VendorPassport>) => {

@@ -7,7 +7,7 @@ import { EventDebriefPanel } from '@/components/vendor/event-debrief-panel';
 import { EventLogbookExport } from '@/components/vendor/setup-checklist';
 import { ReceiptVaultPanel } from '@/components/vendor/receipt-vault-panel';
 import { useVendorTheme } from '@/components/vendor/use-vendor-theme';
-import { useDemoStore } from '@/contexts/demo-store-context';
+import { useVendorApplications } from '@/contexts/vendor-applications-context';
 import { useEventDebrief } from '@/contexts/event-debrief-context';
 import { useVendorFinancial } from '@/contexts/vendor-financial-context';
 import { getVendorBookedEvents } from '@/lib/vendor-booked-events';
@@ -15,7 +15,7 @@ import { TrendingUp, Receipt, Clock, CreditCard, Banknote, Upload, ChevronRight,
 import { deriveJournalInsights } from '@/lib/journal-insights';
 
 export default function FinancialJournalPage() {
-  const { applications } = useDemoStore();
+  const { applications } = useVendorApplications();
   const { financials, upsertFinancial } = useVendorFinancial();
   const { debriefs, getDebriefForEvent, mergeFinancial } = useEventDebrief();
   const bookedEvents = useMemo(() => getVendorBookedEvents(applications), [applications]);
@@ -27,6 +27,33 @@ export default function FinancialJournalPage() {
   const totalExpenses = financials.reduce((sum, f) => sum + f.expenses, 0);
   const totalNetProfit = totalGrossSales - totalExpenses;
   const overallMargin = totalGrossSales > 0 ? Math.round((totalNetProfit / totalGrossSales) * 100) : 0;
+
+  const bestEvent = financials.reduce<(typeof financials)[number] | null>(
+    (best, f) => (best === null || f.netProfit > best.netProfit ? f : best),
+    null
+  );
+  const avgBreakEven = useMemo(() => {
+    const minutes = financials
+      .map(f => {
+        const m = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(f.breakEvenHour ?? '');
+        if (!m) return null;
+        let h = Number(m[1]) % 12;
+        if (m[3].toUpperCase() === 'PM') h += 12;
+        return h * 60 + Number(m[2]);
+      })
+      .filter((v): v is number => v !== null);
+    if (!minutes.length) return null;
+    const avg = Math.round(minutes.reduce((s, v) => s + v, 0) / minutes.length);
+    const h24 = Math.floor(avg / 60);
+    const mm = String(avg % 60).padStart(2, '0');
+    const period = h24 >= 12 ? 'PM' : 'AM';
+    const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+    return `${h12}:${mm} ${period}`;
+  }, [financials]);
+  const avgCashPercent = financials.length
+    ? Math.round(financials.reduce((s, f) => s + (f.cashPercent ?? 0), 0) / financials.length)
+    : 0;
+  const avgCardPercent = financials.length ? 100 - avgCashPercent : 0;
   const insights = deriveJournalInsights(
     financials.map(f => ({
       id: f.id,
@@ -71,7 +98,7 @@ export default function FinancialJournalPage() {
           <div className={`rounded-2xl border p-4 col-span-2 md:col-span-1 ${card} ring-2 ring-amber-400/30`}>
             <div className={`text-xs ${muted} mb-1`}>Net profit</div>
             <div className="text-3xl font-bold text-amber-500">${totalNetProfit.toLocaleString()}</div>
-            <div className={`text-xs mt-1 ${muted}`}>Last 30 days</div>
+            <div className={`text-xs mt-1 ${muted}`}>{financials.length} logged {financials.length === 1 ? 'event' : 'events'}</div>
           </div>
           {[
             { label: 'Gross sales', value: `$${totalGrossSales.toLocaleString()}` },
@@ -118,6 +145,11 @@ export default function FinancialJournalPage() {
             </button>
           </div>
 
+          {financials.length === 0 && (
+            <div className={`rounded-xl p-6 text-center text-sm ${cardInset} ${muted}`}>
+              No events logged yet. Hit Import above or log a sale from the Calendar after your next fair.
+            </div>
+          )}
           <div className="space-y-3">
             {financials.map(record => {
               const log = getDebriefForEvent(record.eventName, record.date);
@@ -200,16 +232,16 @@ export default function FinancialJournalPage() {
             <h3 className="font-bold mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-amber-500" /> Performance</h3>
             <div className={`space-y-2 text-sm ${muted}`}>
               <div className="flex justify-between"><span>Avg event profit</span><span className="font-semibold text-gray-900 dark:text-gray-100">${financials.length ? Math.round(totalNetProfit / financials.length).toLocaleString() : 0}</span></div>
-              <div className="flex justify-between"><span>Best event</span><span className="font-semibold text-gray-900 dark:text-gray-100">Valentine&apos;s Day Fair</span></div>
-              <div className="flex justify-between"><span>Avg break-even</span><span className="font-semibold text-gray-900 dark:text-gray-100">11:15 AM</span></div>
+              <div className="flex justify-between"><span>Best event</span><span className="font-semibold text-gray-900 dark:text-gray-100">{bestEvent ? bestEvent.eventName : '—'}</span></div>
+              <div className="flex justify-between"><span>Avg break-even</span><span className="font-semibold text-gray-900 dark:text-gray-100">{avgBreakEven ?? '—'}</span></div>
             </div>
           </div>
           <div className={`rounded-2xl border p-4 ${card}`}>
             <h3 className="font-bold mb-3">Payment mix</h3>
             <div className={`space-y-2 text-sm ${muted}`}>
-              <div className="flex justify-between"><span>Cash</span><span className="font-semibold text-gray-900 dark:text-gray-100">44%</span></div>
-              <div className="flex justify-between"><span>Card</span><span className="font-semibold text-gray-900 dark:text-gray-100">56%</span></div>
-              <div className="flex justify-between"><span>Avg transaction</span><span className="font-semibold text-gray-900 dark:text-gray-100">$24.50</span></div>
+              <div className="flex justify-between"><span>Cash</span><span className="font-semibold text-gray-900 dark:text-gray-100">{avgCashPercent}%</span></div>
+              <div className="flex justify-between"><span>Card</span><span className="font-semibold text-gray-900 dark:text-gray-100">{avgCardPercent}%</span></div>
+              <div className="flex justify-between"><span>Events logged</span><span className="font-semibold text-gray-900 dark:text-gray-100">{financials.length}</span></div>
             </div>
           </div>
         </div>

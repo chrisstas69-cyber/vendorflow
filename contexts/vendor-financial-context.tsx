@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { FinancialRecord } from '@/lib/mock-data';
 import { useVendorEmail } from '@/lib/hooks/use-vendor-email';
+import { useIsVendorSurface } from '@/lib/hooks/use-vendor-surface';
 import {
   financialFromRecord,
   recordFromFinancial,
@@ -41,9 +42,10 @@ export function VendorFinancialProvider({ children }: { children: React.ReactNod
   const [ready, setReady] = useState(false);
   const [records, setRecords] = useState<VendorFinancialRecord[]>([]);
   const { vendorEmail } = useVendorEmail();
+  const isVendorSurface = useIsVendorSurface();
 
   const refresh = useCallback(async () => {
-    const res = await fetch(`/api/vendors/financials?vendorEmail=${encodeURIComponent(vendorEmail)}`);
+    const res = await fetch('/api/vendors/financials');
     const data = await res.json();
     if (data.ok && Array.isArray(data.items)) {
       const local = readLocal();
@@ -63,10 +65,11 @@ export function VendorFinancialProvider({ children }: { children: React.ReactNod
   }, [vendorEmail]);
 
   useEffect(() => {
+    if (!isVendorSurface) return;
     const local = readLocal();
     if (local.length) setRecords(local);
     refresh().finally(() => setReady(true));
-  }, [refresh, vendorEmail]);
+  }, [refresh, vendorEmail, isVendorSurface]);
 
   const upsertFinancial = useCallback(
     async (record: Omit<FinancialRecord, 'id'>, source: 'import' | 'quick-log' = 'import') => {

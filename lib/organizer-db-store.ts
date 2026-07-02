@@ -106,6 +106,7 @@ async function loadApplications(organizerId: string) {
     where: { organizerId },
     include: { boothAssignment: true },
     orderBy: { createdAt: 'desc' },
+    take: 500,
   });
 }
 

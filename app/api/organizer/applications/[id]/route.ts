@@ -5,15 +5,18 @@ import {
 } from '@/lib/pilot-data-adapter';
 import { getActiveOrganizerId } from '@/lib/pilot-config';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
+import { assertOrganizerOrDemo } from '@/lib/auth/guards';
 
 export const dynamic = 'force-dynamic';
 
-/** GET — single application by id */
+/** GET — single application by id (organizer inbox; includes internal notes) */
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   await ensurePlatformSeed();
+  const forbidden = assertOrganizerOrDemo(req);
+  if (forbidden) return forbidden;
   const organizerId = getActiveOrganizerId();
   const item = await resolveApplicationByIdAsync(params.id, organizerId);
   if (!item) {
@@ -28,6 +31,8 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   await ensurePlatformSeed();
+  const forbidden = assertOrganizerOrDemo(req);
+  if (forbidden) return forbidden;
   const body = await req.json();
   const organizerId = getActiveOrganizerId();
 

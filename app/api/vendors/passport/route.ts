@@ -23,10 +23,9 @@ async function hydratePassport(vendorEmail: string): Promise<VendorPassport> {
   return mem;
 }
 
-/** GET — read passport + validation for vendorEmail (defaults to demo vendor) */
+/** GET — read passport + validation (session-derived identity) */
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const vendorEmail = searchParams.get('vendorEmail') ?? resolveVendorEmail(req);
+  const vendorEmail = resolveVendorEmail(req);
 
   const passport = await hydratePassport(vendorEmail);
   const validation = validatePassport(passport);
@@ -37,30 +36,33 @@ export async function GET(req: NextRequest) {
 /** POST — create passport or sync full client payload */
 export async function POST(req: NextRequest) {
   const body = await req.json();
+  const sessionEmail = resolveVendorEmail(req);
 
   if (body.reset) {
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ ok: false, error: 'Reset disabled in production' }, { status: 403 });
+    }
     resetPassportStore();
     return NextResponse.json({ ok: true, message: 'Passport store reset' });
   }
 
   if (body.sync && body.passport) {
-    syncPassportFromClient(body.passport as VendorPassport);
-    const saved = await persistPassportToDb(body.passport as VendorPassport);
+    // Bind synced passport to the session identity — clients can't write another vendor's passport.
+    const incoming = { ...(body.passport as VendorPassport), vendorEmail: sessionEmail };
+    syncPassportFromClient(incoming);
+    const saved = await persistPassportToDb(incoming);
     const validation = validatePassport(saved);
     return NextResponse.json({ ok: true, passport: saved, validation });
   }
 
-  const vendorEmail = body.vendorEmail as string;
-  if (!vendorEmail) {
-    return NextResponse.json({ ok: false, error: 'vendorEmail is required' }, { status: 400 });
-  }
+  const vendorEmail = sessionEmail;
 
   if (getPassport(vendorEmail)) {
     return NextResponse.json({ ok: false, error: 'Passport already exists — use PUT to update' }, { status: 409 });
   }
 
   try {
-    const passport = createPassport(body);
+    const passport = createPassport({ ...body, vendorEmail });
     const saved = await persistPassportToDb(passport);
     const validation = validatePassport(saved);
     return NextResponse.json({ ok: true, passport: saved, validation }, { status: 201 });
@@ -72,10 +74,10 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/** PUT — partial update */
+/** PUT — partial update (session-derived identity) */
 export async function PUT(req: NextRequest) {
   const body = await req.json();
-  const vendorEmail = (body.vendorEmail as string) ?? resolveVendorEmail(req);
+  const vendorEmail = resolveVendorEmail(req);
 
   const { vendorEmail: _omit, ...patch } = body;
   const passport = updatePassport(vendorEmail, patch);
@@ -85,10 +87,9 @@ export async function PUT(req: NextRequest) {
   return NextResponse.json({ ok: true, passport: saved, validation });
 }
 
-/** DELETE — remove passport */
+/** DELETE — remove own passport */
 export async function DELETE(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const vendorEmail = searchParams.get('vendorEmail') ?? resolveVendorEmail(req);
+  const vendorEmail = resolveVendorEmail(req);
 
   if (vendorEmail === DEMO_VENDOR_EMAIL) {
     return NextResponse.json({ ok: false, error: 'Cannot delete demo passport' }, { status: 403 });

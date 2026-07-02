@@ -17,7 +17,7 @@ export function parseQuickActionsFromReply(text: string, role: 'organizer' | 've
       id: 'call-sheet',
       type: 'open_call_sheet',
       label: 'Open call sheet template',
-      href: role === 'organizer' ? '/organizer/command' : '/command',
+      href: role === 'organizer' ? '/organizer/applications' : '/command',
     });
   }
 

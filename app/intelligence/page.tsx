@@ -15,20 +15,46 @@ export default function IntelligencePage() {
   const canAdvanced = hasPlanFeature(planId, 'advanced_intel');
   const [summary, setSummary] = useState<VendorIntelSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    setLoading(true);
+    setError(false);
     fetch('/api/intel/summary')
       .then(r => r.json())
       .then(data => {
         if (data.ok) setSummary(data.summary);
+        else setError(true);
       })
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
-  }, []);
+  }, [reloadKey]);
 
-  if (loading || !summary) {
+  if (loading) {
     return (
       <AppLayout>
         <div className="max-w-5xl mx-auto p-6 text-sm text-gray-500">Loading intel from your logbook…</div>
+      </AppLayout>
+    );
+  }
+
+  if (error || !summary) {
+    return (
+      <AppLayout>
+        <div className="max-w-5xl mx-auto p-6">
+          <div className={`rounded-2xl border p-6 text-center ${card}`}>
+            <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto mb-3" />
+            <p className="font-semibold mb-1">Couldn&apos;t load your intel</p>
+            <p className={`text-sm mb-4 ${muted}`}>Check your connection and try again.</p>
+            <button
+              onClick={() => setReloadKey(k => k + 1)}
+              className="px-4 py-2 rounded-lg bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
       </AppLayout>
     );
   }

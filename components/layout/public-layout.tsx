@@ -57,11 +57,6 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <div className="bg-amber-400/10 border-b border-amber-400/20 px-4 py-1.5 text-center text-xs public-muted">
-        <span className="font-semibold text-amber-600 dark:text-amber-400">Demo</span>
-        {' '}— switch role above to try Vendor or Organizer tools
-      </div>
-
       <main>{children}</main>
 
       <footer
@@ -70,10 +65,12 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       >
         <div className="max-w-6xl mx-auto px-4 py-8 text-sm public-muted flex flex-col sm:flex-row justify-between gap-4">
           <span>© 2026 VendorFlow — NY &amp; NJ events</span>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-4">
+            <Link href="/discover" className="hover:opacity-80">Discover events</Link>
             <Link href="/for-vendors" className="hover:opacity-80">For vendors</Link>
             <Link href="/for-organizers" className="hover:opacity-80">For organizers</Link>
-            <Link href="/setup" className="hover:opacity-80">Setup</Link>
+            <Link href="/pricing" className="hover:opacity-80">Pricing</Link>
+            <Link href="/login" className="hover:opacity-80">Sign in</Link>
           </div>
         </div>
       </footer>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
 import { getOpsOrganization, logOpsOutreach, updateOpsOrganization } from '@/lib/ops-contacts-store';
 import { resolveViewerRole } from '@/lib/ops-contacts-schema';
+import { canUseInternalViewer } from '@/lib/auth/guards';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,8 @@ export async function GET(
 ) {
   await ensurePlatformSeed();
 
-  const viewer = resolveViewerRole(new URL(req.url).searchParams.get('viewerRole'));
+  const requested = resolveViewerRole(new URL(req.url).searchParams.get('viewerRole'));
+  const viewer = requested === 'internal' && !canUseInternalViewer(req) ? 'organizer' : requested;
   const org = await getOpsOrganization(params.id, viewer);
 
   if (!org) {
@@ -30,7 +32,7 @@ export async function PATCH(
   await ensurePlatformSeed();
 
   const viewer = resolveViewerRole(new URL(req.url).searchParams.get('viewerRole'));
-  if (viewer !== 'internal') {
+  if (viewer !== 'internal' || !canUseInternalViewer(req)) {
     return NextResponse.json({ ok: false, error: 'Internal access required' }, { status: 403 });
   }
 

@@ -10,6 +10,7 @@ import type { OrganizerPipelineStage } from '@/lib/organizer-schema';
 import { getActiveOrganizerId, getEffectiveDataSource, getPilotDataSource } from '@/lib/pilot-config';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
 import { sendCe200FromDb } from '@/lib/vendor-applications-store';
+import { assertOrganizerOrDemo, getSessionFromRequest, requireOrganizer } from '@/lib/auth/guards';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,11 +62,18 @@ export async function POST(req: NextRequest) {
   };
 
   if (reset) {
+    const denied = requireOrganizer(req);
+    if (denied) return denied;
     await resetPilotDataAsync();
     return NextResponse.json({ ok: true, message: 'Pilot data reset to seed' });
   }
 
   if (create) {
+    // Signed-in vendors always apply as themselves; public applicants supply their own email.
+    const session = getSessionFromRequest(req);
+    if (session?.role === 'vendor') {
+      create.vendorEmail = session.email;
+    }
     const item = await resolveCreateApplicationAsync({
       organizerId: getActiveOrganizerId(),
       ...create,
@@ -97,6 +105,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, item }, { status: 201 });
   }
+
+  // Everything below is an organizer inbox action — vendors can't approve themselves.
+  const forbidden = assertOrganizerOrDemo(req);
+  if (forbidden) return forbidden;
 
   if (action === 'send_ce200' && submissionId) {
     const result = await sendCe200FromDb(submissionId);

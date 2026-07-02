@@ -7,8 +7,7 @@ import { resolveVendorEmail } from '@/lib/auth/resolve-vendor-email';
 
 export async function GET(req: NextRequest) {
   await ensurePlatformSeed();
-  const { searchParams } = new URL(req.url);
-  const vendorEmail = searchParams.get('vendorEmail') ?? resolveVendorEmail(req);
+  const vendorEmail = resolveVendorEmail(req);
   const { items } = await listVendorFinancials(vendorEmail);
   return NextResponse.json({ ok: true, dataSource: getEffectiveDataSource(), items });
 }
@@ -16,7 +15,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   await ensurePlatformSeed();
   const body = await req.json();
-  const vendorEmail = (body.vendorEmail as string) ?? resolveVendorEmail(req);
+  const vendorEmail = resolveVendorEmail(req);
   const input = body.financial as VendorFinancialInput;
   if (!input?.eventName || !input?.eventDate) {
     return NextResponse.json({ ok: false, error: 'eventName and eventDate required' }, { status: 400 });

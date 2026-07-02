@@ -14,7 +14,12 @@ const SESSION_DAYS = 14;
 const MAGIC_LINK_MINUTES = 30;
 
 export function getAuthSecret(): string {
-  return process.env.AUTH_SECRET ?? 'vendorflow-dev-secret-change-in-production';
+  const secret = process.env.AUTH_SECRET;
+  if (secret) return secret;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('AUTH_SECRET must be set in production — sessions cannot be signed safely without it');
+  }
+  return 'vendorflow-dev-secret-change-in-production';
 }
 
 export function sessionCookieName() {

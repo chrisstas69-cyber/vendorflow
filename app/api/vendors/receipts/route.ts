@@ -7,9 +7,12 @@ import { resolveVendorEmail } from '@/lib/auth/resolve-vendor-email';
 export async function GET(req: NextRequest) {
   await ensurePlatformSeed();
   const vendorEmail = resolveVendorEmail(req);
+  // imageData (base64 blobs) is intentionally excluded from the list payload —
+  // it multiplied response size ~100x for data the UI never rendered.
   const rows = await prisma.vendorReceipt.findMany({
     where: { vendorEmail },
     orderBy: { createdAt: 'desc' },
+    take: 200,
     select: {
       id: true,
       category: true,
@@ -17,9 +20,17 @@ export async function GET(req: NextRequest) {
       fileName: true,
       notes: true,
       createdAt: true,
-      imageData: true,
     },
   });
+  const withImage = new Set(
+    (
+      await prisma.vendorReceipt.findMany({
+        where: { vendorEmail, imageData: { not: null } },
+        select: { id: true },
+        take: 200,
+      })
+    ).map(r => r.id)
+  );
   return NextResponse.json({
     ok: true,
     dataSource: getEffectiveDataSource(),
@@ -30,8 +41,7 @@ export async function GET(req: NextRequest) {
       fileName: r.fileName,
       notes: r.notes,
       createdAt: r.createdAt.toISOString(),
-      hasImage: Boolean(r.imageData),
-      imageData: r.imageData,
+      hasImage: withImage.has(r.id),
     })),
   });
 }
@@ -67,16 +77,21 @@ export async function POST(req: NextRequest) {
       notes: row.notes,
       createdAt: row.createdAt.toISOString(),
       hasImage: Boolean(row.imageData),
-      imageData: row.imageData,
     },
   });
 }
 
 export async function DELETE(req: NextRequest) {
   await ensurePlatformSeed();
+  const vendorEmail = resolveVendorEmail(req);
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
   if (!id) return NextResponse.json({ ok: false, error: 'id required' }, { status: 400 });
-  await prisma.vendorReceipt.delete({ where: { id } }).catch(() => null);
+  const deleted = await prisma.vendorReceipt
+    .deleteMany({ where: { id, vendorEmail } })
+    .catch(() => null);
+  if (!deleted?.count) {
+    return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+  }
   return NextResponse.json({ ok: true });
 }

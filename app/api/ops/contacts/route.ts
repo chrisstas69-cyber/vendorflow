@@ -8,6 +8,7 @@ import {
   OUTREACH_STATUSES,
   resolveViewerRole,
 } from '@/lib/ops-contacts-schema';
+import { canUseInternalViewer } from '@/lib/auth/guards';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,8 @@ export async function GET(req: NextRequest) {
     await ensurePlatformSeed();
 
     const { searchParams } = new URL(req.url);
-    const viewer = resolveViewerRole(searchParams.get('viewerRole'));
+    const requested = resolveViewerRole(searchParams.get('viewerRole'));
+    const viewer = requested === 'internal' && !canUseInternalViewer(req) ? 'organizer' : requested;
 
     const params = {
       q: searchParams.get('q') ?? undefined,

@@ -24,6 +24,7 @@ export async function listVendorApplicationsFromDb(vendorEmail: string): Promise
     where: { vendorEmail: vendorEmail.toLowerCase().trim() },
     include: { boothAssignment: true },
     orderBy: { createdAt: 'desc' },
+    take: 200,
   });
   return rows.map(r => dbRowToVendorApplication(r as VendorApplicationRow));
 }

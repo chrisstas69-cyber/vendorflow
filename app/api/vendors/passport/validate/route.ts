@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validatePassportByEmail } from '@/lib/vendor-passport-store';
 import { loadPassportFromDb } from '@/lib/vendor-passport-db';
-import { DEMO_VENDOR_EMAIL, validatePassport } from '@/lib/vendor-passport';
+import { validatePassport } from '@/lib/vendor-passport';
+import { resolveVendorEmail } from '@/lib/auth/resolve-vendor-email';
 
-/** GET — validation state only (for matching engine / status badges) */
+/** GET — validation state only (session-derived identity) */
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const vendorEmail = searchParams.get('vendorEmail') ?? DEMO_VENDOR_EMAIL;
+  const vendorEmail = resolveVendorEmail(req);
 
   const fromDb = await loadPassportFromDb(vendorEmail);
   const passport = fromDb ?? validatePassportByEmail(vendorEmail).passport;

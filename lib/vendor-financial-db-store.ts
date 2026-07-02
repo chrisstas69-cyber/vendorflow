@@ -45,6 +45,7 @@ export async function listFinancialsDb(vendorEmail: string): Promise<VendorFinan
   const rows = await prisma.vendorFinancial.findMany({
     where: { vendorEmail },
     orderBy: { eventDate: 'desc' },
+    take: 500,
   });
   return rows.map(rowToRecord);
 }

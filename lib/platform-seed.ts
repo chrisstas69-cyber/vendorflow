@@ -39,11 +39,19 @@ export async function ensurePlatformSeed() {
 
   if (useDb) {
     try {
-      await ensurePaymentSeed();
-      await seedLongIslandComplianceRules();
-      await ensurePilotDbSeed();
-      await ensureGalleryDbSeed();
-      await ensureOpsContactsDbSeed();
+      // Fast path: once an organizer account exists the DB has been seeded —
+      // one cheap query instead of five per-store existence checks per cold start.
+      const alreadySeeded = await prisma.organizerAccount
+        .findFirst({ select: { id: true } })
+        .then(Boolean)
+        .catch(() => false);
+      if (!alreadySeeded) {
+        await ensurePaymentSeed();
+        await seedLongIslandComplianceRules();
+        await ensurePilotDbSeed();
+        await ensureGalleryDbSeed();
+        await ensureOpsContactsDbSeed();
+      }
     } catch (err) {
       console.warn('[platform-seed] DB seed failed, falling back to in-memory seed:', err);
       setEffectiveDataSource('seed');

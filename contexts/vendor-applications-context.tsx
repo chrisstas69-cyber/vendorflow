@@ -10,6 +10,7 @@ import {
 } from 'react';
 import type { Application } from '@/lib/mock-data';
 import { useVendorEmail } from '@/lib/hooks/use-vendor-email';
+import { useIsVendorSurface } from '@/lib/hooks/use-vendor-surface';
 
 interface VendorApplicationsContextValue {
   ready: boolean;
@@ -25,6 +26,7 @@ export function VendorApplicationsProvider({ children }: { children: React.React
   const [ready, setReady] = useState(false);
   const [applications, setApplications] = useState<Application[]>([]);
   const { vendorEmail } = useVendorEmail();
+  const isVendorSurface = useIsVendorSurface();
 
   const refresh = useCallback(async () => {
     const res = await fetch('/api/vendors/applications');
@@ -35,8 +37,9 @@ export function VendorApplicationsProvider({ children }: { children: React.React
   }, []);
 
   useEffect(() => {
+    if (!isVendorSurface) return;
     refresh().finally(() => setReady(true));
-  }, [refresh, vendorEmail]);
+  }, [refresh, vendorEmail, isVendorSurface]);
 
   const getStatusForEvent = useCallback(
     (eventId: string) => applications.find(a => a.eventId === eventId),
