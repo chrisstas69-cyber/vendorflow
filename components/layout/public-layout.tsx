@@ -70,6 +70,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             <Link href="/for-vendors" className="hover:opacity-80">For vendors</Link>
             <Link href="/for-organizers" className="hover:opacity-80">For organizers</Link>
             <Link href="/pricing" className="hover:opacity-80">Pricing</Link>
+            <Link href="/status" className="hover:opacity-80">Status</Link>
             <Link href="/login" className="hover:opacity-80">Sign in</Link>
           </div>
         </div>
