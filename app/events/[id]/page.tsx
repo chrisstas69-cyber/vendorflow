@@ -9,9 +9,10 @@ interface Props {
 export function generateMetadata({ params }: Props): Metadata {
   const event = findPlatformEventById(params.id);
   if (!event) {
-    return { title: 'Event not found — VendorFlow' };
+    return { title: 'Event not found' };
   }
-  const title = `${event.name} — Vendor Booths | VendorFlow`;
+  // Root layout template appends "| VendorFlow" — don't duplicate the brand.
+  const title = `${event.name} — Vendor Booths`;
   const description = `${event.description} ${event.city}, ${event.state} on ${event.date}. Booth fee $${event.boothFee}. Apply as a vendor on VendorFlow.`;
   return {
     title,
