@@ -56,6 +56,11 @@ export function VendorPulseCard({ event, onApply, applying, inPipeline, applicat
           <WorthItBadge event={event} compact />
           {applicationStatus && <ApplicationStatusBadge status={applicationStatus} />}
         </div>
+        {(event.saves > 0 || inPipeline) && (
+          <p className="text-[11px] text-orange-600 mb-2 tabular-nums">
+            {event.saves.toLocaleString()} people saved this event
+          </p>
+        )}
 
         <div className="grid grid-cols-3 gap-2 mb-3 text-center">
           <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 p-2">

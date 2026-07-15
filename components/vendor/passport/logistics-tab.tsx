@@ -1,12 +1,16 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useVendorPassport } from '@/contexts/vendor-passport-context';
 import { useVendorTheme } from '@/components/vendor/use-vendor-theme';
 import {
   VENDOR_CATEGORY_OPTIONS,
   VENDOR_SERVICE_TAG_OPTIONS,
   type VehicleType,
+  type VendorLogistics,
+  type VendorLogisticsPatch,
 } from '@/lib/vendor-passport';
+import { Check, Loader2 } from 'lucide-react';
 
 const VEHICLE_OPTIONS: { value: VehicleType; label: string }[] = [
   { value: 'tent-only', label: 'Tent / table only' },
@@ -44,23 +48,59 @@ function TagToggle({
   );
 }
 
+function logisticsPayload(logistics: VendorLogistics): VendorLogisticsPatch {
+  return {
+    vehicleType: logistics.vehicleType,
+    needsElectric: logistics.needsElectric,
+    generatorOk: logistics.generatorOk ?? null,
+    waterAccess: logistics.waterAccess ?? null,
+    ampRequirement: logistics.ampRequirement?.trim() || null,
+    trailerLengthFt: logistics.trailerLengthFt ?? null,
+    boothWidthFt: logistics.boothWidthFt ?? null,
+    boothDepthFt: logistics.boothDepthFt ?? null,
+    setupTimeMinutes: logistics.setupTimeMinutes ?? null,
+  };
+}
+
 export function PassportLogisticsTab() {
   const { passport, updatePassport, saving } = useVendorPassport();
-  const { logistics } = passport;
-  const { input, label, muted, heading, accent, dark } = useVendorTheme();
+  const { input, label, muted, heading, accent, btnPrimary, dark } = useVendorTheme();
+
+  const [categories, setCategories] = useState(passport.categories);
+  const [serviceTags, setServiceTags] = useState(passport.serviceTags);
+  const [logistics, setLogistics] = useState(passport.logistics);
+  const [dirty, setDirty] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setCategories(passport.categories);
+    setServiceTags(passport.serviceTags);
+    setLogistics(passport.logistics);
+    setDirty(false);
+  }, [passport.categories, passport.serviceTags, passport.logistics, passport.updatedAt]);
+
+  const markDirty = () => {
+    setDirty(true);
+    setSaved(false);
+  };
 
   const toggleCategory = (cat: string) => {
-    const next = passport.categories.includes(cat)
-      ? passport.categories.filter(c => c !== cat)
-      : [...passport.categories, cat];
-    updatePassport({ categories: next });
+    setCategories(prev =>
+      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+    );
+    markDirty();
   };
 
   const toggleTag = (tag: string) => {
-    const next = passport.serviceTags.includes(tag)
-      ? passport.serviceTags.filter(t => t !== tag)
-      : [...passport.serviceTags, tag];
-    updatePassport({ serviceTags: next });
+    setServiceTags(prev =>
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+    markDirty();
+  };
+
+  const updateLogistics = (patch: Partial<VendorLogistics>) => {
+    setLogistics(prev => ({ ...prev, ...patch }));
+    markDirty();
   };
 
   const numField = (
@@ -76,14 +116,25 @@ export function PassportLogisticsTab() {
         step={step}
         value={logistics[key] ?? ''}
         onChange={e =>
-          updatePassport({
-            logistics: { ...logistics, [key]: e.target.value ? Number(e.target.value) : undefined },
+          updateLogistics({
+            [key]: e.target.value === '' ? undefined : Number(e.target.value),
           })
         }
         className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm ${input}`}
       />
     </label>
   );
+
+  const handleSave = async () => {
+    await updatePassport({
+      categories,
+      serviceTags,
+      logistics: logisticsPayload(logistics),
+    });
+    setDirty(false);
+    setSaved(true);
+    window.setTimeout(() => setSaved(false), 3000);
+  };
 
   return (
     <div className="space-y-8 max-w-2xl">
@@ -95,7 +146,7 @@ export function PassportLogisticsTab() {
             <TagToggle
               key={cat}
               label={cat}
-              active={passport.categories.includes(cat)}
+              active={categories.includes(cat)}
               onToggle={() => toggleCategory(cat)}
               dark={dark}
             />
@@ -111,7 +162,7 @@ export function PassportLogisticsTab() {
             <TagToggle
               key={tag}
               label={tag.replace(/-/g, ' ')}
-              active={passport.serviceTags.includes(tag)}
+              active={serviceTags.includes(tag)}
               onToggle={() => toggleTag(tag)}
               dark={dark}
             />
@@ -126,11 +177,7 @@ export function PassportLogisticsTab() {
             <span className={`text-sm font-medium ${label}`}>Vehicle type</span>
             <select
               value={logistics.vehicleType}
-              onChange={e =>
-                updatePassport({
-                  logistics: { ...logistics, vehicleType: e.target.value as VehicleType },
-                })
-              }
+              onChange={e => updateLogistics({ vehicleType: e.target.value as VehicleType })}
               className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm ${input}`}
             >
               {VEHICLE_OPTIONS.map(o => (
@@ -145,20 +192,12 @@ export function PassportLogisticsTab() {
           {numField('Trailer length (ft)', 'trailerLengthFt')}
           {numField('Setup time (minutes)', 'setupTimeMinutes', 15)}
           <label className="block sm:col-span-2">
-            <span className={`text-sm font-medium ${label}`}>Power requirement</span>
+            <span className={`text-sm font-medium ${label}`}>Power requirement (optional)</span>
             <input
               type="text"
-              placeholder="e.g. 20A, none"
+              placeholder="Leave blank if you don't need power — e.g. 20A"
               value={logistics.ampRequirement ?? ''}
-              onChange={e =>
-                updatePassport({
-                  logistics: {
-                    ...logistics,
-                    needsElectric: !!e.target.value,
-                    ampRequirement: e.target.value || undefined,
-                  },
-                })
-              }
+              onChange={e => updateLogistics({ ampRequirement: e.target.value })}
               className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm ${input}`}
             />
           </label>
@@ -175,9 +214,7 @@ export function PassportLogisticsTab() {
               <input
                 type="checkbox"
                 checked={!!logistics[key]}
-                onChange={e =>
-                  updatePassport({ logistics: { ...logistics, [key]: e.target.checked } })
-                }
+                onChange={e => updateLogistics({ [key]: e.target.checked })}
                 className="rounded"
               />
               {fieldLabel}
@@ -185,7 +222,33 @@ export function PassportLogisticsTab() {
           ))}
         </div>
       </section>
-      {saving && <p className={`text-xs ${accent}`}>Saving…</p>}
+
+      <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-gray-200 dark:border-gray-800">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!dirty || saving}
+          className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium disabled:opacity-50 ${btnPrimary}`}
+        >
+          {saving ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Saving…
+            </>
+          ) : (
+            'Save changes'
+          )}
+        </button>
+        {saved && !dirty && (
+          <span className={`inline-flex items-center gap-1 text-sm ${accent}`}>
+            <Check className="h-4 w-4" />
+            Saved
+          </span>
+        )}
+        {dirty && !saving && (
+          <span className={`text-xs ${muted}`}>You have unsaved changes</span>
+        )}
+      </div>
     </div>
   );
 }

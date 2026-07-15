@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AppLayout } from '@/components/layout/app-layout';
 import { VendorPulseCard } from '@/components/vendor/vendor-pulse-card';
@@ -10,9 +10,10 @@ import { useDemoStore } from '@/contexts/demo-store-context';
 import { useVendorPassport } from '@/contexts/vendor-passport-context';
 import { useVendorApplications } from '@/contexts/vendor-applications-context';
 import { submitVendorApplicationToOrganizer } from '@/lib/vendor-apply-api';
+import { getInterestCounts, seedInterestCount } from '@/lib/event-interest';
 import type { AlphaTier } from '@/lib/mock-data';
 import { CATEGORY_LABELS, type EventCategory } from '@/lib/platform-data';
-import { Filter, Search, X } from 'lucide-react';
+import { Filter, Heart, Search, X } from 'lucide-react';
 import { useTheme } from '@/contexts/theme-context';
 
 export default function EventPulsePage() {
@@ -27,6 +28,34 @@ export default function EventPulsePage() {
     () => new Set(applications.map(a => a.eventId).filter(Boolean)),
     [applications]
   );
+
+  const [interestTick, setInterestTick] = useState(0);
+  const appliedDemand = useMemo(() => {
+    void interestTick;
+    const rows = applications
+      .map(a => {
+        const event = publishedEvents.find(e => e.id === a.eventId);
+        if (!event) return null;
+        seedInterestCount(event.id, event.saves);
+        const counts = getInterestCounts(event.id);
+        return {
+          eventId: event.id,
+          name: event.name,
+          total: counts.saves + counts.rsvps,
+          saves: counts.saves,
+          rsvps: counts.rsvps,
+        };
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null && r.total > 0)
+      .sort((a, b) => b.total - a.total);
+    const totalPeople = rows.reduce((sum, r) => sum + r.total, 0);
+    return { rows, totalPeople };
+  }, [applications, publishedEvents, interestTick]);
+
+  useEffect(() => {
+    const t = setInterval(() => setInterestTick(n => n + 1), 2000);
+    return () => clearInterval(t);
+  }, []);
 
   const [showFilters, setShowFilters] = useState(true);
   const [selectedTiers, setSelectedTiers] = useState<AlphaTier[]>(['S', 'A', 'B', 'C']);
@@ -172,6 +201,33 @@ export default function EventPulsePage() {
                 {pipelineIds.size} application{pipelineIds.size === 1 ? '' : 's'} submitted
               </div>
             </div>
+
+            {appliedDemand.totalPeople > 0 && (
+              <div className="mt-4 rounded-xl border border-orange-200 dark:border-orange-900/50 bg-orange-50/80 dark:bg-orange-950/20 p-3 text-sm">
+                <div className="font-semibold mb-1 flex items-center gap-1.5">
+                  <Heart className="h-3.5 w-3.5 text-orange-600" />
+                  Demand on your apps
+                </div>
+                <p className={`text-xs mb-2 ${muted}`}>
+                  {appliedDemand.totalPeople} people interested across events you applied to
+                </p>
+                <ul className="space-y-1.5">
+                  {appliedDemand.rows.slice(0, 4).map(row => (
+                    <li key={row.eventId}>
+                      <Link
+                        href={`/events/${row.eventId}`}
+                        className="flex justify-between gap-2 text-xs hover:underline"
+                      >
+                        <span className="truncate">{row.name}</span>
+                        <span className="tabular-nums text-orange-600 font-semibold shrink-0">
+                          {row.total}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </aside>
         )}
 
@@ -182,6 +238,16 @@ export default function EventPulsePage() {
                 <h1 className="text-2xl font-bold">Find your next event</h1>
                 <p className={`text-sm mt-1 ${muted}`}>
                   Apply directly — submissions land in the organizer inbox
+                  {appliedDemand.totalPeople > 0 && (
+                    <>
+                      {' '}
+                      ·{' '}
+                      <span className="text-orange-600 font-medium tabular-nums">
+                        {appliedDemand.totalPeople} interested
+                      </span>{' '}
+                      on your pipeline
+                    </>
+                  )}
                 </p>
               </div>
               {!showFilters && (

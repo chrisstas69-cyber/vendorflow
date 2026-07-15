@@ -41,6 +41,8 @@ export interface EventListing {
   promotionTier: 'none' | 'featured' | 'spotlight';
   source: ListingSource;
   externalUrl?: string | null;
+  /** Platform seed / DB saves — seeds EventInterest UI */
+  saves?: number;
 }
 
 /** SEO region slugs → SQLite region values */
@@ -165,6 +167,7 @@ export function platformEventToListing(event: PlatformEvent): EventListing {
     experienceTags,
     promotionTier: event.promotionTier,
     source: 'platform',
+    saves: event.saves,
   };
 }
 

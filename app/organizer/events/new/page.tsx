@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useDemoStore } from '@/contexts/demo-store-context';
 import { OrganizerLayout } from '@/components/layout/organizer-layout';
 import type { EventCategory, PromotionTier } from '@/lib/platform-data';
-import { CATEGORY_LABELS } from '@/lib/platform-data';
+import { CATEGORY_LABELS, DEMO_ORGANIZER_ID, mockEventSeries } from '@/lib/platform-data';
 import { STOCK } from '@/lib/event-images';
 
 const IMAGE_PRESETS = [
@@ -15,6 +15,8 @@ const IMAGE_PRESETS = [
   { label: 'Farmers market', url: STOCK.farmersMarket },
   { label: 'Beach festival', url: STOCK.beachFest },
 ];
+
+const MY_SERIES = mockEventSeries.filter(s => s.organizerId === DEMO_ORGANIZER_ID);
 
 export default function CreateEventPage() {
   const router = useRouter();
@@ -34,6 +36,7 @@ export default function CreateEventPage() {
     boothFee: 150,
     permitFee: 0,
     applicationDeadline: '',
+    seriesId: '' as string,
     tier: 'B' as const,
     alphaScore: 70,
     familyDensity: 65,
@@ -61,8 +64,9 @@ export default function CreateEventPage() {
       description: form.description,
       category: form.category,
       audienceTags: form.audienceTags.split(',').map(t => t.trim()).filter(Boolean),
-      organizerId: 'org-demo',
+      organizerId: DEMO_ORGANIZER_ID,
       organizerName: form.organizerName,
+      seriesId: form.seriesId || undefined,
       listingStatus: form.listingStatus,
       vendorSlots: form.vendorSlots,
       applicationDeadline: form.applicationDeadline || undefined,
@@ -106,6 +110,25 @@ export default function CreateEventPage() {
         {field('Time', (
           <input className={inputCls} value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} />
         ))}
+        {field('Event series (optional)', (
+          <select
+            className={inputCls}
+            value={form.seriesId}
+            onChange={e => setForm({ ...form, seriesId: e.target.value })}
+          >
+            <option value="">Standalone event</option>
+            {MY_SERIES.map(s => (
+              <option key={s.id} value={s.id}>
+                {s.name} · {s.seasonLabel}
+              </option>
+            ))}
+          </select>
+        ))}
+        {form.seriesId ? (
+          <p className="text-xs text-gray-500 -mt-3">
+            {MY_SERIES.find(s => s.id === form.seriesId)?.description}
+          </p>
+        ) : null}
         {field('Venue / address', (
           <input required className={inputCls} value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} />
         ))}

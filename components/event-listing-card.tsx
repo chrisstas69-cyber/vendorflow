@@ -6,6 +6,7 @@ import { Calendar, MapPin, Star, Sparkles, ExternalLink } from 'lucide-react';
 import type { EventListing } from '@/lib/marketplace';
 import type { PlatformEvent } from '@/lib/platform-data';
 import { platformEventToListing } from '@/lib/marketplace';
+import { EventInterestButton } from '@/components/public/event-interest-button';
 
 export type EventListingCardSize = 'default' | 'large' | 'compact';
 
@@ -31,8 +32,13 @@ export function EventListingCard({
   const isCompact = size === 'compact';
   const isExternal = listing.href.startsWith('http');
   const imageHeight = isLarge ? 256 : isCompact ? 144 : 192;
+  const showInterest = listing.source === 'platform' && !isExternal && !isCompact;
 
-  const inner = (
+  const cardClass = `group relative block overflow-hidden rounded-2xl border vf-border vf-surface transition-all duration-300 hover:border-orange-500/40 hover:-translate-y-0.5 animate-fade-up ${
+    isLarge ? 'col-span-1 md:col-span-2' : ''
+  } ${className}`;
+
+  const body = (
     <>
       <div
         className={`relative overflow-hidden ${isLarge ? 'h-64 md:h-72' : isCompact ? 'h-36' : 'h-48'}`}
@@ -76,7 +82,7 @@ export function EventListingCard({
         </div>
       </div>
       {!isCompact && (
-        <div className="p-4 vf-surface">
+        <div className="p-4 pr-14 vf-surface">
           <div className="flex items-center gap-3 text-sm vf-text-muted mb-2">
             <span className="flex items-center gap-1">
               <Calendar className="h-3.5 w-3.5" />
@@ -109,21 +115,37 @@ export function EventListingCard({
     </>
   );
 
-  const cardClass = `group block overflow-hidden rounded-2xl border vf-border vf-surface transition-all duration-300 hover:border-orange-500/40 hover:-translate-y-0.5 animate-fade-up ${
-    isLarge ? 'col-span-1 md:col-span-2' : ''
-  } ${className}`;
+  const interestBtn = showInterest ? (
+    <div
+      className="absolute bottom-3 right-3 z-10"
+      onClick={e => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+    >
+      <EventInterestButton
+        eventId={listing.id}
+        initialSaves={listing.saves}
+        kind="save"
+        compact
+      />
+    </div>
+  ) : null;
 
   if (isExternal) {
     return (
       <a href={listing.href} target="_blank" rel="noopener noreferrer" className={cardClass}>
-        {inner}
+        {body}
       </a>
     );
   }
 
   return (
-    <Link href={listing.href} className={cardClass}>
-      {inner}
-    </Link>
+    <div className={cardClass}>
+      <Link href={listing.href} className="block">
+        {body}
+      </Link>
+      {interestBtn}
+    </div>
   );
 }

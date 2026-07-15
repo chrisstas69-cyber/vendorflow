@@ -75,11 +75,26 @@ export function InvoicingPanel({ role, organizerId, vendorEmail }: InvoicingPane
   }
 
   if (invoices.length === 0) {
-    return <p className={`text-sm py-6 ${muted}`}>No invoices yet.</p>;
+    return (
+      <div className={`text-sm py-6 space-y-2 ${muted}`}>
+        <p>No booth-fee invoices yet.</p>
+        {role === 'organizer' && (
+          <p>
+            When you approve a vendor application, create an invoice here for their booth fee and permit
+            charges. The vendor receives a payment link — you are collecting fees, not paying them.
+          </p>
+        )}
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
+      {role === 'organizer' && (
+        <p className={`text-sm ${muted}`}>
+          Each invoice is money a vendor owes you (booth fee, permits, deposits). Status updates when they pay.
+        </p>
+      )}
       {invoices.map(inv => {
         const paidCents = inv.payments
           .filter(p => p.status === 'succeeded')

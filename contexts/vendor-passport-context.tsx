@@ -10,9 +10,11 @@ import {
 } from 'react';
 import {
   DEMO_VENDOR_EMAIL,
+  mergeLogisticsFields,
   mockVendorPassport,
   validatePassport,
   type PassportValidation,
+  type VendorLogisticsPatch,
   type VendorPassport,
 } from '@/lib/vendor-passport';
 import { useVendorEmail } from '@/lib/hooks/use-vendor-email';
@@ -27,7 +29,9 @@ interface VendorPassportContextValue {
   passport: VendorPassport;
   validation: PassportValidation;
   saving: boolean;
-  updatePassport: (patch: Partial<VendorPassport>) => Promise<void>;
+  updatePassport: (
+    patch: Omit<Partial<VendorPassport>, 'logistics'> & { logistics?: VendorLogisticsPatch }
+  ) => Promise<void>;
   addDocument: (type: DocumentType, fileName: string) => Promise<void>;
   removeDocument: (docId: string) => Promise<void>;
   setSetupPhoto: (url: string | undefined) => Promise<void>;
@@ -62,7 +66,10 @@ async function syncToServer(passport: VendorPassport) {
   });
 }
 
-async function putToServer(vendorEmail: string, patch: Partial<VendorPassport>) {
+async function putToServer(
+  vendorEmail: string,
+  patch: Omit<Partial<VendorPassport>, 'logistics'> & { logistics?: VendorLogisticsPatch }
+) {
   const res = await fetch('/api/vendors/passport', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -103,12 +110,14 @@ export function VendorPassportProvider({ children }: { children: React.ReactNode
   }, [refreshFromServer, vendorEmail, isSignedIn, isVendorSurface]);
 
   const persist = useCallback(
-    async (patch: Partial<VendorPassport>) => {
+    async (patch: Omit<Partial<VendorPassport>, 'logistics'> & { logistics?: VendorLogisticsPatch }) => {
       setSaving(true);
       const merged = {
         ...passport,
         ...patch,
-        logistics: patch.logistics ? { ...passport.logistics, ...patch.logistics } : passport.logistics,
+        logistics: patch.logistics
+          ? mergeLogisticsFields(passport.logistics, patch.logistics)
+          : passport.logistics,
         updatedAt: new Date().toISOString(),
       };
       applyPassport(merged);
@@ -125,7 +134,8 @@ export function VendorPassportProvider({ children }: { children: React.ReactNode
   );
 
   const updatePassport = useCallback(
-    (patch: Partial<VendorPassport>) => persist(patch),
+    (patch: Omit<Partial<VendorPassport>, 'logistics'> & { logistics?: VendorLogisticsPatch }) =>
+      persist(patch),
     [persist]
   );
 

@@ -1,9 +1,11 @@
 import {
   DEMO_VENDOR_EMAIL,
   createEmptyPassport,
+  mergeLogisticsFields,
   mockVendorPassport,
   normalizePassport,
   validatePassport,
+  type VendorLogisticsPatch,
   type VendorPassport,
 } from '@/lib/vendor-passport';
 
@@ -49,7 +51,9 @@ export function updatePassport(
     ...current,
     ...patch,
     vendorEmail,
-    logistics: { ...current.logistics, ...patch.logistics },
+    logistics: patch.logistics
+      ? mergeLogisticsFields(current.logistics, patch.logistics as VendorLogisticsPatch)
+      : current.logistics,
   });
   store.set(vendorEmail, updated);
   return updated;

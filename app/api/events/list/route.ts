@@ -1,6 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type Database from 'better-sqlite3';
 import { getDb, getEvents, getEventStats } from '@/lib/db';
 import { mockPlatformEvents } from '@/lib/platform-data';
+
+/**
+ * The scraped-events store is better-sqlite3, which cannot open on Vercel's
+ * read-only serverless filesystem. When that happens we still serve the static
+ * platform listings instead of 500-ing the whole Discover page.
+ */
+function openScrapeDb(): Database.Database | null {
+  try {
+    return getDb();
+  } catch (err) {
+    console.warn(
+      '[events/list] Scrape DB unavailable — serving platform events only:',
+      err instanceof Error ? err.message : err
+    );
+    return null;
+  }
+}
+
+const EMPTY_STATS = {
+  total: 0, nightTotal: 0, next7: 0, next30: 0, next90: 0, newToday: 0,
+  njTotal: 0, njNewToday: 0, fireworksTotal: 0, weekendTotal: 0, lastScrape: 'Never',
+};
+
+function safeStats(db: Database.Database | null) {
+  if (!db) return EMPTY_STATS;
+  try {
+    return getEventStats(db);
+  } catch {
+    return EMPTY_STATS;
+  }
+}
 import {
   EXPERIENCE_TAGS,
   eventRowToListing,
@@ -26,7 +58,7 @@ export async function GET(req: NextRequest) {
   const includePlatform = searchParams.get('includePlatform') !== '0';
   const format = searchParams.get('format') || 'legacy';
 
-  const db = getDb();
+  const db = openScrapeDb();
   const dbRegion = regionSlug ? regionSlugToDb(regionSlug) : searchParams.get('region') || undefined;
   const townQuery = townSlug ? townSlugToQuery(townSlug) : undefined;
 
@@ -40,14 +72,16 @@ export async function GET(req: NextRequest) {
     format === 'marketplace';
 
   if (isDiscoverSearch) {
-    const rows = getEvents(db, {
-      region: dbRegion,
-      town: townQuery,
-      query: q,
-      state: state === 'NY' || state === 'NJ' ? state : undefined,
-      daysAhead: 90,
-      limit: 200,
-    });
+    const rows = db
+      ? getEvents(db, {
+          region: dbRegion,
+          town: townQuery,
+          query: q,
+          state: state === 'NY' || state === 'NJ' ? state : undefined,
+          daysAhead: 90,
+          limit: 200,
+        })
+      : [];
 
     let listings: EventListing[] = rows.map(eventRowToListing);
 
@@ -82,7 +116,7 @@ export async function GET(req: NextRequest) {
       listings = filterListingsByExperienceTags(listings, tagIds);
     }
 
-    const stats = getEventStats(db);
+    const stats = safeStats(db);
 
     return NextResponse.json({
       listings,
@@ -98,6 +132,9 @@ export async function GET(req: NextRequest) {
   }
 
   // Legacy view routing (ops dashboard)
+  if (!db) {
+    return NextResponse.json({ events: [], stats: EMPTY_STATS });
+  }
   let events;
   const region = searchParams.get('region') || undefined;
   const eventType = searchParams.get('event_type') || undefined;

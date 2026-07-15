@@ -659,6 +659,21 @@ model GalleryItem {
   @@index([passportId])
 }
 
+// ─── Consumer interest (save / RSVP) ─────────────────────────────────────────
+
+model EventInterest {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  eventId  String
+  deviceId String
+  /// save | rsvp
+  kind     String @default("save")
+
+  @@unique([eventId, deviceId, kind])
+  @@index([eventId, kind])
+}
+
 // ─── Operational contact intelligence (private — not public directory) ───────
 
 model Jurisdiction {

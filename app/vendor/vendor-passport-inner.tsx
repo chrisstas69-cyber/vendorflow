@@ -11,10 +11,11 @@ import { PassportCompletionMeter } from '@/components/vendor/passport-completion
 import { PassportGeneralTab } from '@/components/vendor/passport/general-tab';
 import { PassportLogisticsTab } from '@/components/vendor/passport/logistics-tab';
 import { PassportDocumentsTab } from '@/components/vendor/passport/documents-tab';
-import { CreditCard, Building2, Truck, FileText, RefreshCw, MessageSquare, Images } from 'lucide-react';
+import { CreditCard, Building2, Truck, FileText, RefreshCw, MessageSquare, Images, ExternalLink } from 'lucide-react';
 import { InvoicingPanel } from '@/components/invoicing/invoicing-panel';
 import { PassportPortfolioTab } from '@/components/vendor/passport/portfolio-tab';
 import { FoundersEditionBanner } from '@/components/founders/founders-banner';
+import { passportPublicSlug } from '@/lib/vendor-passport';
 
 const TABS = [
   { id: 'general', label: 'General', icon: Building2 },
@@ -57,6 +58,12 @@ export default function VendorPassportPageInner() {
             <p className={`text-sm mt-1 ${muted}`}>
               One profile for every application — {passport.vendorEmail}
             </p>
+            <Link
+              href={`/vendors/${passportPublicSlug(passport)}`}
+              className={`inline-flex items-center gap-1 text-xs font-medium mt-2 ${accent}`}
+            >
+              Public profile <ExternalLink className="h-3 w-3" />
+            </Link>
           </div>
           <div className="flex gap-2">
             <button

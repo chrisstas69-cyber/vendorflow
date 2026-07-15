@@ -26,6 +26,29 @@ export interface VendorLogistics {
   generatorOk?: boolean;
 }
 
+/** Merge logistics patches — `null` explicitly clears optional fields (JSON can't send undefined). */
+export type VendorLogisticsPatch = Partial<{ [K in keyof VendorLogistics]: VendorLogistics[K] | null }>;
+
+export function mergeLogisticsFields(
+  current: VendorLogistics,
+  patch: VendorLogisticsPatch
+): VendorLogistics {
+  const next: VendorLogistics = { ...current };
+  (Object.keys(patch) as (keyof VendorLogistics)[]).forEach(key => {
+    const value = patch[key];
+    if (value === null) {
+      if (key !== 'needsElectric' && key !== 'vehicleType') {
+        delete next[key];
+      }
+      return;
+    }
+    if (value !== undefined) {
+      Object.assign(next, { [key]: value });
+    }
+  });
+  return next;
+}
+
 export interface VendorPassport {
   id: string;
   vendorEmail: string;
@@ -201,6 +224,44 @@ export const mockVendorPassport: VendorPassport = {
   updatedAt: new Date().toISOString(),
 };
 
+export function passportPublicSlug(passport: Pick<VendorPassport, 'businessName' | 'dba' | 'id'>): string {
+  const base = passport.dba || passport.businessName || passport.id;
+  return base
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '') || 'vendor';
+}
+
+export function getPublicVendorProfile(slug: string) {
+  const candidates = [mockVendorPassport];
+  const match = candidates.find(p => {
+    const primary = passportPublicSlug(p);
+    const byBusiness = passportPublicSlug({ ...p, dba: undefined });
+    return primary === slug || byBusiness === slug || p.id === slug;
+  });
+  if (!match) return null;
+
+  return {
+    id: match.id,
+    slug: passportPublicSlug(match),
+    businessName: match.businessName,
+    dba: match.dba,
+    description: match.description,
+    website: match.website,
+    categories: match.categories,
+    serviceTags: match.serviceTags.filter(t =>
+      ['family-friendly', 'high-foot-traffic', 'outdoor-only', 'compact-booth', 'liability-insured'].includes(t)
+    ),
+    setupPhotoUrl: match.setupPhotoUrl,
+    logistics: {
+      boothWidthFt: match.logistics.boothWidthFt,
+      boothDepthFt: match.logistics.boothDepthFt,
+      needsElectric: match.logistics.needsElectric,
+      vehicleType: match.logistics.vehicleType,
+    },
+  };
+}
+
 export function normalizePassport(input: Partial<VendorPassport> & { vendorEmail: string }): VendorPassport {
   const base = mockVendorPassport.vendorEmail === input.vendorEmail
     ? { ...mockVendorPassport }
@@ -209,7 +270,12 @@ export function normalizePassport(input: Partial<VendorPassport> & { vendorEmail
   return {
     ...base,
     ...input,
-    logistics: { ...base.logistics, ...input.logistics },
+    logistics: input.logistics !== undefined
+      ? mergeLogisticsFields(
+          createEmptyPassport(input.vendorEmail).logistics,
+          input.logistics as VendorLogisticsPatch
+        )
+      : base.logistics,
     categories: input.categories ?? base.categories,
     serviceTags: input.serviceTags ?? base.serviceTags,
     documents: input.documents ?? base.documents,

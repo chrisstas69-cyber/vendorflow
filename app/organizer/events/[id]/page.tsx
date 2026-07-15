@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useDemoStore } from '@/contexts/demo-store-context';
@@ -9,7 +10,9 @@ import { useOrganizerTheme } from '@/components/organizer/use-organizer-theme';
 import { TrustGalleryEditor } from '@/components/gallery/trust-gallery-editor';
 import { CATEGORY_LABELS } from '@/lib/platform-data';
 import { useGallery } from '@/hooks/use-gallery';
-import { ExternalLink, Eye } from 'lucide-react';
+import { getInterestCounts, seedInterestCount } from '@/lib/event-interest';
+import { passportPublicSlug } from '@/lib/vendor-passport';
+import { ExternalLink, Eye, Heart } from 'lucide-react';
 
 export default function OrganizerEventDetailPage() {
   const params = useParams();
@@ -19,15 +22,29 @@ export default function OrganizerEventDetailPage() {
   const eventSubs = submissions.filter(s => s.eventId === id);
   const { surface, muted, heading, btnSecondary, btnPrimary } = useOrganizerTheme();
   const { items, loading, refresh } = useGallery('event', id);
+  const [interest, setInterest] = useState({ saves: 0, rsvps: 0 });
+
+  useEffect(() => {
+    if (!event) return;
+    seedInterestCount(event.id, event.saves);
+    const sync = () => setInterest(getInterestCounts(event.id));
+    sync();
+    const t = setInterval(sync, 1500);
+    return () => clearInterval(t);
+  }, [event]);
 
   if (!event) {
     return (
       <OrganizerLayout>
         <p className="text-gray-500">Event not found.</p>
-        <Link href="/organizer/events" className="text-indigo-600 underline text-sm">← Back</Link>
+        <Link href="/organizer/events" className="text-indigo-600 underline text-sm">
+          ← Back
+        </Link>
       </OrganizerLayout>
     );
   }
+
+  const interested = interest.saves + interest.rsvps;
 
   return (
     <OrganizerLayout showBanners={false}>
@@ -47,11 +64,18 @@ export default function OrganizerEventDetailPage() {
 
       <p className={`text-xs font-medium mb-6 ${muted}`}>{CATEGORY_LABELS[event.category]}</p>
 
-      <div className="grid sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className={`p-4 rounded-2xl ${surface}`}>
           <Eye className="h-5 w-5 text-teal-600 mb-1" />
           <div className={`text-2xl font-bold ${heading}`}>{event.views}</div>
           <div className={`text-xs ${muted}`}>Page views</div>
+        </div>
+        <div className={`p-4 rounded-2xl ${surface}`}>
+          <Heart className="h-5 w-5 text-orange-600 mb-1" />
+          <div className={`text-2xl font-bold tabular-nums ${heading}`}>{interested}</div>
+          <div className={`text-xs ${muted}`}>
+            Interested · {interest.saves} saved · {interest.rsvps} RSVP
+          </div>
         </div>
         <div className={`p-4 rounded-2xl ${surface}`}>
           <div className={`text-2xl font-bold ${heading}`}>{eventSubs.length}</div>
@@ -88,9 +112,22 @@ export default function OrganizerEventDetailPage() {
       ) : (
         <div className="space-y-2">
           {eventSubs.map(sub => (
-            <div key={sub.id} className={`p-4 rounded-2xl flex justify-between items-center ${surface}`}>
+            <div
+              key={sub.id}
+              className={`p-4 rounded-2xl flex justify-between items-center ${surface}`}
+            >
               <div>
-                <div className={`font-semibold ${heading}`}>{sub.vendorName}</div>
+                <div className={`font-semibold ${heading}`}>
+                  <Link
+                    href={`/vendors/${passportPublicSlug({
+                      businessName: sub.vendorName,
+                      id: sub.id,
+                    })}`}
+                    className="hover:underline"
+                  >
+                    {sub.vendorName}
+                  </Link>
+                </div>
                 <div className={`text-sm ${muted}`}>{sub.category}</div>
               </div>
               <span
@@ -109,7 +146,10 @@ export default function OrganizerEventDetailPage() {
         </div>
       )}
 
-      <Link href="/organizer/applications" className="inline-block mt-4 text-sm font-semibold text-teal-600 hover:underline">
+      <Link
+        href="/organizer/applications"
+        className="inline-block mt-4 text-sm font-semibold text-teal-600 hover:underline"
+      >
         Manage all applications →
       </Link>
     </OrganizerLayout>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { EventListingCard } from '@/components/event-listing-card';
 import { BROWSE_CATEGORIES, type BrowseCategoryId } from '@/lib/documents';
 import type { EventListing } from '@/lib/marketplace';
@@ -29,6 +29,8 @@ export function DiscoverExplore({
   pageDescription,
 }: DiscoverExploreProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [query, setQuery] = useState('');
   const [state, setState] = useState<'all' | 'NY' | 'NJ'>(initialState);
   const [browseCategory, setBrowseCategory] = useState<BrowseCategoryId>('all');
@@ -42,8 +44,29 @@ export function DiscoverExplore({
     const cat = searchParams.get('category');
     if (cat && BROWSE_CATEGORIES.some(c => c.id === cat)) {
       setBrowseCategory(cat as BrowseCategoryId);
+    } else if (!cat) {
+      setBrowseCategory('all');
+    }
+    const st = searchParams.get('state');
+    if (st === 'NY' || st === 'NJ' || st === 'all') {
+      setState(st);
     }
   }, [searchParams]);
+
+  const syncFiltersToUrl = useCallback(
+    (next: { category?: BrowseCategoryId; state?: 'all' | 'NY' | 'NJ' }) => {
+      const params = new URLSearchParams(searchParams.toString());
+      const cat = next.category ?? browseCategory;
+      const st = next.state ?? state;
+      if (cat && cat !== 'all') params.set('category', cat);
+      else params.delete('category');
+      if (st && st !== 'all') params.set('state', st);
+      else params.delete('state');
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [browseCategory, state, searchParams, router, pathname]
+  );
 
   const fetchListings = useCallback(async () => {
     setLoading(true);
@@ -117,7 +140,10 @@ export function DiscoverExplore({
           <button
             key={cat.id}
             type="button"
-            onClick={() => setBrowseCategory(cat.id)}
+            onClick={() => {
+              setBrowseCategory(cat.id);
+              syncFiltersToUrl({ category: cat.id });
+            }}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
               browseCategory === cat.id
                 ? 'bg-orange-600 border-orange-600 text-white shadow-sm'
@@ -168,7 +194,11 @@ export function DiscoverExplore({
         </div>
         <select
           value={state}
-          onChange={e => setState(e.target.value as typeof state)}
+          onChange={e => {
+            const next = e.target.value as typeof state;
+            setState(next);
+            syncFiltersToUrl({ state: next });
+          }}
           className="px-4 py-3 rounded-xl border vf-border vf-surface vf-text"
         >
           <option value="all">All states</option>
