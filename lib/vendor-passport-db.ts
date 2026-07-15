@@ -87,14 +87,24 @@ export function prismaRowToPassport(row: {
 }
 
 export async function loadPassportFromDb(vendorEmail: string): Promise<VendorPassport | null> {
-  const row = await prisma.vendorPassport.findUnique({
-    where: { vendorEmail },
-    include: { documents: true },
-  });
-  return row ? prismaRowToPassport(row) : null;
+  try {
+    const { isHostedDatabaseUrl } = await import('@/lib/prisma');
+    if (!isHostedDatabaseUrl()) return null;
+    const row = await prisma.vendorPassport.findUnique({
+      where: { vendorEmail },
+      include: { documents: true },
+    });
+    return row ? prismaRowToPassport(row) : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function persistPassportToDb(passport: VendorPassport): Promise<VendorPassport> {
+  try {
+    const { isHostedDatabaseUrl } = await import('@/lib/prisma');
+    if (!isHostedDatabaseUrl()) return passport;
+
   const validation = validatePassport(passport);
 
   const row = await prisma.vendorPassport.upsert({
@@ -114,14 +124,14 @@ export async function persistPassportToDb(passport: VendorPassport): Promise<Ven
       insuranceExpiry: passport.insuranceExpiry ? new Date(passport.insuranceExpiry) : null,
       setupPhotoUrl: passport.setupPhotoUrl,
       vehicleType: passport.logistics.vehicleType,
-      trailerLengthFt: passport.logistics.trailerLengthFt,
-      boothWidthFt: passport.logistics.boothWidthFt,
-      boothDepthFt: passport.logistics.boothDepthFt,
+      trailerLengthFt: passport.logistics.trailerLengthFt ?? null,
+      boothWidthFt: passport.logistics.boothWidthFt ?? null,
+      boothDepthFt: passport.logistics.boothDepthFt ?? null,
       needsElectric: passport.logistics.needsElectric,
-      ampRequirement: passport.logistics.ampRequirement,
-      setupTimeMinutes: passport.logistics.setupTimeMinutes,
-      waterAccess: passport.logistics.waterAccess,
-      generatorOk: passport.logistics.generatorOk,
+      ampRequirement: passport.logistics.ampRequirement?.trim() || null,
+      setupTimeMinutes: passport.logistics.setupTimeMinutes ?? null,
+      waterAccess: passport.logistics.waterAccess ?? null,
+      generatorOk: passport.logistics.generatorOk ?? null,
     },
     update: {
       businessName: passport.businessName,
@@ -137,14 +147,14 @@ export async function persistPassportToDb(passport: VendorPassport): Promise<Ven
       insuranceExpiry: passport.insuranceExpiry ? new Date(passport.insuranceExpiry) : null,
       setupPhotoUrl: passport.setupPhotoUrl,
       vehicleType: passport.logistics.vehicleType,
-      trailerLengthFt: passport.logistics.trailerLengthFt,
-      boothWidthFt: passport.logistics.boothWidthFt,
-      boothDepthFt: passport.logistics.boothDepthFt,
+      trailerLengthFt: passport.logistics.trailerLengthFt ?? null,
+      boothWidthFt: passport.logistics.boothWidthFt ?? null,
+      boothDepthFt: passport.logistics.boothDepthFt ?? null,
       needsElectric: passport.logistics.needsElectric,
-      ampRequirement: passport.logistics.ampRequirement,
-      setupTimeMinutes: passport.logistics.setupTimeMinutes,
-      waterAccess: passport.logistics.waterAccess,
-      generatorOk: passport.logistics.generatorOk,
+      ampRequirement: passport.logistics.ampRequirement?.trim() || null,
+      setupTimeMinutes: passport.logistics.setupTimeMinutes ?? null,
+      waterAccess: passport.logistics.waterAccess ?? null,
+      generatorOk: passport.logistics.generatorOk ?? null,
     },
     include: { documents: true },
   });
@@ -168,4 +178,7 @@ export async function persistPassportToDb(passport: VendorPassport): Promise<Ven
     include: { documents: true },
   });
   return prismaRowToPassport(refreshed);
+  } catch {
+    return passport;
+  }
 }

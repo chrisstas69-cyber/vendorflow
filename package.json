@@ -19,6 +19,8 @@
     "airtable:verify": "python3 scripts/verify-airtable.py"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/utilities": "^3.2.2",
     "@prisma/client": "^6.9.0",
     "@sentry/nextjs": "^10.63.0",
     "@vercel/analytics": "^2.0.1",

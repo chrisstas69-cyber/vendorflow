@@ -33,10 +33,11 @@ export const PILOT_ORGANIZER: PilotOrganizerProfile = {
 };
 
 export function getPilotDataSource(): PilotDataSource {
-  const v =
+  const raw =
     (typeof process !== 'undefined' && process.env.PILOT_DATA_SOURCE) ||
     (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_PILOT_DATA_SOURCE) ||
     'seed';
+  const v = String(raw).trim().toLowerCase();
   return v === 'db' ? 'db' : 'seed';
 }
 

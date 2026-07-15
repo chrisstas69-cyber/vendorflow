@@ -2,7 +2,7 @@
 
 import { useTheme } from '@/contexts/theme-context';
 
-/** Restrained organizer dashboard tokens — neutral surfaces + teal accent */
+/** Organizer hub tokens — aligned with VendorFlow vf-* palette + teal accent */
 export function useOrganizerTheme() {
   const { mode } = useTheme();
   const dark = mode === 'night';
@@ -10,30 +10,31 @@ export function useOrganizerTheme() {
   return {
     dark,
     accent: 'teal',
-    shell: dark ? 'bg-stone-950 text-stone-100' : 'bg-stone-100 text-stone-900',
-    sidebar: dark ? 'bg-stone-900 border-stone-800' : 'bg-white border-stone-200',
-    card: dark ? 'bg-stone-900 border-stone-800' : 'bg-white border-stone-200',
-    /** Softer card — shadow instead of heavy border */
+    shell: 'vf-bg vf-text',
+    sidebar: dark
+      ? 'vf-surface border-[var(--vf-border)]'
+      : 'vf-surface border-[var(--vf-border)]',
+    card: 'vf-surface border-[var(--vf-border)]',
     surface: dark
-      ? 'bg-stone-900 shadow-sm ring-1 ring-stone-800'
-      : 'bg-white shadow-sm ring-1 ring-stone-200/80',
-    cardInset: dark ? 'bg-stone-800/50 border-stone-700' : 'bg-stone-50 border-stone-100',
-    muted: dark ? 'text-stone-400' : 'text-stone-500',
-    heading: dark ? 'text-stone-50' : 'text-stone-900',
-    label: dark ? 'text-stone-300' : 'text-stone-700',
+      ? 'vf-surface shadow-sm ring-1 ring-white/10'
+      : 'vf-surface shadow-sm ring-1 ring-black/5',
+    cardInset: dark ? 'vf-surface-2 border-[var(--vf-border)]' : 'vf-bg-subtle border-[var(--vf-border)]',
+    muted: 'vf-text-muted',
+    heading: 'vf-text',
+    label: dark ? 'text-stone-300' : 'vf-text-subtle',
     pageTitle: 'text-2xl md:text-[1.75rem] font-bold tracking-tight',
     sectionTitle: 'text-lg font-semibold',
     navActive: dark
-      ? 'bg-teal-950/60 text-teal-300'
-      : 'bg-teal-50 text-teal-800',
+      ? 'bg-emerald-950/50 text-emerald-300'
+      : 'bg-orange-50 text-orange-800',
     navIdle: dark
-      ? 'text-stone-400 hover:bg-stone-800 hover:text-stone-200'
-      : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900',
-    btnPrimary: 'bg-teal-600 hover:bg-teal-700 text-white font-semibold',
+      ? 'vf-text-muted hover:vf-surface-2 hover:vf-text'
+      : 'vf-text-muted hover:vf-surface-2 hover:vf-text',
+    btnPrimary: 'bg-orange-600 hover:bg-orange-700 text-white font-semibold',
     btnSecondary: dark
-      ? 'border-stone-700 bg-stone-800 hover:bg-stone-700 text-stone-200'
-      : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-800',
-    divider: dark ? 'border-stone-800' : 'border-stone-200',
-    statIcon: dark ? 'text-teal-400' : 'text-teal-600',
+      ? 'border-[var(--vf-border)] vf-surface-2 hover:vf-surface-3 vf-text'
+      : 'border-[var(--vf-border)] vf-surface hover:vf-surface-2 vf-text',
+    divider: 'border-[var(--vf-border)]',
+    statIcon: dark ? 'text-emerald-400' : 'text-orange-600',
   };
 }

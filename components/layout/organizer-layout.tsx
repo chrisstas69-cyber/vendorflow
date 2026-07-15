@@ -32,7 +32,7 @@ const NAV = [
   { href: '/organizer/vendors', label: 'Vendors', icon: Users, match: (p: string) => p.startsWith('/organizer/vendors') },
   { href: '/organizer/contacts', label: 'Contacts', icon: BookUser, match: (p: string) => p.startsWith('/organizer/contacts') },
   { href: '/organizer/booths', label: 'Booths', icon: Map, match: (p: string) => p.startsWith('/organizer/booths') },
-  { href: '/organizer/invoicing', label: 'Payments', icon: CreditCard, match: (p: string) => p.startsWith('/organizer/invoicing') },
+  { href: '/organizer/invoicing', label: 'Booth fees', icon: CreditCard, match: (p: string) => p.startsWith('/organizer/invoicing') },
   { href: '/organizer/compliance', label: 'Compliance', icon: MapPin, match: (p: string) => p.startsWith('/organizer/compliance') },
   { href: '/organizer/intel', label: 'Insights', icon: Sparkles, match: (p: string) => p.startsWith('/organizer/intel') },
   { href: '/organizer/settings', label: 'Settings', icon: Settings, match: (p: string) => p.startsWith('/organizer/settings') || p.startsWith('/organizer/founder') || p.startsWith('/organizer/assistant') },
@@ -58,11 +58,11 @@ export function OrganizerLayout({
       <aside className={`hidden lg:flex w-56 flex-col shrink-0 ${t.sidebar} border-r`}>
         <div className={`p-4 border-b ${t.divider}`}>
           <Link href="/organizer" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-teal-600 text-white flex items-center justify-center text-xs font-bold">
-              VF
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-orange-600 to-amber-700 text-white flex items-center justify-center text-xs font-bold shadow-sm">
+              V
             </div>
             <div>
-              <div className="font-bold text-sm">Organizer Hub</div>
+              <div className="font-bold text-sm vf-text">Organizer Hub</div>
               <div className={`text-xs ${t.muted}`}>VendorFlow OS</div>
             </div>
           </Link>

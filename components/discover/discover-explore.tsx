@@ -108,9 +108,9 @@ export function DiscoverExplore({
     `${filtered.length} events${initialTownSlug ? ` near ${initialTownSlug.replace(/-/g, ' ')}` : ''} in NY & NJ`;
 
   return (
-    <>
-      <h1 className="text-3xl font-bold public-heading mb-2">{pageTitle}</h1>
-      <p className="public-muted mb-6">{description}</p>
+    <div className="animate-fade-up">
+      <h1 className="text-3xl font-bold vf-text tracking-tight mb-2">{pageTitle}</h1>
+      <p className="vf-text-muted mb-6 text-sm">{description}</p>
 
       <div className="flex flex-wrap gap-2 mb-4">
         {BROWSE_CATEGORIES.map(cat => (
@@ -120,8 +120,8 @@ export function DiscoverExplore({
             onClick={() => setBrowseCategory(cat.id)}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
               browseCategory === cat.id
-                ? 'bg-amber-400 border-amber-400 text-gray-900'
-                : 'public-card public-muted hover:border-amber-400/50'
+                ? 'bg-orange-600 border-orange-600 text-white shadow-sm'
+                : 'vf-surface vf-border vf-text-muted hover:border-orange-500/40 hover:vf-text'
             }`}
           >
             <span>{cat.icon}</span>
@@ -132,7 +132,9 @@ export function DiscoverExplore({
 
       {tagOptions.length > 0 && (
         <div className="mb-6">
-          <p className="text-xs font-semibold uppercase tracking-wide public-muted mb-2">Experience tags</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider vf-text-subtle mb-2">
+            Experience tags
+          </p>
           <div className="flex flex-wrap gap-2">
             {tagOptions.map(tag => (
               <button
@@ -142,7 +144,7 @@ export function DiscoverExplore({
                 className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                   experienceTags.includes(tag.id)
                     ? 'bg-indigo-600 border-indigo-600 text-white'
-                    : 'public-card public-muted hover:border-indigo-400/50'
+                    : 'vf-surface vf-border vf-text-muted hover:border-indigo-400/50'
                 }`}
               >
                 <span>{tag.icon}</span>
@@ -153,21 +155,21 @@ export function DiscoverExplore({
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row gap-4 mb-8">
+      <div className="flex flex-col md:flex-row gap-3 mb-8">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 public-muted" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 vf-text-muted" />
           <input
             type="search"
             placeholder="Search events, cities, tags..."
             value={query}
             onChange={e => setQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 rounded-xl border public-input focus:outline-none focus:ring-2 focus:ring-amber-400"
+            className="w-full pl-10 pr-4 py-3 rounded-xl border vf-border vf-surface vf-text placeholder:vf-text-subtle focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/50"
           />
         </div>
         <select
           value={state}
           onChange={e => setState(e.target.value as typeof state)}
-          className="px-4 py-3 rounded-xl border public-input"
+          className="px-4 py-3 rounded-xl border vf-border vf-surface vf-text"
         >
           <option value="all">All states</option>
           <option value="NY">New York</option>
@@ -175,14 +177,12 @@ export function DiscoverExplore({
         </select>
       </div>
 
-      {error && (
-        <p className="text-red-600 text-sm mb-4">{error}</p>
-      )}
+      {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
 
       {loading ? (
-        <p className="public-muted text-center py-12">Searching events index…</p>
+        <p className="vf-text-muted text-center py-12 text-sm">Searching events index…</p>
       ) : filtered.length === 0 ? (
-        <p className="public-muted text-center py-12">No events match your filters.</p>
+        <p className="vf-text-muted text-center py-12 text-sm">No events match your filters.</p>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(listing => (
@@ -190,6 +190,6 @@ export function DiscoverExplore({
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }

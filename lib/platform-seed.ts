@@ -59,12 +59,7 @@ export async function ensurePlatformSeed() {
       ensureOpsContactsSeedStore();
     }
   } else {
-    try {
-      await ensurePaymentSeed();
-      await seedLongIslandComplianceRules();
-    } catch (err) {
-      console.warn('[platform-seed] Prisma optional seed skipped:', err);
-    }
+    // Seed / demo mode — never touch Prisma when DATABASE_URL is missing/invalid
     ensureGallerySeedStore();
     ensureOpsContactsSeedStore();
   }

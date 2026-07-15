@@ -8,20 +8,23 @@ import { ApplicationDetailDrawer } from '@/components/organizer/application-deta
 import { DocumentCompletenessBadge } from '@/components/organizer/document-completeness-badge';
 import { OrganizerLoadingState } from '@/components/organizer/organizer-loading-state';
 import { OrganizerEmptyState } from '@/components/organizer/organizer-empty-state';
+import { VendorPipelineBoard } from '@/components/organizer/vendor-pipeline-board';
 import { buildApplicationDetail } from '@/lib/application-detail';
 import { inboxItemsToSubmissions } from '@/lib/inbox-to-submission';
 import { useOrganizerInbox } from '@/hooks/use-organizer-inbox';
 import { useOrganizerTheme } from '@/components/organizer/use-organizer-theme';
-import { ArrowRight, ChevronRight, Inbox, Star, AlertTriangle } from 'lucide-react';
+import { ChevronRight, Inbox, LayoutGrid, List, Star, AlertTriangle } from 'lucide-react';
 import type { VendorSubmission } from '@/lib/platform-data';
 
 type InboxView = 'all' | 'pending' | 'approved' | 'rejected' | 'shortlisted';
+type DisplayMode = 'board' | 'list';
 
 export default function OrganizerApplicationsPage() {
   const { data, loading, error, reload, performAction } = useOrganizerInbox();
   const { card, muted, heading, pageTitle, btnPrimary, btnSecondary } = useOrganizerTheme();
   const [toast, setToast] = useState('');
   const [view, setView] = useState<InboxView>('all');
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('board');
   const [selected, setSelected] = useState<VendorSubmission | null>(null);
 
   const submissions = useMemo(
@@ -130,15 +133,29 @@ export default function OrganizerApplicationsPage() {
         <div>
           <h1 className={`${pageTitle} ${heading}`}>Vendor applications</h1>
           <p className={`text-base mt-1 ${muted}`}>
-            Click any application to review profile, documents, and take action
+            Drag vendors between columns, or open a card to review documents and act
           </p>
         </div>
-        <Link
-          href="/organizer"
-          className="flex items-center gap-1 text-sm font-semibold text-teal-600 hover:underline shrink-0"
-        >
-          Pipeline board <ArrowRight className="h-4 w-4" />
-        </Link>
+        <div className="inline-flex rounded-lg border overflow-hidden shrink-0">
+          <button
+            type="button"
+            onClick={() => setDisplayMode('board')}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold ${
+              displayMode === 'board' ? btnPrimary : btnSecondary
+            }`}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" /> Board
+          </button>
+          <button
+            type="button"
+            onClick={() => setDisplayMode('list')}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold ${
+              displayMode === 'list' ? btnPrimary : btnSecondary
+            }`}
+          >
+            <List className="h-3.5 w-3.5" /> List
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
@@ -161,21 +178,34 @@ export default function OrganizerApplicationsPage() {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2 mb-6">
-        {viewTabs.map(tab => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setView(tab.id)}
-            className={`px-3 py-2 rounded-lg text-sm font-medium ${
-              view === tab.id ? btnPrimary : btnSecondary
-            }`}
-          >
-            {tab.label} ({tab.count})
-          </button>
-        ))}
-      </div>
+      {displayMode === 'list' && (
+        <div className="flex flex-wrap gap-2 mb-6">
+          {viewTabs.map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setView(tab.id)}
+              className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                view === tab.id ? btnPrimary : btnSecondary
+              }`}
+            >
+              {tab.label} ({tab.count})
+            </button>
+          ))}
+        </div>
+      )}
 
+      {displayMode === 'board' ? (
+        <div className="mb-6">
+          <VendorPipelineBoard
+            submissions={submissions}
+            onOpen={setSelected}
+            onStatusChange={(id, status) => handleReview(id, status)}
+          />
+        </div>
+      ) : null}
+
+      {displayMode === 'list' ? (
       <div className="space-y-3">
         {filtered.length === 0 ? (
           <OrganizerEmptyState
@@ -287,6 +317,7 @@ export default function OrganizerApplicationsPage() {
           })
         )}
       </div>
+      ) : null}
 
       <ApplicationDetailDrawer
         submission={selected}

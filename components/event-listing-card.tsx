@@ -47,12 +47,12 @@ export function EventListingCard({
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
         {listing.source === 'sqlite' && (
-          <span className="absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-white/90 text-gray-800">
+          <span className="absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-black/50 backdrop-blur text-white">
             Scraped
           </span>
         )}
         {showFeaturedBadge && listing.promotionTier !== 'none' && (
-          <div className="absolute top-3 left-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-400 text-gray-900 text-xs font-bold shadow">
+          <div className="absolute top-3 left-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-600 text-white text-[10px] font-bold shadow">
             {listing.promotionTier === 'spotlight' ? (
               <>
                 <Sparkles className="h-3 w-3" /> SPONSORED
@@ -65,7 +65,7 @@ export function EventListingCard({
           </div>
         )}
         <div className="absolute bottom-0 left-0 right-0 p-4">
-          <span className="text-xs font-medium text-amber-300 uppercase tracking-wide">
+          <span className="text-[10px] font-medium text-orange-200 uppercase tracking-wide">
             {listing.categoryLabel}
           </span>
           <h3
@@ -76,8 +76,8 @@ export function EventListingCard({
         </div>
       </div>
       {!isCompact && (
-        <div className="p-4 public-card-body">
-          <div className="flex items-center gap-3 text-sm public-muted mb-2">
+        <div className="p-4 vf-surface">
+          <div className="flex items-center gap-3 text-sm vf-text-muted mb-2">
             <span className="flex items-center gap-1">
               <Calendar className="h-3.5 w-3.5" />
               {listing.date
@@ -96,7 +96,10 @@ export function EventListingCard({
           </div>
           <div className="flex flex-wrap gap-1.5">
             {listing.tags.slice(0, 4).map(tag => (
-              <span key={tag} className="public-tag px-2 py-0.5 text-xs rounded-full">
+              <span
+                key={tag}
+                className="vf-bg-subtle vf-text-muted px-2 py-0.5 text-[10px] rounded-full"
+              >
                 {tag}
               </span>
             ))}
@@ -106,7 +109,7 @@ export function EventListingCard({
     </>
   );
 
-  const cardClass = `group block overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 public-card ${
+  const cardClass = `group block overflow-hidden rounded-2xl border vf-border vf-surface transition-all duration-300 hover:border-orange-500/40 hover:-translate-y-0.5 animate-fade-up ${
     isLarge ? 'col-span-1 md:col-span-2' : ''
   } ${className}`;
 

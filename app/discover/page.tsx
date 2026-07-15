@@ -7,8 +7,8 @@ import { DiscoverExplore } from '@/components/discover/discover-explore';
 export default function DiscoverPage() {
   return (
     <PublicLayout>
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <Suspense fallback={<p className="public-muted">Loading events…</p>}>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+        <Suspense fallback={<p className="vf-text-muted text-sm">Loading events…</p>}>
           <DiscoverExplore />
         </Suspense>
       </div>

@@ -1,53 +1,70 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
 import { getEffectiveDataSource } from '@/lib/pilot-config';
-import { prisma } from '@/lib/prisma';
+import { prisma, isHostedDatabaseUrl } from '@/lib/prisma';
 import { resolveVendorEmail } from '@/lib/auth/resolve-vendor-email';
 
 export async function GET(req: NextRequest) {
   await ensurePlatformSeed();
   const vendorEmail = resolveVendorEmail(req);
-  // imageData (base64 blobs) is intentionally excluded from the list payload —
-  // it multiplied response size ~100x for data the UI never rendered.
-  const rows = await prisma.vendorReceipt.findMany({
-    where: { vendorEmail },
-    orderBy: { createdAt: 'desc' },
-    take: 200,
-    select: {
-      id: true,
-      category: true,
-      amountCents: true,
-      fileName: true,
-      notes: true,
-      createdAt: true,
-    },
-  });
-  const withImage = new Set(
-    (
-      await prisma.vendorReceipt.findMany({
-        where: { vendorEmail, imageData: { not: null } },
-        select: { id: true },
-        take: 200,
-      })
-    ).map(r => r.id)
-  );
-  return NextResponse.json({
-    ok: true,
-    dataSource: getEffectiveDataSource(),
-    items: rows.map(r => ({
-      id: r.id,
-      category: r.category,
-      amount: r.amountCents / 100,
-      fileName: r.fileName,
-      notes: r.notes,
-      createdAt: r.createdAt.toISOString(),
-      hasImage: withImage.has(r.id),
-    })),
-  });
+  const dataSource = getEffectiveDataSource();
+
+  if (dataSource !== 'db' || !isHostedDatabaseUrl()) {
+    return NextResponse.json({ ok: true, dataSource: 'seed', items: [] });
+  }
+
+  try {
+    // imageData (base64 blobs) is intentionally excluded from the list payload —
+    // it multiplied response size ~100x for data the UI never rendered.
+    const rows = await prisma.vendorReceipt.findMany({
+      where: { vendorEmail },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+      select: {
+        id: true,
+        category: true,
+        amountCents: true,
+        fileName: true,
+        notes: true,
+        createdAt: true,
+      },
+    });
+    const withImage = new Set(
+      (
+        await prisma.vendorReceipt.findMany({
+          where: { vendorEmail, imageData: { not: null } },
+          select: { id: true },
+          take: 200,
+        })
+      ).map(r => r.id)
+    );
+    return NextResponse.json({
+      ok: true,
+      dataSource,
+      items: rows.map(r => ({
+        id: r.id,
+        category: r.category,
+        amount: r.amountCents / 100,
+        fileName: r.fileName,
+        notes: r.notes,
+        createdAt: r.createdAt.toISOString(),
+        hasImage: withImage.has(r.id),
+      })),
+    });
+  } catch (err) {
+    console.warn('[receipts] DB read failed:', err instanceof Error ? err.message : err);
+    return NextResponse.json({ ok: true, dataSource: 'seed', items: [] });
+  }
 }
 
 export async function POST(req: NextRequest) {
   await ensurePlatformSeed();
+  if (getEffectiveDataSource() !== 'db' || !isHostedDatabaseUrl()) {
+    return NextResponse.json(
+      { ok: false, error: 'Receipts require hosted DB mode (PILOT_DATA_SOURCE=db)' },
+      { status: 400 }
+    );
+  }
   const vendorEmail = resolveVendorEmail(req);
   const body = await req.json();
   const passport = await prisma.vendorPassport.findUnique({
@@ -83,6 +100,12 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   await ensurePlatformSeed();
+  if (getEffectiveDataSource() !== 'db' || !isHostedDatabaseUrl()) {
+    return NextResponse.json(
+      { ok: false, error: 'Receipts require hosted DB mode (PILOT_DATA_SOURCE=db)' },
+      { status: 400 }
+    );
+  }
   const vendorEmail = resolveVendorEmail(req);
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
