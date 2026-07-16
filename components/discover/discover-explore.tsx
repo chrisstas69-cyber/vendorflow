@@ -82,8 +82,23 @@ export function DiscoverExplore({
       if (experienceTags.length) params.set('tags', experienceTags.join(','));
 
       const res = await fetch(`/api/events/list?${params.toString()}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to load events');
+      const text = await res.text();
+      let data: {
+        listings?: EventListing[];
+        error?: string;
+        meta?: { experienceTags?: ExperienceTagOption[] };
+      } = {};
+      if (text.trim()) {
+        try {
+          data = JSON.parse(text) as typeof data;
+        } catch {
+          throw new Error(res.ok ? 'Invalid events response' : `Failed to load events (${res.status})`);
+        }
+      } else if (!res.ok) {
+        throw new Error(`Failed to load events (${res.status})`);
+      }
+
+      if (!res.ok) throw new Error(data.error || `Failed to load events (${res.status})`);
 
       setListings(data.listings || []);
       if (data.meta?.experienceTags) setTagOptions(data.meta.experienceTags);
