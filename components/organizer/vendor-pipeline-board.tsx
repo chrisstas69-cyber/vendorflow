@@ -212,7 +212,7 @@ function VendorCard({
           }`}
         >
           <Shield size={10} />
-          {sub.hasInsurance ? 'Insured' : 'No COI'}
+          {sub.hasInsurance ? 'COI reported' : 'COI missing'}
         </span>
         {sub.boothId && (
           <span className="text-[10px] font-medium vf-bg-subtle vf-text-muted px-1.5 py-0.5 rounded-full">

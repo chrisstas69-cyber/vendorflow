@@ -13,6 +13,7 @@ import { buildApplicationDetail } from '@/lib/application-detail';
 import { inboxItemsToSubmissions } from '@/lib/inbox-to-submission';
 import { useOrganizerInbox } from '@/hooks/use-organizer-inbox';
 import { useOrganizerTheme } from '@/components/organizer/use-organizer-theme';
+import { useOrganizerContext } from '@/contexts/organizer-context';
 import { ChevronRight, Inbox, LayoutGrid, List, Star, AlertTriangle } from 'lucide-react';
 import type { VendorSubmission } from '@/lib/platform-data';
 
@@ -20,16 +21,17 @@ type InboxView = 'all' | 'pending' | 'approved' | 'rejected' | 'shortlisted';
 type DisplayMode = 'board' | 'list';
 
 export default function OrganizerApplicationsPage() {
-  const { data, loading, error, reload, performAction } = useOrganizerInbox();
+  const { eventId, setEventId } = useOrganizerContext();
+  const { data, loading, error, reload, performAction } = useOrganizerInbox({ eventId: eventId ?? undefined });
   const { card, muted, heading, pageTitle, btnPrimary, btnSecondary } = useOrganizerTheme();
   const [toast, setToast] = useState('');
   const [view, setView] = useState<InboxView>('all');
-  const [displayMode, setDisplayMode] = useState<DisplayMode>('board');
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('list');
   const [selected, setSelected] = useState<VendorSubmission | null>(null);
 
   const submissions = useMemo(
-    () => inboxItemsToSubmissions(data?.items ?? []),
-    [data?.items]
+    () => (eventId ? inboxItemsToSubmissions(data?.items ?? []) : []),
+    [data?.items, eventId]
   );
 
   const counts = useMemo(
@@ -132,10 +134,13 @@ export default function OrganizerApplicationsPage() {
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
         <div>
           <h1 className={`${pageTitle} ${heading}`}>Vendor applications</h1>
-          <p className={`text-base mt-1 ${muted}`}>
-            Drag vendors between columns, or open a card to review documents and act
-          </p>
+          <p className={`text-base mt-1 ${muted}`}>Review each vendor’s fit and documents, then make the next decision.</p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select value={eventId ?? ''} onChange={e => setEventId(e.target.value || null)} className={`rounded-lg border px-3 py-2 text-sm ${btnSecondary}`} aria-label="Filter applications by event">
+            <option value="">Choose an event</option>
+            {(data?.events ?? []).map(event => <option key={event.id} value={event.id}>{event.name}</option>)}
+          </select>
         <div className="inline-flex rounded-lg border overflow-hidden shrink-0">
           <button
             type="button"
@@ -156,14 +161,17 @@ export default function OrganizerApplicationsPage() {
             <List className="h-3.5 w-3.5" /> List
           </button>
         </div>
+        </div>
       </div>
+
+      {!eventId && <div className="mb-6 rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-900"><strong>Start by choosing an event.</strong> Application counts and decisions will stay scoped to that event so vendors do not get mixed between fairs.</div>}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
           { label: 'Pending review', value: counts.pending, accent: 'text-amber-600' },
           { label: 'Approved', value: counts.approved, accent: 'text-emerald-600' },
           { label: 'Rejected', value: counts.rejected, accent: 'text-red-600' },
-          { label: 'Shortlisted', value: counts.shortlisted, accent: 'text-teal-600' },
+          { label: 'Saved for comparison', value: counts.shortlisted, accent: 'text-teal-600' },
         ].map(stat => (
           <div key={stat.label} className={`rounded-xl border p-3 ${card}`}>
             <div className={`text-2xl font-bold ${stat.accent}`}>{stat.value}</div>

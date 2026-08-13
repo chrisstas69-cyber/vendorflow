@@ -10,19 +10,26 @@ import {
 
 /** GET — list invoices. Vendors see only their own; organizer/demo can filter. */
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const session = getSessionFromRequest(req);
-  const vendorEmail =
-    session?.role === 'vendor'
-      ? session.email
-      : searchParams.get('vendorEmail') ?? undefined;
-  const invoices = await listInvoices({
-    organizerId: searchParams.get('organizerId') ?? undefined,
-    vendorEmail,
-    vendorPassportId: session?.role === 'vendor' ? undefined : searchParams.get('vendorPassportId') ?? undefined,
-    status: searchParams.get('status') ?? undefined,
-  });
-  return NextResponse.json({ ok: true, invoices: invoices.map(serializeInvoice) });
+  try {
+    const { searchParams } = new URL(req.url);
+    const session = getSessionFromRequest(req);
+    const vendorEmail =
+      session?.role === 'vendor'
+        ? session.email
+        : searchParams.get('vendorEmail') ?? undefined;
+    const invoices = await listInvoices({
+      organizerId: searchParams.get('organizerId') ?? undefined,
+      vendorEmail,
+      vendorPassportId: session?.role === 'vendor' ? undefined : searchParams.get('vendorPassportId') ?? undefined,
+      status: searchParams.get('status') ?? undefined,
+    });
+    return NextResponse.json({ ok: true, invoices: invoices.map(serializeInvoice) });
+  } catch (error) {
+    return NextResponse.json(
+      { ok: false, error: error instanceof Error ? error.message : 'Invoice data is temporarily unavailable.' },
+      { status: 503 }
+    );
+  }
 }
 
 /** POST — create invoice + optional contract from template */

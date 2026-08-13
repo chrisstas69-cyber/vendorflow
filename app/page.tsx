@@ -2,9 +2,10 @@
 
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Store, Building2 } from 'lucide-react';
+import { ArrowRight, Store, Building2, CalendarSearch } from 'lucide-react';
 import { PublicLayout } from '@/components/layout/public-layout';
 import { DiscoverExplore } from '@/components/discover/discover-explore';
+import { VendorDigestSignup } from '@/components/public/vendor-digest-signup';
 
 export default function HomePage() {
   return (
@@ -40,6 +41,19 @@ export default function HomePage() {
                 className="rounded-full border vf-border vf-surface px-3 py-1.5 vf-text-muted hover:border-orange-500/40 hover:vf-text transition-colors"
               >
                 {l.label}
+              </Link>
+            ))}
+          </div>
+          <div className="mt-7 grid gap-3 sm:grid-cols-3">
+            {[
+              { href: '/discover', icon: CalendarSearch, title: 'Find an event', copy: 'Browse nearby fairs and markets.', tone: 'bg-orange-600' },
+              { href: '/for-vendors', icon: Store, title: 'Grow my vendor business', copy: 'Find events and apply faster.', tone: 'bg-indigo-600' },
+              { href: '/for-organizers', icon: Building2, title: 'Run an event', copy: 'Manage vendors, fees, and booths.', tone: 'bg-emerald-700' },
+            ].map(item => (
+              <Link key={item.href} href={item.href} className="group flex items-center gap-3 rounded-xl border vf-border vf-surface p-3 hover:-translate-y-0.5 hover:shadow-sm transition-all">
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white ${item.tone}`}><item.icon size={17} /></span>
+                <span className="min-w-0"><span className="block text-sm font-semibold vf-text">{item.title}</span><span className="block text-xs vf-text-muted">{item.copy}</span></span>
+                <ArrowRight size={14} className="ml-auto vf-text-subtle group-hover:translate-x-0.5 transition-transform" />
               </Link>
             ))}
           </div>
@@ -92,6 +106,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      <section className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8"><VendorDigestSignup /></section>
     </PublicLayout>
   );
 }

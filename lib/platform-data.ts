@@ -145,7 +145,7 @@ export function mockEventToPlatform(e: typeof mockEvents[0], extra?: Partial<Pla
     applicationDeadline: meta.applicationDeadline,
     views: meta.views ?? 500,
     saves: meta.saves ?? 50,
-    isClaimable: extra?.isClaimable ?? false,
+    isClaimable: extra?.isClaimable ?? meta.isClaimable ?? false,
     coverImageUrl,
     galleryUrls: extra?.galleryUrls ?? [coverImageUrl, STOCK.crowdHands],
     promotionTier: (meta.promotionTier as PlatformEvent['promotionTier']) ?? extra?.promotionTier ?? 'none',

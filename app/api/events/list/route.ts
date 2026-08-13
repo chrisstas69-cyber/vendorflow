@@ -12,6 +12,10 @@ import {
   townSlugToQuery,
   type EventListing,
 } from '@/lib/marketplace';
+import { prisma } from '@/lib/prisma';
+import { publicEventToListing } from '@/lib/public-events';
+
+export const dynamic = 'force-dynamic';
 
 /**
  * The scraped-events store is better-sqlite3, which cannot open on Vercel's
@@ -140,6 +144,21 @@ export async function GET(req: NextRequest) {
       });
 
       let listings: EventListing[] = rows.map(eventRowToListing);
+
+      try {
+        const community = await prisma.publicEventListing.findMany({
+          where: {
+            status: 'published',
+            startDate: { gte: new Date(Date.now() - 14 * 86400000) },
+            ...(state === 'NY' || state === 'NJ' ? { state } : {}),
+            ...(townQuery ? { city: { contains: townQuery, mode: 'insensitive' as const } } : {}),
+          },
+          orderBy: { startDate: 'asc' }, take: 250,
+        });
+        listings = mergeListings(listings, community.map(publicEventToListing));
+      } catch (error) {
+        console.warn('[events/list] community event DB unavailable:', error instanceof Error ? error.message : error);
+      }
 
       if (includePlatform) {
         listings = mergeListings(

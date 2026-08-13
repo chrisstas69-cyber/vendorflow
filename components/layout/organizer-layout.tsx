@@ -14,6 +14,7 @@ import {
   Sparkles,
   Users,
   BookUser,
+  ClipboardCheck,
 } from 'lucide-react';
 import { RoleSwitcher } from '@/components/layout/role-switcher';
 import { AuthNav } from '@/components/layout/auth-nav';
@@ -35,6 +36,7 @@ const NAV = [
   { href: '/organizer/invoicing', label: 'Booth fees', icon: CreditCard, match: (p: string) => p.startsWith('/organizer/invoicing') },
   { href: '/organizer/compliance', label: 'Compliance', icon: MapPin, match: (p: string) => p.startsWith('/organizer/compliance') },
   { href: '/organizer/intel', label: 'Insights', icon: Sparkles, match: (p: string) => p.startsWith('/organizer/intel') },
+  { href: '/organizer/moderation', label: 'Event moderation', icon: ClipboardCheck, match: (p: string) => p.startsWith('/organizer/moderation') },
   { href: '/organizer/settings', label: 'Settings', icon: Settings, match: (p: string) => p.startsWith('/organizer/settings') || p.startsWith('/organizer/founder') || p.startsWith('/organizer/assistant') },
 ];
 
@@ -104,7 +106,6 @@ export function OrganizerLayout({
           <div className="flex items-center gap-2">
             <PublicThemeToggle compact />
             <AuthNav accent="teal" compact />
-            <RoleSwitcher variant="compact" accent="teal" />
           </div>
         </header>
 

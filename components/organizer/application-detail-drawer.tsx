@@ -192,7 +192,7 @@ export function ApplicationDetailDrawer({
                 </span>
                 {submission.hasInsurance && (
                   <span className="text-xs text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Insurance confirmed
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Vendor reports insurance
                   </span>
                 )}
               </div>
@@ -296,6 +296,7 @@ export function ApplicationDetailDrawer({
 
         {/* Sticky actions */}
         <div className="sticky bottom-0 border-t border-stone-200/80 dark:border-stone-700 p-4 bg-inherit">
+          <p className={`mb-3 text-xs ${muted}`}><strong className={heading}>Recommended order:</strong> check fit → request missing information → approve → invoice → assign booth.</p>
           <div className="flex flex-wrap gap-2">
             {submission.status === 'pending' && (
               <>
@@ -320,7 +321,7 @@ export function ApplicationDetailDrawer({
               onClick={() => onRequestDoc(submission.id)}
               className={`flex items-center gap-1 px-3 py-2 text-sm font-semibold rounded-lg ${btnSecondary}`}
             >
-              <AlertCircle className="h-4 w-4" /> Request doc
+              <AlertCircle className="h-4 w-4" /> Request information
             </button>
             {!submission.ce200SentAt && submission.requiredForms?.includes('ce200') && (
               <button
@@ -331,12 +332,12 @@ export function ApplicationDetailDrawer({
                 Send CE200
               </button>
             )}
-            <Link
+            {submission.status === 'approved' && <Link
               href={`/organizer/booths?eventId=${submission.eventId}`}
               className={`flex items-center gap-1 px-3 py-2 text-sm font-semibold rounded-lg ${btnSecondary}`}
             >
               <LayoutGrid className="h-4 w-4" /> Assign booth
-            </Link>
+            </Link>}
             <button
               type="button"
               onClick={() => onToast('Invoice draft created (pilot placeholder)')}

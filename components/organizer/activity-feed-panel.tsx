@@ -16,6 +16,18 @@ function timeAgo(iso: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+function activityLabel(eventType: string) {
+  const labels: Record<string, string> = {
+    'application.submitted': 'Application submitted',
+    'application.approved': 'Application approved',
+    'application.info_requested': 'Information requested',
+    'contract.sent': 'Form sent',
+    'payment.received': 'Payment received',
+    'booth.assigned': 'Booth assigned',
+  };
+  return labels[eventType] ?? eventType.replace(/[._]/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
 export function ActivityFeedPanel({ compact }: { compact?: boolean }) {
   const { items, unreadCount, loading, markRead } = useActivityFeed({ limit: compact ? 8 : 20 });
   const { surface, muted, heading, sectionTitle } = useOrganizerTheme();
@@ -63,7 +75,7 @@ export function ActivityFeedPanel({ compact }: { compact?: boolean }) {
                 <span className={`text-[10px] shrink-0 ${muted}`}>{timeAgo(item.createdAt)}</span>
               </div>
               {item.summary && <p className={`text-xs mt-1 ${muted}`}>{item.summary}</p>}
-              <span className={`text-[10px] mt-1 inline-block ${muted}`}>{item.eventType}</span>
+              <span className={`text-[10px] mt-1 inline-block ${muted}`}>{activityLabel(item.eventType)}</span>
             </li>
           ))}
         </ul>

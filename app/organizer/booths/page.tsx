@@ -16,7 +16,7 @@ export default function OrganizerBoothsPage() {
     <OrganizerLayout showBanners={false}>
       <OrganizerPageHeader
         title="Booths"
-        description="Quick Grid or Street Fair Mode — assign approved vendors to booth spaces."
+        description="Assign approved vendors to numbered spaces. Start simple; street mapping is available when you need it."
         actions={
           events.length > 0 ? (
             <select

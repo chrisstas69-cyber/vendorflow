@@ -187,9 +187,7 @@ export function BoothMapEditor({ eventId: eventIdProp }: { eventId?: string | nu
 
       <div className="grid lg:grid-cols-[1fr_240px] gap-6">
         <div>
-          <p className={`text-sm mb-4 ${muted}`}>
-            Drag approved vendors onto booths for event <strong>{eventId}</strong>.
-          </p>
+          <p className={`text-sm mb-4 ${muted}`}>Drag approved vendors onto an empty booth, then save assignments.</p>
           {loading ? (
             <div className={`flex items-center gap-2 text-sm ${muted}`}>
               <Loader2 className="h-4 w-4 animate-spin" /> Loading…

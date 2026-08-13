@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
 import { getEffectiveDataSource } from '@/lib/pilot-config';
 import { isHostedDatabaseUrl, prisma } from '@/lib/prisma';
+import { sendEventEmail } from '@/lib/public-events';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,6 +56,14 @@ export async function POST(req: NextRequest) {
       prisma.eventInterest.count({ where: { eventId, kind: 'save' } }),
       prisma.eventInterest.count({ where: { eventId, kind: 'rsvp' } }),
     ]);
+
+    if (active && [10, 25, 50, 100].includes(saves + rsvps)) {
+      const listing = await prisma.publicEventListing.findUnique({ where: { id: eventId } }).catch(() => null);
+      if (listing?.organizerEmail && !listing.claimedByEmail) {
+        const claimUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://vendorflow-mu.vercel.app'}/community-events/${listing.slug}`;
+        await sendEventEmail(listing.organizerEmail, `${saves + rsvps} people are interested in ${listing.name}`, `<p>${saves + rsvps} people have saved or marked interest in your event.</p><p><a href="${claimUrl}">Claim the listing to manage vendor applications and see demand</a></p>`).catch(() => false);
+      }
+    }
 
     return NextResponse.json({
       ok: true,

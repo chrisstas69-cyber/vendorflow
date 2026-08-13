@@ -29,16 +29,26 @@ export function InvoicingPanel({ role, organizerId, vendorEmail }: InvoicingPane
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [payingId, setPayingId] = useState<string | null>(null);
+  const [error, setError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError('');
     const params = new URLSearchParams();
     if (role === 'organizer' && organizerId) params.set('organizerId', organizerId);
     if (role === 'vendor' && vendorEmail) params.set('vendorEmail', vendorEmail);
-    const res = await fetch(`/api/payments/invoices?${params}`);
-    const data = await res.json();
-    setInvoices(data.invoices ?? []);
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/payments/invoices?${params}`);
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : null;
+      if (!res.ok) throw new Error(data?.error ?? 'Invoice data is temporarily unavailable.');
+      setInvoices(Array.isArray(data?.invoices) ? data.invoices : []);
+    } catch (loadError) {
+      setInvoices([]);
+      setError(loadError instanceof Error ? loadError.message : 'Invoice data is temporarily unavailable.');
+    } finally {
+      setLoading(false);
+    }
   }, [role, organizerId, vendorEmail]);
 
   useEffect(() => {
@@ -70,6 +80,16 @@ export function InvoicingPanel({ role, organizerId, vendorEmail }: InvoicingPane
     return (
       <div className={`flex items-center gap-2 text-sm py-8 justify-center ${muted}`}>
         <Loader2 className="h-4 w-4 animate-spin" /> Loading invoices…
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <p className="font-semibold">Invoices could not be loaded</p>
+        <p className="mt-1">{error}</p>
+        <button type="button" onClick={() => void load()} className="mt-3 rounded-lg border border-amber-300 bg-white px-3 py-1.5 font-semibold">Try again</button>
       </div>
     );
   }

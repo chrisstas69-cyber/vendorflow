@@ -5,6 +5,7 @@ import { getDb } from '@/lib/db';
 import { eventRowToListing } from '@/lib/marketplace';
 import { EventListingCard } from '@/components/event-listing-card';
 import { Calendar, MapPin, ExternalLink } from 'lucide-react';
+import { EventTrustActions } from '@/components/public/event-trust-actions';
 
 interface PageProps {
   params: { eventId: string };
@@ -86,6 +87,11 @@ export default function ScrapedEventDetailPage({ params }: PageProps) {
                 View original listing <ExternalLink className="h-4 w-4" />
               </a>
             )}
+            <div className="mt-6 rounded-xl border vf-border vf-surface p-4">
+              <h2 className="font-semibold vf-text">Listing transparency</h2>
+              <p className="mt-1 text-sm vf-text-muted">Imported from {row.source || 'a public source'}. Last checked {row.last_seen || row.first_seen || 'recently'}.</p>
+              <EventTrustActions eventId={row.event_id} claimable />
+            </div>
           </div>
         </div>
       </div>

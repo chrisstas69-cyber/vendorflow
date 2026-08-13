@@ -674,6 +674,124 @@ model EventInterest {
   @@index([eventId, kind])
 }
 
+// ─── Public event acquisition & trust ───────────────────────────────────────
+
+model PublicEventListing {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  slug        String @unique
+  name        String
+  startDate   DateTime
+  endDate     DateTime?
+  timeLabel   String?
+  venueName   String
+  streetAddress String?
+  city        String
+  state       String
+  postalCode  String?
+  description String @default("")
+  category    String
+  imageUrl    String?
+
+  organizerName  String
+  organizerEmail String?
+  sourceName     String
+  sourceUrl      String?
+  vendorApplicationUrl String?
+  vendorDeadline DateTime?
+  boothFeeCents  Int?
+  vendorDetails  String @default("{}")
+
+  status             String @default("pending") // pending | published | rejected | expired
+  trustStatus        String @default("public_source") // public_source | organizer_verified | managed
+  lastVerifiedAt     DateTime?
+  publishedAt        DateTime?
+  expiresAt          DateTime?
+  claimedByEmail     String?
+  manageToken        String? @unique
+  submissionId       String? @unique
+
+  submissions EventSubmission[]
+  claims      EventClaim[]
+  corrections EventCorrection[]
+
+  @@index([status, startDate])
+  @@index([city, state, startDate])
+  @@index([category, startDate])
+}
+
+model EventSubmission {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  email             String
+  verificationToken String   @unique
+  verifiedAt        DateTime?
+  status            String   @default("awaiting_verification") // awaiting_verification | pending | approved | rejected
+  payloadJson       String
+  duplicateOfId     String?
+  moderationNote    String?
+
+  listingId String?
+  listing   PublicEventListing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+model EventClaim {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listingId String?
+  listing   PublicEventListing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  externalEventId String?
+  eventName String?
+  email     String
+  role      String?
+  evidenceUrl String?
+  note      String?
+  status    String @default("pending") // pending | approved | rejected
+
+  @@index([status, createdAt])
+  @@index([listingId])
+}
+
+model EventCorrection {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  listingId String?
+  listing   PublicEventListing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  externalEventId String?
+  eventName String?
+  email     String?
+  message   String
+  status    String @default("open") // open | resolved | dismissed
+
+  @@index([status, createdAt])
+  @@index([listingId])
+}
+
+model VendorDigestSubscription {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  email      String @unique
+  regions    String @default("[]")
+  categories String @default("[]")
+  active     Boolean @default(true)
+  lastSentAt DateTime?
+  unsubscribeToken String? @unique
+
+  @@index([active, lastSentAt])
+}
+
 // ─── Operational contact intelligence (private — not public directory) ───────
 
 model Jurisdiction {

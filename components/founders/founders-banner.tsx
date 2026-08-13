@@ -23,7 +23,7 @@ export function FoundersEditionBanner({ compact }: { compact?: boolean }) {
           )}
         </div>
         <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-200">
-          Early access
+          Pilot program
         </span>
       </div>
     </div>

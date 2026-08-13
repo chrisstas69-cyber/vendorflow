@@ -1,0 +1,6 @@
+import { notFound } from 'next/navigation';
+import { PublicLayout } from '@/components/layout/public-layout';
+import { prisma } from '@/lib/prisma';
+import { ManageEventForm } from '@/components/public/manage-event-form';
+export const dynamic = 'force-dynamic';
+export default async function ManageEventPage({ params }: { params: { token: string } }) { const event = await prisma.publicEventListing.findUnique({ where: { manageToken: params.token } }).catch(() => null); if (!event) notFound(); return <PublicLayout><div className="mx-auto max-w-2xl px-4 py-10"><p className="text-xs font-semibold uppercase tracking-wider text-orange-600">Private management link</p><h1 className="mt-1 text-3xl font-bold vf-text">Manage {event.name}</h1><p className="mt-2 text-sm vf-text-muted">Update essential details without creating an Organizer Hub account. Keep this link private.</p><ManageEventForm token={params.token} event={{ name: event.name, description: event.description, vendorApplicationUrl: event.vendorApplicationUrl ?? '', vendorDeadline: event.vendorDeadline?.toISOString().slice(0, 10) ?? '', boothFee: event.boothFeeCents != null ? event.boothFeeCents / 100 : '' }} /></div></PublicLayout>; }

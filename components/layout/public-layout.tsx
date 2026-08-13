@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Search,
-  Bell,
   Menu,
   X,
   Moon,
@@ -13,7 +12,6 @@ import {
   LogOut,
   LogIn,
 } from 'lucide-react';
-import { RoleSwitcher } from '@/components/layout/role-switcher';
 import { useAuth } from '@/contexts/auth-context';
 import { useTheme } from '@/contexts/theme-context';
 
@@ -23,6 +21,7 @@ const NAV = [
   { href: '/for-vendors', label: 'Vendors' },
   { href: '/for-organizers', label: 'Organizers' },
   { href: '/pricing', label: 'Pricing' },
+  { href: '/submit-event', label: 'Submit event' },
 ];
 
 function ThemeToggle() {
@@ -155,18 +154,6 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
             <ThemeToggle />
 
-            <button
-              className="relative hidden sm:block rounded-lg border vf-border vf-surface p-2 vf-text-muted hover:vf-text transition-colors"
-              aria-label="Notifications"
-            >
-              <Bell size={15} />
-              <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-orange-500" />
-            </button>
-
-            <div className="hidden sm:block">
-              <RoleSwitcher variant="compact" accent="amber" />
-            </div>
-
             <AuthActions />
 
             <button
@@ -201,9 +188,6 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 );
               })}
               <AuthActions mobile onNavigate={() => setMobileOpen(false)} />
-              <div className="px-3 py-2">
-                <RoleSwitcher variant="compact" accent="amber" />
-              </div>
             </nav>
           </div>
         )}
@@ -246,6 +230,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             <FooterCol
               title="For organizers"
               links={[
+                { label: 'Submit an event free', href: '/submit-event' },
                 { label: 'Organizer hub', href: '/for-organizers' },
                 { label: 'Dashboard', href: '/organizer' },
                 { label: 'Pricing', href: '/pricing' },

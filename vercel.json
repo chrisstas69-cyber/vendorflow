@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/engines",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/vendor-digest",
+      "schedule": "0 13 * * 2"
     }
   ]
 }

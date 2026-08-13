@@ -126,7 +126,7 @@ export function eventRowToListing(row: EventRow): EventListing {
   const experienceTags = extractExperienceTags(text, row.event_type);
   const state = inferState(row.region, row.location);
   const city = row.town || row.county || row.region || 'NY/NJ';
-  const href = row.url && row.url.startsWith('http') ? row.url : `/discover/event/${encodeURIComponent(row.event_id)}`;
+  const href = `/discover/event/${encodeURIComponent(row.event_id)}`;
 
   return {
     id: row.event_id,

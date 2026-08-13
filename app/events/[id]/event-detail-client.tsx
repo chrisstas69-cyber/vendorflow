@@ -30,6 +30,7 @@ import { submitVendorApplicationToOrganizer } from '@/lib/vendor-apply-api';
 import { runLongIslandComplianceCheck } from '@/lib/long-island/compliance-check';
 import { FoundersEditionBanner } from '@/components/founders/founders-banner';
 import { LocalComplianceAlert } from '@/components/founders/local-compliance-alert';
+import { EventTrustActions } from '@/components/public/event-trust-actions';
 
 export function EventDetailClient() {
   const params = useParams();
@@ -152,12 +153,7 @@ export function EventDetailClient() {
             <div>
               <p className="vf-text-muted mb-2">
                 Hosted by{' '}
-                <Link
-                  href="/organizers/hempstead-chamber"
-                  className="font-medium vf-text hover:underline"
-                >
-                  {event.organizerName}
-                </Link>
+                {event.isClaimable ? <span className="font-medium vf-text">{event.organizerName}</span> : <Link href="/organizers/hempstead-chamber" className="font-medium vf-text hover:underline">{event.organizerName}</Link>}
               </p>
               <EventInterestStat eventId={event.id} initialSaves={event.saves} />
               <p className="vf-text leading-relaxed mt-3">{event.description}</p>
@@ -247,6 +243,13 @@ export function EventDetailClient() {
                 </span>
               ))}
             </div>
+            <section className="rounded-2xl border vf-border vf-surface p-5">
+              <h3 className="font-semibold vf-text">Listing transparency</h3>
+              <p className="mt-1 text-sm vf-text-muted">
+                {event.isClaimable ? 'Listed from a public source. This event is not yet managed by its organizer on VendorFlow.' : 'Managed or verified through VendorFlow pilot data.'}
+              </p>
+              <EventTrustActions eventId={event.id} claimable={event.isClaimable} />
+            </section>
           </div>
 
           <div className="space-y-4">

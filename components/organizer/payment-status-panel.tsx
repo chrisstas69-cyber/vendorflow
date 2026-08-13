@@ -18,30 +18,34 @@ export function PaymentStatusPanel({ compact }: { compact?: boolean }) {
   const { surface, muted, heading, sectionTitle, statIcon } = useOrganizerTheme();
   const [summary, setSummary] = useState<InvoiceSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/payments/invoices?organizerId=${getActiveOrganizerId()}`);
-    const data = await res.json();
-    const invoices = data.invoices ?? [];
-    const totalInvoicedCents = invoices.reduce(
-      (s: number, i: { totalAmountCents: number }) => s + i.totalAmountCents,
-      0
-    );
-    const totalPaidCents = invoices.reduce(
-      (s: number, i: { payments: { status: string; amountCents: number }[] }) =>
-        s +
-        i.payments.filter(p => p.status === 'succeeded').reduce((a, p) => a + p.amountCents, 0),
-      0
-    );
-    setSummary({
-      totalInvoicedCents,
-      totalPaidCents,
-      outstandingCents: totalInvoicedCents - totalPaidCents,
-      invoiceCount: invoices.length,
-      paidCount: invoices.filter((i: { status: string }) => i.status === 'paid').length,
-    });
-    setLoading(false);
+    setError('');
+    try {
+      const res = await fetch(`/api/payments/invoices?organizerId=${getActiveOrganizerId()}`);
+      if (!res.ok) throw new Error('Payment data is temporarily unavailable.');
+      const data = await res.json();
+      const invoices = Array.isArray(data.invoices) ? data.invoices : [];
+      const totalInvoicedCents = invoices.reduce((s: number, i: { totalAmountCents: number }) => s + i.totalAmountCents, 0);
+      const totalPaidCents = invoices.reduce(
+        (s: number, i: { payments?: { status: string; amountCents: number }[] }) => s + (i.payments ?? []).filter(p => p.status === 'succeeded').reduce((a, p) => a + p.amountCents, 0),
+        0
+      );
+      setSummary({
+        totalInvoicedCents,
+        totalPaidCents,
+        outstandingCents: totalInvoicedCents - totalPaidCents,
+        invoiceCount: invoices.length,
+        paidCount: invoices.filter((i: { status: string }) => i.status === 'paid').length,
+      });
+    } catch (loadError) {
+      setSummary(null);
+      setError(loadError instanceof Error ? loadError.message : 'Payment data is temporarily unavailable.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -52,6 +56,8 @@ export function PaymentStatusPanel({ compact }: { compact?: boolean }) {
     <div className={`flex items-center gap-2 text-sm ${muted}`}>
       <Loader2 className="h-4 w-4 animate-spin" /> Loading…
     </div>
+  ) : error ? (
+    <p className="text-sm text-amber-700">{error}</p>
   ) : summary ? (
     <div className={`grid gap-3 ${compact ? 'grid-cols-1' : 'sm:grid-cols-3'}`}>
       <div>

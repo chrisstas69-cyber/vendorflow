@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { OrganizerLayout } from '@/components/layout/organizer-layout';
 import { ApplicationPipelineBoard } from '@/components/organizer/application-pipeline-board';
 import { OrganizerTopBar } from '@/components/organizer/organizer-top-bar';
@@ -17,12 +18,14 @@ import { useOrganizerContext } from '@/contexts/organizer-context';
 import { useOrganizerTheme } from '@/components/organizer/use-organizer-theme';
 import { usePilotConfig } from '@/hooks/use-pilot-config';
 import { useActivityFeed } from '@/hooks/use-activity-feed';
+import { OrganizerGettingStarted } from '@/components/organizer/organizer-getting-started';
 
 export default function OrganizerDashboardPage() {
   const { seriesId, eventId } = useOrganizerContext();
   const { organizer } = usePilotConfig();
   const { heading, sectionTitle } = useOrganizerTheme();
   const [toast, setToast] = useState('');
+  const [showOperations, setShowOperations] = useState(false);
   const { reload: reloadActivity } = useActivityFeed({ limit: 1 });
 
   const { data, loading, error, performAction } = useOrganizerInbox({
@@ -62,46 +65,51 @@ export default function OrganizerDashboardPage() {
 
       {data && (
         <div className="mb-6">
+          <OrganizerGettingStarted eventCount={data.events.length} items={data.items} />
+        </div>
+      )}
+
+      {data && (
+        <div className="mb-6">
           <AttentionSummary items={data.items} displayCounts={data.displayCounts} />
         </div>
       )}
 
-      {data?.seasonMetrics && (
-        <div className="mb-6">
-          <SeasonOverviewPanel metrics={data.seasonMetrics} compact />
+      <button
+        type="button"
+        onClick={() => setShowOperations(value => !value)}
+        className="mb-6 flex w-full items-center justify-between rounded-2xl border border-stone-200 bg-white px-5 py-4 text-left shadow-sm hover:bg-stone-50"
+        aria-expanded={showOperations}
+      >
+        <span>
+          <span className={`block text-sm font-semibold ${heading}`}>Detailed operations</span>
+          <span className="mt-0.5 block text-xs text-stone-500">Timeline, vendor pipeline, activity, payments, compliance, and booth occupancy</span>
+        </span>
+        {showOperations ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+      </button>
+
+      {showOperations && (
+        <div>
+          {data?.seasonMetrics && <div className="mb-6"><SeasonOverviewPanel metrics={data.seasonMetrics} compact /></div>}
+          {eventId ? (
+            <div className="mb-6"><EventTimelineCard eventId={timelineEventId} eventName={timelineEventName} /></div>
+          ) : (
+            <div className="mb-6 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">Select an event above to see its timeline. This prevents information from different events being mixed together.</div>
+          )}
+          <div className="grid xl:grid-cols-[1fr_320px] gap-6 mb-8">
+            <section>
+              <h2 className={`${sectionTitle} mb-4 ${heading}`}>Vendor pipeline</h2>
+              {loading ? <OrganizerLoadingState label="Loading pipeline…" /> : error ? <p className="text-red-600 text-sm">{error}</p> : data ? <ApplicationPipelineBoard items={data.items} onAction={handleAction} /> : null}
+            </section>
+            <aside className="xl:sticky xl:top-24 xl:self-start"><ActivityFeedPanel /></aside>
+          </div>
+          <div className="grid md:grid-cols-3 gap-4">
+            <PaymentStatusPanel compact />
+            <ComplianceChecklistPanel compact category={data?.events.find(e => e.id === timelineEventId)?.category ?? 'festival'} region={organizer.region} />
+            <BoothOccupancyCard mapped={mapped} approved={approved} />
+          </div>
         </div>
       )}
-
-      <div className="mb-6">
-        <EventTimelineCard eventId={timelineEventId} eventName={timelineEventName} />
-      </div>
-
-      <div className="grid xl:grid-cols-[1fr_320px] gap-6 mb-8">
-        <section>
-          <h2 className={`${sectionTitle} mb-4 ${heading}`}>Vendor pipeline</h2>
-          {loading ? (
-            <OrganizerLoadingState label="Loading pipeline…" />
-          ) : error ? (
-            <p className="text-red-600 text-sm">{error}</p>
-          ) : data ? (
-            <ApplicationPipelineBoard items={data.items} onAction={handleAction} />
-          ) : null}
-        </section>
-
-        <aside className="xl:sticky xl:top-24 xl:self-start">
-          <ActivityFeedPanel />
-        </aside>
-      </div>
-
-      <div className="grid md:grid-cols-3 gap-4">
-        <PaymentStatusPanel compact />
-        <ComplianceChecklistPanel
-          compact
-          category={data?.events.find(e => e.id === timelineEventId)?.category ?? 'festival'}
-          region={organizer.region}
-        />
-        <BoothOccupancyCard mapped={mapped} approved={approved} />
-      </div>
     </OrganizerLayout>
   );
 }

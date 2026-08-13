@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Grid3X3, Map } from 'lucide-react';
+import { ChevronDown, ChevronUp, Grid3X3, Map } from 'lucide-react';
 import { BoothMapEditor } from '@/components/organizer/booth-map-editor';
 import { StreetFairBuilder } from '@/components/organizer/street-fair-builder';
 import { useOrganizerTheme } from '@/components/organizer/use-organizer-theme';
@@ -11,6 +11,7 @@ import type { LayoutMode } from '@/lib/booth/street-fair-schema';
 export function BoothPlanningShell({ eventId }: { eventId: string }) {
   const { btnPrimary, btnSecondary, muted } = useOrganizerTheme();
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('grid');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const loadMode = useCallback(async () => {
@@ -18,7 +19,9 @@ export function BoothPlanningShell({ eventId }: { eventId: string }) {
     const orgId = getActiveOrganizerId();
     const res = await fetch(`/api/organizer/booths?organizerId=${orgId}&eventId=${eventId}`);
     const data = await res.json();
-    if (data.layoutMode) setLayoutMode(data.layoutMode);
+    // Always introduce organizers through the simple grid. Existing street
+    // layouts remain available under the clearly labeled advanced option.
+    if (data.layoutMode === 'grid') setLayoutMode('grid');
     setLoading(false);
   }, [eventId]);
 
@@ -42,16 +45,30 @@ export function BoothPlanningShell({ eventId }: { eventId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
+      <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-wider text-teal-600">Recommended</p>
+        <h2 className="mt-1 font-semibold">Start with a simple booth grid</h2>
+        <p className={`mt-1 text-sm ${muted}`}>Create numbered spaces and assign approved vendors. This works for most school fairs, markets, and indoor events.</p>
         <button
           type="button"
           onClick={() => switchMode('grid')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold ${
-            layoutMode === 'grid' ? btnPrimary : btnSecondary
-          }`}
+          className={`mt-4 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold ${btnPrimary}`}
         >
-          <Grid3X3 className="h-4 w-4" /> Quick Grid Mode
+          <Grid3X3 className="h-4 w-4" /> Use simple grid
         </button>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setShowAdvanced(value => !value)}
+        className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-semibold ${btnSecondary}`}
+        aria-expanded={showAdvanced}
+      >
+        <span><span className="block">Advanced street mapping</span><span className={`mt-0.5 block text-xs font-normal ${muted}`}>For events spanning streets, blocks, odd/even sides, or food-truck zones</span></span>
+        {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </button>
+
+      {showAdvanced && <div className="rounded-xl border border-stone-200 bg-white p-4">
         <button
           type="button"
           onClick={() => switchMode('street-fair')}
@@ -59,15 +76,9 @@ export function BoothPlanningShell({ eventId }: { eventId: string }) {
             layoutMode === 'street-fair' ? btnPrimary : btnSecondary
           }`}
         >
-          <Map className="h-4 w-4" /> Street Fair Mode
+          <Map className="h-4 w-4" /> Open street mapping
         </button>
-      </div>
-
-      <p className={`text-sm ${muted}`}>
-        {layoutMode === 'grid'
-          ? 'Drag approved vendors onto a simple grid — best for indoor halls and school fairs.'
-          : 'Model streets, blocks, and both sides — auto-generates numbered booth inventory for festivals.'}
-      </p>
+      </div>}
 
       {layoutMode === 'grid' ? <BoothMapEditor eventId={eventId} /> : <StreetFairBuilder eventId={eventId} />}
     </div>

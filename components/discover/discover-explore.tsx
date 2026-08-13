@@ -19,6 +19,8 @@ export interface DiscoverExploreProps {
   initialState?: 'all' | 'NY' | 'NJ';
   pageTitle?: string;
   pageDescription?: string;
+  initialCategory?: BrowseCategoryId;
+  weekendOnly?: boolean;
 }
 
 export function DiscoverExplore({
@@ -27,13 +29,15 @@ export function DiscoverExplore({
   initialState = 'all',
   pageTitle = 'Discover Events',
   pageDescription,
+  initialCategory = 'all',
+  weekendOnly = false,
 }: DiscoverExploreProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const [query, setQuery] = useState('');
   const [state, setState] = useState<'all' | 'NY' | 'NJ'>(initialState);
-  const [browseCategory, setBrowseCategory] = useState<BrowseCategoryId>('all');
+  const [browseCategory, setBrowseCategory] = useState<BrowseCategoryId>(initialCategory);
   const [experienceTags, setExperienceTags] = useState<string[]>([]);
   const [tagOptions, setTagOptions] = useState<ExperienceTagOption[]>([]);
   const [listings, setListings] = useState<EventListing[]>([]);
@@ -45,13 +49,13 @@ export function DiscoverExplore({
     if (cat && BROWSE_CATEGORIES.some(c => c.id === cat)) {
       setBrowseCategory(cat as BrowseCategoryId);
     } else if (!cat) {
-      setBrowseCategory('all');
+      setBrowseCategory(initialCategory);
     }
     const st = searchParams.get('state');
     if (st === 'NY' || st === 'NJ' || st === 'all') {
       setState(st);
     }
-  }, [searchParams]);
+  }, [searchParams, initialCategory]);
 
   const syncFiltersToUrl = useCallback(
     (next: { category?: BrowseCategoryId; state?: 'all' | 'NY' | 'NJ' }) => {
@@ -120,7 +124,20 @@ export function DiscoverExplore({
   };
 
   const filtered = useMemo(() => {
-    if (browseCategory === 'all') return listings;
+    let candidates = listings;
+    if (weekendOnly) {
+      const now = new Date();
+      const saturday = new Date(now);
+      saturday.setHours(0, 0, 0, 0);
+      saturday.setDate(now.getDate() + (6 - now.getDay() + 7) % 7);
+      const monday = new Date(saturday);
+      monday.setDate(saturday.getDate() + 2);
+      candidates = candidates.filter(listing => {
+        const date = new Date(`${listing.date}T12:00:00`);
+        return date >= saturday && date < monday;
+      });
+    }
+    if (browseCategory === 'all') return candidates;
     const map: Record<string, string[]> = {
       music: ['music', 'concert', 'live'],
       'car-show': ['car show', 'car'],
@@ -135,11 +152,11 @@ export function DiscoverExplore({
       community: ['community'],
     };
     const keys = map[browseCategory] ?? [browseCategory.replace('-', ' ')];
-    return listings.filter(l => {
+    return candidates.filter(l => {
       const hay = `${l.categoryLabel} ${l.tags.join(' ')} ${l.title}`.toLowerCase();
       return keys.some(k => hay.includes(k));
     });
-  }, [listings, browseCategory]);
+  }, [listings, browseCategory, weekendOnly]);
 
   const description =
     pageDescription ??
