@@ -405,3 +405,30 @@ body::after {
     visibility: visible;
   }
 }
+
+/* Organizer field packet — hide the dashboard and print only the take-along sheet. */
+@media print {
+  body:has(#organizer-print-packet) * {
+    visibility: hidden !important;
+  }
+
+  #organizer-print-packet,
+  #organizer-print-packet * {
+    visibility: visible !important;
+  }
+
+  #organizer-print-packet {
+    display: block !important;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    padding: 0.35in;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  @page {
+    size: letter portrait;
+    margin: 0.35in;
+  }
+}

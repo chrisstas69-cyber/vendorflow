@@ -65,7 +65,7 @@ export default function OrganizerDashboardPage() {
 
       {data && (
         <div className="mb-6">
-          <OrganizerGettingStarted eventCount={data.events.length} items={data.items} />
+          <OrganizerGettingStarted eventCount={data.events.length} eventName={timelineEventName ?? data.events[0]?.name} items={data.items} />
         </div>
       )}
 
