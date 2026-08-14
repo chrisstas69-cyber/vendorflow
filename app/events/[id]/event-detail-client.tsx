@@ -150,12 +150,12 @@ export function EventDetailClient() {
               <EventInterestButton eventId={event.id} initialSaves={event.saves} kind="save" />
 
               <div className="border-t vf-border pt-4 mt-2">
-                <Link
+                <a
                   href={`/pulse?eventId=${encodeURIComponent(event.id)}`}
                   className="block w-full rounded-xl border border-orange-600 px-4 py-3 text-center text-sm font-semibold text-orange-600 hover:bg-orange-50"
                 >
                   Interested in vending? View vendor details
-                </Link>
+                </a>
                 <p className="mt-2 text-center text-xs vf-text-muted">Fees, availability, requirements, and fit insights are shown in the vendor workspace.</p>
               </div>
             </div>

@@ -62,7 +62,7 @@ export default function ForOrganizersPage() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid md:grid-cols-2 gap-4 mb-12">
           {FEATURES.map((item, i) => (
-            <Link
+            <a
               key={item.title}
               href={item.href}
               className="rounded-2xl border vf-border vf-surface p-6 hover:border-emerald-500/40 transition-all hover:-translate-y-0.5 animate-fade-up"
@@ -74,7 +74,7 @@ export default function ForOrganizersPage() {
               <h2 className="font-semibold text-lg vf-text mb-1.5">{item.title}</h2>
               <p className="text-sm vf-text-muted leading-relaxed">{item.desc}</p>
               <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">Open tool <ArrowRight className="h-4 w-4" /></span>
-            </Link>
+            </a>
           ))}
         </div>
 
@@ -90,13 +90,13 @@ export default function ForOrganizersPage() {
             </ul>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-            <Link
+            <a
               href="/organizer"
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-700/20"
             >
               Open Organizer Dashboard
               <ArrowRight className="h-4 w-4" />
-            </Link>
+            </a>
             <Link
               href="/submit-event"
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 border vf-border vf-surface hover:vf-surface-2 vf-text font-semibold rounded-xl text-sm"

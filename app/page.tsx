@@ -50,11 +50,11 @@ export default function HomePage() {
               { href: '/for-vendors', icon: Store, title: 'Grow my vendor business', copy: 'Find events and apply faster.', tone: 'bg-indigo-600' },
               { href: '/for-organizers', icon: Building2, title: 'Run an event', copy: 'Manage vendors, fees, and booths.', tone: 'bg-emerald-700' },
             ].map(item => (
-              <Link key={item.href} href={item.href} className="group flex items-center gap-3 rounded-xl border vf-border vf-surface p-3 hover:-translate-y-0.5 hover:shadow-sm transition-all">
+              <a key={item.href} href={item.href} className="group flex items-center gap-3 rounded-xl border vf-border vf-surface p-3 hover:-translate-y-0.5 hover:shadow-sm transition-all">
                 <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white ${item.tone}`}><item.icon size={17} /></span>
                 <span className="min-w-0"><span className="block text-sm font-semibold vf-text">{item.title}</span><span className="block text-xs vf-text-muted">{item.copy}</span></span>
                 <ArrowRight size={14} className="ml-auto vf-text-subtle group-hover:translate-x-0.5 transition-transform" />
-              </Link>
+              </a>
             ))}
           </div>
         </div>
@@ -73,7 +73,7 @@ export default function HomePage() {
       <section className="border-t vf-border vf-bg-subtle">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Link
+            <a
               href="/for-vendors"
               className="group relative overflow-hidden rounded-2xl border vf-border vf-surface p-6 hover:border-orange-500/40 transition-all hover:-translate-y-0.5"
             >
@@ -87,8 +87,8 @@ export default function HomePage() {
               <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-orange-600">
                 Vendor tools <ArrowRight size={12} />
               </span>
-            </Link>
-            <Link
+            </a>
+            <a
               href="/for-organizers"
               className="group relative overflow-hidden rounded-2xl border vf-border vf-surface p-6 hover:border-emerald-500/40 transition-all hover:-translate-y-0.5"
             >
@@ -102,7 +102,7 @@ export default function HomePage() {
               <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
                 Organizer hub <ArrowRight size={12} />
               </span>
-            </Link>
+            </a>
           </div>
         </div>
       </section>
