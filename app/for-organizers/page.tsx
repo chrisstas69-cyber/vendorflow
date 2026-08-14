@@ -49,8 +49,8 @@ export default function ForOrganizersPage() {
             List once. Reach vendors &amp; families.
           </h1>
           <p className="mt-3 text-white/80 max-w-xl text-sm md:text-base leading-relaxed">
-            Upload crowd photos, promote to the top banner, and fill vendor slots with a drag-and-drop
-            pipeline.
+            Put your event in the public directory free. Upgrade only when you want promotion,
+            vendor management, booth planning, and day-of operations.
           </p>
         </div>
       </div>
@@ -74,9 +74,9 @@ export default function ForOrganizersPage() {
 
         <div className="rounded-2xl border vf-border vf-bg-subtle p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h3 className="text-lg font-semibold vf-text">Launch your next fair faster</h3>
+            <h3 className="text-lg font-semibold vf-text">Start with a free event listing</h3>
             <ul className="mt-2 space-y-1">
-              {['Kanban vendor pipeline', 'Booth map & fees', 'Compliance checklists'].map(t => (
+              {['Free public page and organizer claim', 'Optional $49 event operations', 'Optional $79 event spotlight'].map(t => (
                 <li key={t} className="flex items-center gap-1.5 text-xs vf-text-muted">
                   <CheckCircle2 size={12} className="text-emerald-700" /> {t}
                 </li>
@@ -85,17 +85,17 @@ export default function ForOrganizersPage() {
           </div>
           <div className="flex flex-col sm:flex-row gap-2 shrink-0">
             <Link
-              href="/organizer/events/new"
+              href="/submit-event"
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-700/20"
             >
-              Create your event
+              Submit event free
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              href="/organizer/applications"
+              href="/pricing"
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 border vf-border vf-surface hover:vf-surface-2 vf-text font-semibold rounded-xl text-sm"
             >
-              Open applications board
+              Compare paid tools
             </Link>
           </div>
         </div>

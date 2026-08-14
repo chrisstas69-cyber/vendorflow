@@ -238,11 +238,12 @@ export default function CreateEventPage() {
             value={form.promotionTier}
             onChange={e => setForm({ ...form, promotionTier: e.target.value as PromotionTier })}
           >
-            <option value="none">Standard listing</option>
-            <option value="featured">Featured listing</option>
-            <option value="spotlight">Homepage spotlight</option>
+            <option value="none">Standard listing · Free</option>
+            <option value="featured">Featured listing · Paid promotion</option>
+            <option value="spotlight">Homepage spotlight · $79/event</option>
           </select>
         ))}
+        <p className="-mt-3 text-xs text-stone-500">Your public event page is always free. Promotion is optional and can be added later.</p>
         </>}
         {step === 3 && <>
           <div><h2 className="flex items-center gap-2 text-lg font-semibold"><Eye className="h-5 w-5 text-teal-600" /> Review before publishing</h2><p className="text-sm text-stone-500">Confirm the details below. You can edit the event after publishing.</p></div>

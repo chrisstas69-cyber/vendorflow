@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { PublicLayout } from '@/components/layout/public-layout';
 import { PRICING_TIERS } from '@/lib/pricing-tiers';
 import { FoundersEditionBanner } from '@/components/founders/founders-banner';
-import { Check, Sparkles, Store, Building2 } from 'lucide-react';
+import { Check, Sparkles, Store, Building2, Users } from 'lucide-react';
 
 export default function PricingPage() {
   const organizerTiers = PRICING_TIERS.filter(t => t.audience === 'organizer');
@@ -52,8 +52,8 @@ export default function PricingPage() {
             </span>
           </h1>
           <p className="mt-4 text-sm vf-text-muted max-w-2xl mx-auto leading-relaxed">
-            Free while we&apos;re in Founders Edition — no card required. We&apos;ll email you
-            before any billing begins.
+            Browsing and basic event listings stay free. We charge for professional vendor tools,
+            organizer operations, and optional promotion.
           </p>
         </div>
       </section>
@@ -64,11 +64,22 @@ export default function PricingPage() {
         </div>
 
         <section className="mb-14">
+          <div className="flex items-center gap-2 mb-5"><Users size={18} className="text-indigo-600" /><h2 className="text-xl font-semibold vf-text">For the public</h2></div>
+          <div className="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-6 dark:border-indigo-900 dark:bg-indigo-950/20">
+            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700">Always free</p>
+            <h3 className="mt-1 text-2xl font-bold vf-text">Discover local events · $0</h3>
+            <p className="mt-2 max-w-2xl text-sm vf-text-muted">Anyone can browse, search, save events, mark interest, and subscribe to the weekly events email. No paid account is needed.</p>
+            <Link href="/discover" className="mt-4 inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">Browse events free</Link>
+          </div>
+        </section>
+
+        <section className="mb-14">
           <div className="flex items-center gap-2 mb-5">
             <Building2 size={18} className="text-emerald-700" />
             <h2 className="text-xl font-semibold vf-text">For organizers</h2>
           </div>
-          <div className="grid md:grid-cols-2 gap-4">
+          <p className="mb-5 text-sm vf-text-muted">Listing an event is free. Pay only when you want operating tools or extra promotion.</p>
+          <div className="grid md:grid-cols-3 gap-4">
             {organizerTiers.map(tier => (
               <TierCard
                 key={tier.id}
@@ -180,7 +191,7 @@ function TierCard({
       </button>
       {selected && (
         <p className={`text-xs mt-2 text-center ${isOrange ? 'text-orange-700' : 'text-emerald-700'}`}>
-          You&apos;re on {tier.name} for the pilot — free, no card required.
+          {tier.priceLabel === 'Free' ? `You're on ${tier.name} — no card required.` : `${tier.name} selected. Billing is not charged until checkout is connected.`}
         </p>
       )}
       {errored && (
