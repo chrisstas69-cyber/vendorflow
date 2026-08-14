@@ -3,11 +3,13 @@ import { ensurePlatformSeed } from '@/lib/platform-seed';
 import { prisma } from '@/lib/prisma';
 import { rulesForEventCategory } from '@/lib/long-island/compliance-rules';
 import type { LiRegion } from '@/lib/long-island/compliance-rules';
+import { requireSession } from '@/lib/auth/guards';
 
 export const dynamic = 'force-dynamic';
 
 /** GET — server-driven compliance checklist by region + event category */
 export async function GET(req: NextRequest) {
+  const auth = requireSession(req); if (!auth.ok) return auth.response;
   await ensurePlatformSeed();
 
   const { searchParams } = new URL(req.url);

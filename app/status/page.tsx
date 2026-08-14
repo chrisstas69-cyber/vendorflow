@@ -10,7 +10,6 @@ import {
   XCircle,
   HelpCircle,
   RefreshCw,
-  Radio,
 } from 'lucide-react';
 import type { HealthCheck, HealthSnapshot } from '@/lib/health-snapshot';
 
@@ -49,8 +48,6 @@ export default function StatusPage() {
   const [data, setData] = useState<HealthResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pinging, setPinging] = useState(false);
-  const [pingResult, setPingResult] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -69,21 +66,6 @@ export default function StatusPage() {
   useEffect(() => {
     void load();
   }, [load]);
-
-  const pingSentry = async () => {
-    setPinging(true);
-    setPingResult(null);
-    try {
-      const res = await fetch('/api/health?ping=sentry', { cache: 'no-store' });
-      const json = (await res.json()) as HealthResponse;
-      setData(json);
-      setPingResult(json.sentryPing?.detail ?? 'No response');
-    } catch {
-      setPingResult('Ping request failed');
-    } finally {
-      setPinging(false);
-    }
-  };
 
   return (
     <PublicLayout>
@@ -149,31 +131,6 @@ export default function StatusPage() {
               {data.checks.map(check => (
                 <CheckRow key={check.id} check={check} />
               ))}
-            </div>
-
-            <div
-              className="rounded-2xl border p-5 mb-8"
-              style={{ borderColor: 'var(--pub-border)', background: 'var(--pub-footer)' }}
-            >
-              <h2 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                <Radio className="h-4 w-4 text-amber-500" />
-                Test Sentry
-              </h2>
-              <p className="text-sm public-muted mb-4">
-                Sends a harmless test event. After clicking, open your Sentry project → Issues and look for
-                &quot;VendorFlow health-check ping&quot;.
-              </p>
-              <button
-                type="button"
-                onClick={() => void pingSentry()}
-                disabled={pinging}
-                className="px-4 py-2 rounded-lg bg-amber-500 text-gray-900 text-sm font-semibold hover:bg-amber-600 disabled:opacity-50"
-              >
-                {pinging ? 'Sending…' : 'Send test event'}
-              </button>
-              {pingResult && (
-                <p className="text-sm mt-3 public-muted">{pingResult}</p>
-              )}
             </div>
 
             <div className="text-xs public-muted space-y-2 border-t pt-6" style={{ borderColor: 'var(--pub-border)' }}>

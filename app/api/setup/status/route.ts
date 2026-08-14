@@ -3,6 +3,9 @@ import fs from 'fs';
 import path from 'path';
 
 export async function GET() {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+  }
   const envPath = path.join(process.cwd(), '.env.local');
   const status: Record<string, { set: boolean; valid: boolean }> = {
     AIRTABLE_PAT: { set: false, valid: false },

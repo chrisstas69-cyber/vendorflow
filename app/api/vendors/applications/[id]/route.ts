@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
-import { resolveVendorEmail } from '@/lib/auth/resolve-vendor-email';
+import { requireVendorEmail } from '@/lib/auth/resolve-vendor-email';
 import {
   getVendorApplicationById,
   markVendorApplicationPaid,
@@ -8,17 +8,20 @@ import {
   uploadVendorApplicationDoc,
 } from '@/lib/vendor-applications-store';
 import type { DocumentType } from '@/lib/documents';
+import { isAllowedImageReference } from '@/lib/storage/image-reference';
 
 export const dynamic = 'force-dynamic';
 
 /** GET — single vendor application */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   await ensurePlatformSeed();
-  const vendorEmail = resolveVendorEmail(req);
-  const application = await getVendorApplicationById(params.id, vendorEmail);
+  const { id } = await params;
+  const auth = requireVendorEmail(req); if (!auth.ok) return auth.response;
+  const vendorEmail = auth.email;
+  const application = await getVendorApplicationById(id, vendorEmail);
   if (!application) {
     return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
   }
@@ -28,15 +31,17 @@ export async function GET(
 /** PATCH — vendor updates (docs, paid, setup photo) */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   await ensurePlatformSeed();
-  const vendorEmail = resolveVendorEmail(req);
+  const { id } = await params;
+  const auth = requireVendorEmail(req); if (!auth.ok) return auth.response;
+  const vendorEmail = auth.email;
   const body = await req.json();
 
   if (body.uploadDocType) {
     const application = await uploadVendorApplicationDoc(
-      params.id,
+      id,
       vendorEmail,
       body.uploadDocType as DocumentType
     );
@@ -47,7 +52,7 @@ export async function PATCH(
   }
 
   if (body.markPaid) {
-    const application = await markVendorApplicationPaid(params.id, vendorEmail);
+    const application = await markVendorApplicationPaid(id, vendorEmail);
     if (!application) {
       return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
     }
@@ -55,8 +60,11 @@ export async function PATCH(
   }
 
   if (body.setupPhotoUrl !== undefined) {
+    if (!isAllowedImageReference(body.setupPhotoUrl)) {
+      return NextResponse.json({ ok: false, error: 'Invalid photo URL' }, { status: 400 });
+    }
     const application = await updateVendorSetupPhoto(
-      params.id,
+      id,
       vendorEmail,
       body.setupPhotoUrl as string | undefined
     );

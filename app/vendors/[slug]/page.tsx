@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { PublicLayout } from '@/components/layout/public-layout';
 import { TrustGalleryView } from '@/components/gallery/trust-gallery-view';
@@ -26,7 +26,8 @@ interface PublicVendorProfile {
   };
 }
 
-export default function PublicVendorProfilePage({ params }: { params: { slug: string } }) {
+export default function PublicVendorProfilePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
   const [profile, setProfile] = useState<PublicVendorProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const { items, loading: galleryLoading } = useGallery('vendor', DEMO_VENDOR_EMAIL, {
@@ -34,13 +35,13 @@ export default function PublicVendorProfilePage({ params }: { params: { slug: st
   });
 
   useEffect(() => {
-    fetch(`/api/vendors/${params.slug}`)
+    fetch(`/api/vendors/${slug}`)
       .then(r => r.json())
       .then(data => {
         if (data.ok && data.profile) setProfile(data.profile);
       })
       .finally(() => setLoading(false));
-  }, [params.slug]);
+  }, [slug]);
 
   if (loading) {
     return (

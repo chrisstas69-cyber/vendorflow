@@ -41,6 +41,11 @@ export async function buildHealthSnapshot(): Promise<HealthSnapshot> {
   const devMagicLink = process.env.ALLOW_DEV_MAGIC_LINK === 'true';
   const onVercel = Boolean(process.env.VERCEL);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() ?? null;
+  const cronSet = Boolean(process.env.CRON_SECRET);
+  const adminSet = Boolean(process.env.ADMIN_EMAILS?.trim());
+  const stripeSet = Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET);
+  const storageSet = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const production = process.env.NODE_ENV === 'production';
 
   const checks: HealthCheck[] = [
     {
@@ -73,12 +78,36 @@ export async function buildHealthSnapshot(): Promise<HealthSnapshot> {
     {
       id: 'magic-link-email',
       label: 'Magic-link email',
-      status: resendSet ? 'ok' : devMagicLink ? 'warn' : 'warn',
+      status: resendSet ? 'ok' : production ? 'error' : 'warn',
       detail: resendSet
         ? 'Resend configured — links sent by email'
         : devMagicLink
           ? 'Dev link mode ON — remove ALLOW_DEV_MAGIC_LINK when Resend is live'
           : 'No email provider — sign-in links disabled in production',
+    },
+    {
+      id: 'automation-secret',
+      label: 'Automation security',
+      status: cronSet ? 'ok' : production ? 'error' : 'warn',
+      detail: cronSet ? 'CRON_SECRET protects scheduled imports' : 'Set CRON_SECRET before enabling scheduled jobs',
+    },
+    {
+      id: 'admin-access',
+      label: 'Administrator access',
+      status: adminSet ? 'ok' : production ? 'error' : 'warn',
+      detail: adminSet ? 'Admin email allowlist configured' : 'Set ADMIN_EMAILS to unlock moderation and internal operations safely',
+    },
+    {
+      id: 'payments',
+      label: 'Stripe payments',
+      status: stripeSet ? 'ok' : production ? 'error' : 'warn',
+      detail: stripeSet ? 'Checkout and signed webhook reconciliation configured' : 'Set Stripe secret and webhook signing secret before accepting payments',
+    },
+    {
+      id: 'file-storage',
+      label: 'Photo storage',
+      status: storageSet ? 'ok' : production ? 'error' : 'warn',
+      detail: storageSet ? 'Supabase Storage configured for vendor photos' : 'Connect a dedicated VendorFlow Supabase project for uploads',
     },
     {
       id: 'sentry',

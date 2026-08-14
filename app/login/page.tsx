@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Mail, Sparkles } from 'lucide-react';
 import { PublicLayout } from '@/components/layout/public-layout';
@@ -11,6 +11,16 @@ export default function LoginPage() {
   const [message, setMessage] = useState('');
   const [devLink, setDevLink] = useState('');
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState<'vendor' | 'organizer' | null>(null);
+  const [nextPath, setNextPath] = useState('');
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedRole = params.get('role');
+    if (requestedRole === 'vendor' || requestedRole === 'organizer') setRole(requestedRole);
+    const requestedNext = params.get('next');
+    if (requestedNext?.startsWith('/') && !requestedNext.startsWith('//')) setNextPath(requestedNext);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +31,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, role }),
+        body: JSON.stringify({ email, role, next: nextPath || undefined }),
       });
       const data = await res.json();
       setMessage(data.message ?? (data.ok ? 'Check your email' : data.error));
@@ -30,6 +40,28 @@ export default function LoginPage() {
       setMessage('Something went wrong — try again');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDemo = async (demoRole: 'vendor' | 'organizer') => {
+    setDemoLoading(demoRole);
+    setMessage('');
+    try {
+      const res = await fetch('/api/auth/demo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: demoRole, next: nextPath || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setMessage(data.error ?? 'Demo access is unavailable');
+        return;
+      }
+      window.location.assign(data.destination);
+    } catch {
+      setMessage('Something went wrong — try again');
+    } finally {
+      setDemoLoading(null);
     }
   };
 
@@ -44,6 +76,19 @@ export default function LoginPage() {
           <p className="text-sm vf-text-muted mt-2 leading-relaxed">
             Magic link — no password. Vendors land in Pulse; organizers go to the hub.
           </p>
+
+          <div className="mt-6 rounded-xl border border-orange-200 bg-orange-50/70 p-4 dark:border-orange-900/60 dark:bg-orange-950/20">
+            <p className="text-sm font-semibold vf-text">Test without signing in</p>
+            <p className="mt-1 text-xs vf-text-muted">Open a shared demo dashboard. Demo changes may be visible to other testers.</p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => handleDemo('vendor')} disabled={demoLoading !== null} className="rounded-lg bg-amber-500 px-3 py-2.5 text-sm font-semibold text-gray-950 disabled:opacity-50">
+                {demoLoading === 'vendor' ? 'Opening…' : 'Demo Vendor'}
+              </button>
+              <button type="button" onClick={() => handleDemo('organizer')} disabled={demoLoading !== null} className="rounded-lg bg-emerald-700 px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+                {demoLoading === 'organizer' ? 'Opening…' : 'Demo Organizer'}
+              </button>
+            </div>
+          </div>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <label className="block text-sm">

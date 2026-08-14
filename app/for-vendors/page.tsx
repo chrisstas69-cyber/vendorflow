@@ -11,7 +11,7 @@ const FEATURES = [
   {
     icon: Activity,
     title: 'Event Pulse',
-    desc: 'Alpha scores, ROI projections, and DUD risk on every fair.',
+    desc: 'Private fit scores and ROI projections personalized to your vendor business.',
     href: '/pulse',
   },
   {
@@ -70,7 +70,7 @@ export default function ForVendorsPage() {
 
         <div className="grid md:grid-cols-2 gap-4 mb-12">
           {FEATURES.map((item, i) => (
-            <Link
+            <a
               key={item.href}
               href={item.href}
               className="group rounded-2xl border vf-border vf-surface p-6 hover:border-orange-500/40 transition-all hover:-translate-y-0.5 animate-fade-up"
@@ -84,7 +84,7 @@ export default function ForVendorsPage() {
               <span className="text-xs font-semibold text-orange-600 inline-flex items-center gap-1 group-hover:gap-2 transition-all">
                 Open <ArrowRight className="h-3 w-3" />
               </span>
-            </Link>
+            </a>
           ))}
         </div>
 
@@ -100,13 +100,13 @@ export default function ForVendorsPage() {
             </ul>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-            <Link
+            <a
               href="/pulse"
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl text-sm shadow-lg shadow-orange-600/20"
             >
               Open Vendor Dashboard
               <ArrowRight className="h-4 w-4" />
-            </Link>
+            </a>
             <Link
               href="/login"
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 border vf-border vf-surface hover:vf-surface-2 vf-text font-semibold rounded-xl text-sm"

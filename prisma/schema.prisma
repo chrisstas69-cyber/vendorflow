@@ -337,6 +337,7 @@ model VendorReceipt {
   amountCents Int    @default(0)
   fileName    String?
   imageData   String?
+  fileUrl     String?
   notes       String @default("")
 
   @@index([vendorEmail])

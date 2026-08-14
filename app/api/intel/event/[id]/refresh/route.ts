@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { refreshEventInsights } from '@/lib/intel/pipeline';
+import { requireAdmin, requireCronSecret } from '@/lib/auth/guards';
 
 interface RouteParams {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 /** POST — on-demand refresh: cache AI recommendations for event + vendor matches */
-export async function POST(_req: NextRequest, { params }: RouteParams) {
+export async function POST(req: NextRequest, { params }: RouteParams) {
+  const auth = requireAdmin(req); if (!auth.ok) return auth.response;
+  const { id } = await params;
   try {
-    const data = await refreshEventInsights(params.id);
+    const data = await refreshEventInsights(id);
     return NextResponse.json({ ok: true, ...data });
   } catch (e) {
     return NextResponse.json(
@@ -20,14 +23,11 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
 
 /** GET — trigger refresh via cron or manual poll */
 export async function GET(req: NextRequest, { params }: RouteParams) {
-  const secret = req.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && secret !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-  }
+  const denied = requireCronSecret(req); if (denied) return denied;
+  const { id } = await params;
 
   try {
-    const data = await refreshEventInsights(params.id);
+    const data = await refreshEventInsights(id);
     return NextResponse.json({ ok: true, ...data });
   } catch (e) {
     return NextResponse.json(

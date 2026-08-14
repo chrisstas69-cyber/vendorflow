@@ -39,7 +39,7 @@ export function FeaturedSpotlightBanner({ event }: { event: PlatformEvent }) {
           <span className="text-xs text-white/70">Paid placement · Demo</span>
         </div>
         <p className="text-amber-300 text-sm font-medium uppercase tracking-wide mb-1">
-          {CATEGORY_LABELS[event.category]} · {event.footTraffic} expected
+          {CATEGORY_LABELS[event.category]} · {event.city}, {event.state}
         </p>
         <h2 className="text-3xl md:text-5xl font-bold text-white mb-3 leading-tight">
           {event.name}

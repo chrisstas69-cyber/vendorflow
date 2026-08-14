@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { AppLayout } from '@/components/layout/app-layout';
 import { VendorPulseCard } from '@/components/vendor/vendor-pulse-card';
 import { OnboardingChecklist } from '@/components/vendor/onboarding-checklist';
@@ -17,6 +18,8 @@ import { Filter, Heart, Search, X } from 'lucide-react';
 import { useTheme } from '@/contexts/theme-context';
 
 export default function EventPulsePage() {
+  const searchParams = useSearchParams();
+  const requestedEventId = searchParams.get('eventId');
   const { publishedEvents } = useDemoStore();
   const { passport } = useVendorPassport();
   const { applications, refresh, getPublicStatus } = useVendorApplications();
@@ -29,15 +32,15 @@ export default function EventPulsePage() {
     [applications]
   );
 
-  const [interestTick, setInterestTick] = useState(0);
+  const [interestCounts, setInterestCounts] = useState<
+    Record<string, { saves: number; rsvps: number }>
+  >({});
   const appliedDemand = useMemo(() => {
-    void interestTick;
     const rows = applications
       .map(a => {
         const event = publishedEvents.find(e => e.id === a.eventId);
         if (!event) return null;
-        seedInterestCount(event.id, event.saves);
-        const counts = getInterestCounts(event.id);
+        const counts = interestCounts[event.id] ?? { saves: 0, rsvps: 0 };
         return {
           eventId: event.id,
           name: event.name,
@@ -50,12 +53,23 @@ export default function EventPulsePage() {
       .sort((a, b) => b.total - a.total);
     const totalPeople = rows.reduce((sum, r) => sum + r.total, 0);
     return { rows, totalPeople };
-  }, [applications, publishedEvents, interestTick]);
+  }, [applications, publishedEvents, interestCounts]);
 
   useEffect(() => {
-    const t = setInterval(() => setInterestTick(n => n + 1), 2000);
+    const refreshInterest = () => {
+      const next: Record<string, { saves: number; rsvps: number }> = {};
+      for (const application of applications) {
+        const event = publishedEvents.find(item => item.id === application.eventId);
+        if (!event) continue;
+        seedInterestCount(event.id, event.saves);
+        next[event.id] = getInterestCounts(event.id);
+      }
+      setInterestCounts(next);
+    };
+    refreshInterest();
+    const t = setInterval(refreshInterest, 2000);
     return () => clearInterval(t);
-  }, []);
+  }, [applications, publishedEvents]);
 
   const [showFilters, setShowFilters] = useState(true);
   const [selectedTiers, setSelectedTiers] = useState<AlphaTier[]>(['S', 'A', 'B', 'C']);
@@ -72,6 +86,7 @@ export default function EventPulsePage() {
   };
 
   const filteredEvents = publishedEvents
+    .filter(event => !requestedEventId || event.id === requestedEventId)
     .filter(event => selectedTiers.includes(event.tier))
     .filter(event => category === 'all' || event.category === category)
     .filter(event => {
@@ -180,7 +195,7 @@ export default function EventPulsePage() {
                 {[
                   { value: 'roi', label: 'Best ROI' },
                   { value: 'family', label: 'Most family-friendly' },
-                  { value: 'risk', label: 'Lowest risk' },
+                  { value: 'risk', label: 'Best vendor fit' },
                 ].map(option => (
                   <label key={option.value} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer text-sm">
                     <input
@@ -235,9 +250,9 @@ export default function EventPulsePage() {
           <div className={`sticky top-0 z-10 backdrop-blur border-b p-4 ${dark ? 'bg-gray-950/95 border-gray-800' : 'bg-gray-50/95 border-gray-200'}`}>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-bold">Find your next event</h1>
+                <h1 className="text-2xl font-bold">{requestedEventId ? 'Vendor opportunity' : 'Find your next event'}</h1>
                 <p className={`text-sm mt-1 ${muted}`}>
-                  Apply directly — submissions land in the organizer inbox
+                  Private vendor details and fit estimates are based on your products and history—not a public rating of the event.
                   {appliedDemand.totalPeople > 0 && (
                     <>
                       {' '}

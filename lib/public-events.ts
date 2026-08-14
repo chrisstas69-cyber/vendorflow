@@ -21,6 +21,12 @@ export function normalizeEventName(value: string) {
 
 export function eventToken() { return randomBytes(24).toString('base64url'); }
 
+export function escapeHtml(value: string) {
+  return value.replace(/[&<>'"]/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;',
+  })[character] ?? character);
+}
+
 export async function findPossibleDuplicate(input: Pick<PublicEventInput, 'name' | 'startDate' | 'city' | 'state'>) {
   const normalized = normalizeEventName(input.name);
   const staticMatch = mockPlatformEvents.find(event =>

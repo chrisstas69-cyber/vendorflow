@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { createLead, findLeadByNameAndDate, LEAD_FIELDS } from '@/lib/airtable';
+import { requireAdmin } from '@/lib/auth/guards';
 
 export async function POST(req: NextRequest) {
+  const auth = requireAdmin(req); if (!auth.ok) return auth.response;
   try {
     const body = await req.json();
     const eventId = body.eventId as number | undefined;
