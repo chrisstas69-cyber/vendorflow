@@ -4,8 +4,7 @@ import { reconcileStripeCheckout } from '@/lib/payments/payment-service';
 /** POST — Stripe Connect-style webhook handler (emulator + future live Stripe) */
 export async function POST(req: NextRequest) {
   const signingSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  const stripeKey = process.env.STRIPE_SECRET_KEY;
-  if (!signingSecret || !stripeKey) {
+  if (!signingSecret) {
     return NextResponse.json(
       { ok: false, error: 'Payment webhooks are not configured' },
       { status: 503 }
@@ -18,8 +17,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Missing Stripe signature' }, { status: 401 });
     }
     const Stripe = (await import('stripe')).default;
-    const stripe = new Stripe(stripeKey, { apiVersion: '2025-02-24.acacia' });
-    const event = stripe.webhooks.constructEvent(await req.text(), signature, signingSecret);
+    // Signature verification is local cryptography and does not require an API
+    // credential. Keeping it independent lets sandbox webhooks be verified
+    // without ever enabling sandbox checkout on the production site.
+    const event = Stripe.webhooks.constructEvent(await req.text(), signature, signingSecret);
     if (event.type !== 'checkout.session.completed') {
       return NextResponse.json({ ok: true, ignored: true });
     }

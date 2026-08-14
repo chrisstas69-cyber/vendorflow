@@ -144,7 +144,12 @@ export async function reconcileStripeCheckout(session: {
     where: { externalPaymentId: session.id },
     include: { invoice: { include: { payments: true } } },
   });
-  if (!payment) throw new Error('Payment session not found');
+  // Stripe may send test fixtures, events created by another integration, or
+  // an old event after data retention. A valid but unrelated event should be
+  // acknowledged so Stripe does not retry it indefinitely.
+  if (!payment) {
+    return { ok: true, ignored: true, reason: 'Payment session not found' };
+  }
   if (payment.status === 'succeeded') {
     return { ok: true, duplicate: true, invoiceId: payment.invoiceId };
   }
