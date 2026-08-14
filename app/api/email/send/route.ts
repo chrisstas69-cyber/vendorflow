@@ -1,7 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { sendDailyDigest } from '@/lib/email';
+import { requireAdmin } from '@/lib/auth/guards';
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const auth = requireAdmin(req); if (!auth.ok) return auth.response;
   try {
     const result = await sendDailyDigest();
     return NextResponse.json({ success: true, ...result });

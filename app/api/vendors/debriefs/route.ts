@@ -3,13 +3,14 @@ import { ensurePlatformSeed } from '@/lib/platform-seed';
 import { getEffectiveDataSource } from '@/lib/pilot-config';
 import type { EventDebriefInput } from '@/lib/event-debrief-schema';
 import { listDebriefs, upsertDebrief } from '@/lib/event-debrief-store';
-import { resolveVendorEmail } from '@/lib/auth/resolve-vendor-email';
+import { requireVendorEmail } from '@/lib/auth/resolve-vendor-email';
 import { DEMO_VENDOR_EMAIL } from '@/lib/vendor-passport';
 
 /** GET — list vendor event logbook entries */
 export async function GET(req: NextRequest) {
   await ensurePlatformSeed();
-  const vendorEmail = resolveVendorEmail(req);
+  const auth = requireVendorEmail(req); if (!auth.ok) return auth.response;
+  const vendorEmail = auth.email;
   const { items } = await listDebriefs(vendorEmail);
   return NextResponse.json({
     ok: true,
@@ -22,7 +23,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   await ensurePlatformSeed();
   const body = await req.json();
-  const vendorEmail = resolveVendorEmail(req);
+  const auth = requireVendorEmail(req); if (!auth.ok) return auth.response;
+  const vendorEmail = auth.email;
   const input = body.debrief as EventDebriefInput;
   if (!input?.eventName || !input?.eventDate) {
     return NextResponse.json({ ok: false, error: 'eventName and eventDate required' }, { status: 400 });

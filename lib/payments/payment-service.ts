@@ -131,6 +131,46 @@ export async function completeCheckout(sessionId: string) {
   return { payment, result, newStatus };
 }
 
+/** Idempotently reconcile a verified Stripe Checkout completion into VendorFlow. */
+export async function reconcileStripeCheckout(session: {
+  id: string;
+  payment_status?: string | null;
+  amount_total?: number | null;
+}) {
+  if (session.payment_status && session.payment_status !== 'paid') {
+    return { ok: true, ignored: true, reason: 'Checkout is not paid' };
+  }
+  const payment = await prisma.payment.findFirst({
+    where: { externalPaymentId: session.id },
+    include: { invoice: { include: { payments: true } } },
+  });
+  if (!payment) throw new Error('Payment session not found');
+  if (payment.status === 'succeeded') {
+    return { ok: true, duplicate: true, invoiceId: payment.invoiceId };
+  }
+
+  const amountCents = session.amount_total ?? payment.amountCents;
+  await prisma.$transaction(async tx => {
+    await tx.payment.update({
+      where: { id: payment.id },
+      data: {
+        status: 'succeeded',
+        amountCents,
+        metadata: JSON.stringify({ completedAt: new Date().toISOString(), stripeSessionId: session.id }),
+      },
+    });
+    const paid = payment.invoice.payments
+      .filter(item => item.id !== payment.id && item.status === 'succeeded')
+      .reduce((sum, item) => sum + item.amountCents, 0) + amountCents;
+    const status: InvoiceStatus = paid >= payment.invoice.totalAmountCents ? 'paid' : 'partial';
+    await tx.invoice.update({
+      where: { id: payment.invoiceId },
+      data: { status, paidAt: status === 'paid' ? new Date() : null },
+    });
+  });
+  return { ok: true, duplicate: false, invoiceId: payment.invoiceId };
+}
+
 export async function handlePaymentWebhook(body: Record<string, unknown>) {
   const provider = (body.provider as string) ?? 'stripe-emulator';
   const adapter = getPaymentAdapter(provider);

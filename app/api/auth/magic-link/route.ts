@@ -16,12 +16,10 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * Dev links let anyone mint a session for any email — never expose them in
- * production unless ALLOW_DEV_MAGIC_LINK=true is set explicitly (pilot
- * stopgap until RESEND_API_KEY lands).
+ * production. Local development returns a link when email is not configured.
  */
 function devLinkAllowed(): boolean {
-  if (process.env.NODE_ENV !== 'production') return true;
-  return process.env.ALLOW_DEV_MAGIC_LINK === 'true';
+  return process.env.NODE_ENV !== 'production';
 }
 
 /** POST — request magic link { email, role } */
@@ -44,6 +42,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  if (process.env.NODE_ENV === 'production' && !process.env.RESEND_API_KEY) {
+    return NextResponse.json(
+      { ok: false, error: 'Sign-in email is temporarily unavailable' },
+      { status: 503 }
+    );
+  }
+
   const token = generateMagicToken();
   await prisma.magicLinkToken.create({
     data: { email, role, token, expiresAt: magicLinkExpiresAt() },
@@ -53,7 +58,7 @@ export async function POST(req: NextRequest) {
 
   if (canSendEmail() && process.env.RESEND_API_KEY) {
     try {
-      await fetch('https://api.resend.com/emails', {
+      const emailResponse = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
@@ -66,8 +71,15 @@ export async function POST(req: NextRequest) {
           html: `<p>Click to sign in (expires in 30 min):</p><p><a href="${link}">${link}</a></p>`,
         }),
       });
-    } catch {
-      /* fall through to dev link */
+      if (!emailResponse.ok) {
+        throw new Error(`Email provider rejected request (${emailResponse.status})`);
+      }
+    } catch (error) {
+      await prisma.magicLinkToken.delete({ where: { token } }).catch(() => undefined);
+      return NextResponse.json(
+        { ok: false, error: 'Unable to send the sign-in email. Please try again.' },
+        { status: 502 }
+      );
     }
   }
 

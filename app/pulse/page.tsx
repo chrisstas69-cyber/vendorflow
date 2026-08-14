@@ -29,15 +29,15 @@ export default function EventPulsePage() {
     [applications]
   );
 
-  const [interestTick, setInterestTick] = useState(0);
+  const [interestCounts, setInterestCounts] = useState<
+    Record<string, { saves: number; rsvps: number }>
+  >({});
   const appliedDemand = useMemo(() => {
-    void interestTick;
     const rows = applications
       .map(a => {
         const event = publishedEvents.find(e => e.id === a.eventId);
         if (!event) return null;
-        seedInterestCount(event.id, event.saves);
-        const counts = getInterestCounts(event.id);
+        const counts = interestCounts[event.id] ?? { saves: 0, rsvps: 0 };
         return {
           eventId: event.id,
           name: event.name,
@@ -50,12 +50,23 @@ export default function EventPulsePage() {
       .sort((a, b) => b.total - a.total);
     const totalPeople = rows.reduce((sum, r) => sum + r.total, 0);
     return { rows, totalPeople };
-  }, [applications, publishedEvents, interestTick]);
+  }, [applications, publishedEvents, interestCounts]);
 
   useEffect(() => {
-    const t = setInterval(() => setInterestTick(n => n + 1), 2000);
+    const refreshInterest = () => {
+      const next: Record<string, { saves: number; rsvps: number }> = {};
+      for (const application of applications) {
+        const event = publishedEvents.find(item => item.id === application.eventId);
+        if (!event) continue;
+        seedInterestCount(event.id, event.saves);
+        next[event.id] = getInterestCounts(event.id);
+      }
+      setInterestCounts(next);
+    };
+    refreshInterest();
+    const t = setInterval(refreshInterest, 2000);
     return () => clearInterval(t);
-  }, []);
+  }, [applications, publishedEvents]);
 
   const [showFilters, setShowFilters] = useState(true);
   const [selectedTiers, setSelectedTiers] = useState<AlphaTier[]>(['S', 'A', 'B', 'C']);

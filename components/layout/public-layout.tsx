@@ -245,6 +245,8 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <Link href="/for-vendors" className="hover:vf-text">Vendors</Link>
               <Link href="/for-organizers" className="hover:vf-text">Organizers</Link>
               <Link href="/pricing" className="hover:vf-text">Pricing</Link>
+              <Link href="/privacy" className="hover:vf-text">Privacy</Link>
+              <Link href="/terms" className="hover:vf-text">Terms</Link>
             </div>
           </div>
         </div>

@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
 import { getEffectiveDataSource } from '@/lib/pilot-config';
 import { prisma, isHostedDatabaseUrl } from '@/lib/prisma';
-import { resolveVendorEmail } from '@/lib/auth/resolve-vendor-email';
+import { requireVendorEmail } from '@/lib/auth/resolve-vendor-email';
+import { deletePrivateVendorFile, isSupabaseStorageConfigured, uploadPrivateVendorFile } from '@/lib/storage/supabase-storage';
 
 export async function GET(req: NextRequest) {
   await ensurePlatformSeed();
-  const vendorEmail = resolveVendorEmail(req);
+  const auth = requireVendorEmail(req); if (!auth.ok) return auth.response;
+  const vendorEmail = auth.email;
   const dataSource = getEffectiveDataSource();
 
   if (dataSource !== 'db' || !isHostedDatabaseUrl()) {
@@ -25,6 +27,7 @@ export async function GET(req: NextRequest) {
         category: true,
         amountCents: true,
         fileName: true,
+        fileUrl: true,
         notes: true,
         createdAt: true,
       },
@@ -48,7 +51,7 @@ export async function GET(req: NextRequest) {
         fileName: r.fileName,
         notes: r.notes,
         createdAt: r.createdAt.toISOString(),
-        hasImage: withImage.has(r.id),
+        hasImage: Boolean(r.fileUrl) || withImage.has(r.id),
       })),
     });
   } catch (err) {
@@ -65,8 +68,19 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
-  const vendorEmail = resolveVendorEmail(req);
-  const body = await req.json();
+  const auth = requireVendorEmail(req); if (!auth.ok) return auth.response;
+  const vendorEmail = auth.email;
+  if (!isSupabaseStorageConfigured()) {
+    return NextResponse.json({ ok: false, error: 'Receipt storage is not configured yet' }, { status: 503 });
+  }
+  const form = await req.formData();
+  const file = form.get('file');
+  if (!(file instanceof File) || file.size <= 0 || file.size > 8 * 1024 * 1024) {
+    return NextResponse.json({ ok: false, error: 'Choose a receipt file under 8 MB' }, { status: 400 });
+  }
+  const allowed = file.type.startsWith('image/') || file.type === 'application/pdf';
+  if (!allowed) return NextResponse.json({ ok: false, error: 'Use an image or PDF receipt' }, { status: 400 });
+  const fileUrl = await uploadPrivateVendorFile(vendorEmail, file);
   const passport = await prisma.vendorPassport.findUnique({
     where: { vendorEmail },
     select: { id: true },
@@ -76,11 +90,12 @@ export async function POST(req: NextRequest) {
     data: {
       vendorEmail,
       vendorPassportId: passport?.id ?? null,
-      category: body.category ?? 'Other',
-      amountCents: Math.round((body.amount ?? 0) * 100),
-      fileName: body.fileName ?? null,
-      imageData: body.imageData ?? null,
-      notes: body.notes ?? '',
+      category: String(form.get('category') ?? 'Other'),
+      amountCents: Math.round(Number(form.get('amount') ?? 0) * 100),
+      fileName: file.name,
+      fileUrl,
+      imageData: null,
+      notes: String(form.get('notes') ?? file.name),
     },
   });
 
@@ -93,7 +108,7 @@ export async function POST(req: NextRequest) {
       fileName: row.fileName,
       notes: row.notes,
       createdAt: row.createdAt.toISOString(),
-      hasImage: Boolean(row.imageData),
+      hasImage: Boolean(row.fileUrl),
     },
   });
 }
@@ -106,15 +121,16 @@ export async function DELETE(req: NextRequest) {
       { status: 400 }
     );
   }
-  const vendorEmail = resolveVendorEmail(req);
+  const auth = requireVendorEmail(req); if (!auth.ok) return auth.response;
+  const vendorEmail = auth.email;
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
   if (!id) return NextResponse.json({ ok: false, error: 'id required' }, { status: 400 });
-  const deleted = await prisma.vendorReceipt
-    .deleteMany({ where: { id, vendorEmail } })
-    .catch(() => null);
+  const receipt = await prisma.vendorReceipt.findFirst({ where: { id, vendorEmail }, select: { fileUrl: true } });
+  const deleted = await prisma.vendorReceipt.deleteMany({ where: { id, vendorEmail } }).catch(() => null);
   if (!deleted?.count) {
     return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
   }
+  if (receipt?.fileUrl) await deletePrivateVendorFile(receipt.fileUrl).catch(() => undefined);
   return NextResponse.json({ ok: true });
 }

@@ -8,11 +8,12 @@ import { Calendar, MapPin, ExternalLink } from 'lucide-react';
 import { EventTrustActions } from '@/components/public/event-trust-actions';
 
 interface PageProps {
-  params: { eventId: string };
+  params: Promise<{ eventId: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const id = decodeURIComponent(params.eventId);
+  const { eventId } = await params;
+  const id = decodeURIComponent(eventId);
   const db = getDb();
   const row = db.prepare('SELECT title, description FROM events WHERE event_id = ?').get(id) as
     | { title: string; description: string | null }
@@ -24,8 +25,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default function ScrapedEventDetailPage({ params }: PageProps) {
-  const id = decodeURIComponent(params.eventId);
+export default async function ScrapedEventDetailPage({ params }: PageProps) {
+  const { eventId } = await params;
+  const id = decodeURIComponent(eventId);
   const db = getDb();
   const row = db.prepare('SELECT * FROM events WHERE event_id = ?').get(id) as
     | import('@/lib/db').EventRow

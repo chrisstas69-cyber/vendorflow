@@ -3,6 +3,8 @@ import { ensurePlatformSeed } from '@/lib/platform-seed';
 import { getEffectiveDataSource } from '@/lib/pilot-config';
 import { isHostedDatabaseUrl, prisma } from '@/lib/prisma';
 import { sendEventEmail } from '@/lib/public-events';
+import { rateLimit } from '@/lib/auth/guards';
+import { randomUUID } from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,8 +19,12 @@ export async function POST(req: NextRequest) {
   const kind = body.kind === 'rsvp' ? 'rsvp' : 'save';
   const active = Boolean(body.active);
 
-  if (!eventId) {
+  if (!eventId || eventId.length > 160) {
     return NextResponse.json({ ok: false, error: 'eventId required' }, { status: 400 });
+  }
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  if (!rateLimit(`interest:${ip}`, 60, 60_000)) {
+    return NextResponse.json({ ok: false, error: 'Too many requests' }, { status: 429 });
   }
 
   if (getEffectiveDataSource() !== 'db' || !isHostedDatabaseUrl()) {
@@ -33,10 +39,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const deviceId =
+    const requestedDeviceId =
       req.headers.get('x-vf-device') ||
-      req.cookies.get('vf_interest_device')?.value ||
-      'anonymous';
+      req.cookies.get('vf_interest_device')?.value;
+    const deviceId = requestedDeviceId && /^[a-zA-Z0-9_-]{8,100}$/.test(requestedDeviceId)
+      ? requestedDeviceId
+      : randomUUID();
 
     if (active) {
       await prisma.eventInterest.upsert({
@@ -65,12 +73,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       ok: true,
       dataSource: 'db',
       persisted: true,
       counts: { saves, rsvps },
     });
+    if (!requestedDeviceId) {
+      response.cookies.set('vf_interest_device', deviceId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 365 * 24 * 60 * 60,
+      });
+    }
+    return response;
   } catch (err) {
     console.warn('[interest] persist failed:', err instanceof Error ? err.message : err);
     return NextResponse.json({

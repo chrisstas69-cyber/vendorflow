@@ -3,11 +3,12 @@ import { findPlatformEventById } from '@/lib/event-lookup';
 import { EventDetailClient } from './event-detail-client';
 
 interface Props {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export function generateMetadata({ params }: Props): Metadata {
-  const event = findPlatformEventById(params.id);
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const event = findPlatformEventById(id);
   if (!event) {
     return { title: 'Event not found' };
   }
@@ -65,8 +66,9 @@ function eventJsonLd(id: string) {
   };
 }
 
-export default function EventDetailPage({ params }: Props) {
-  const jsonLd = eventJsonLd(params.id);
+export default async function EventDetailPage({ params }: Props) {
+  const { id } = await params;
+  const jsonLd = eventJsonLd(id);
   return (
     <>
       {jsonLd && (

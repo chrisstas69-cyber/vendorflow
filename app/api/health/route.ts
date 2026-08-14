@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { buildHealthSnapshot } from '@/lib/health-snapshot';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
+import { requireAdmin } from '@/lib/auth/guards';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,7 @@ export async function GET(req: NextRequest) {
   let sentryPing: { sent: boolean; detail: string } | undefined;
 
   if (ping === 'sentry') {
+    const auth = requireAdmin(req); if (!auth.ok) return auth.response;
     const dsn = process.env.SENTRY_DSN ?? process.env.NEXT_PUBLIC_SENTRY_DSN;
     if (!dsn) {
       sentryPing = { sent: false, detail: 'SENTRY_DSN not set' };

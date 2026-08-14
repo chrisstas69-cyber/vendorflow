@@ -1,12 +1,14 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getPilotConfigSnapshot, getActiveOrganizerId } from '@/lib/pilot-config';
 import { resolveOrganizerInboxAsync } from '@/lib/pilot-data-adapter';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/auth/guards';
 
 export const dynamic = 'force-dynamic';
 
 /** Internal founder traction metrics for the Long Island pilot */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = requireAdmin(req); if (!auth.ok) return auth.response;
   const pilot = getPilotConfigSnapshot();
   const organizerId = getActiveOrganizerId();
 

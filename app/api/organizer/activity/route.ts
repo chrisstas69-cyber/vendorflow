@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getActiveOrganizerId, getEffectiveDataSource } from '@/lib/pilot-config';
+import { getEffectiveDataSource } from '@/lib/pilot-config';
+import { organizerIdForRequest } from '@/lib/auth/guards';
 import {
   getActivityFeedFromDb,
   markActivityReadDb,
@@ -12,8 +13,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   await ensurePlatformSeed();
 
+  const auth = await organizerIdForRequest(req);
+  if (!auth.ok) return auth.response;
+
   const { searchParams } = new URL(req.url);
-  const organizerId = searchParams.get('organizerId') ?? getActiveOrganizerId();
+  const organizerId = auth.organizerId;
   const unreadOnly = searchParams.get('unreadOnly') === '1';
   const limit = Number(searchParams.get('limit') ?? 50);
 
@@ -35,13 +39,15 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   await ensurePlatformSeed();
 
+  const auth = await organizerIdForRequest(req);
+  if (!auth.ok) return auth.response;
+
   if (getEffectiveDataSource() !== 'db') {
     return NextResponse.json({ ok: false, error: 'Requires PILOT_DATA_SOURCE=db' }, { status: 400 });
   }
 
   const body = await req.json();
-  const { organizerId = getActiveOrganizerId(), ids } = body as {
-    organizerId?: string;
+  const { ids } = body as {
     ids?: string[];
   };
 
@@ -49,6 +55,6 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'ids[] required' }, { status: 400 });
   }
 
-  await markActivityReadDb(organizerId, ids);
+  await markActivityReadDb(auth.organizerId, ids);
   return NextResponse.json({ ok: true, marked: ids.length });
 }

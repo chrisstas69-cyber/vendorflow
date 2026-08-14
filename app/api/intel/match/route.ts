@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runIntelPipeline } from '@/lib/intel/pipeline';
 import { ruleBasedProvider } from '@/lib/intel/providers/rule-based';
 import { findPlatformEventById } from '@/lib/event-lookup';
-import { resolveVendorEmail } from '@/lib/auth/resolve-vendor-email';
+import { requireVendorEmail } from '@/lib/auth/resolve-vendor-email';
 
 /** GET — rule-based vendor ↔ event match score with breakdown */
 import { ensurePlatformSeed } from '@/lib/platform-seed';
@@ -12,7 +12,8 @@ import { ensurePlatformSeed } from '@/lib/platform-seed';
 export async function GET(req: NextRequest) {
   await ensurePlatformSeed();
   const { searchParams } = new URL(req.url);
-  const vendorEmail = resolveVendorEmail(req);
+  const auth = requireVendorEmail(req); if (!auth.ok) return auth.response;
+  const vendorEmail = auth.email;
   const eventId = searchParams.get('eventId');
   const useAi = searchParams.get('ai') === '1';
 

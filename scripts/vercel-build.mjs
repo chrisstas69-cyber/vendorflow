@@ -1,4 +1,9 @@
 import { spawnSync } from 'node:child_process';
+import nextEnv from '@next/env';
+
+// Prisma runs before `next build`, so load the same local env files Next.js uses.
+// Vercel already injects these variables and is unaffected by this call.
+nextEnv.loadEnvConfig(process.cwd());
 
 if (!process.env.DIRECT_URL?.trim()) {
   const direct =

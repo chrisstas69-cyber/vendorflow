@@ -10,7 +10,32 @@ import type { OrganizerPipelineStage } from '@/lib/organizer-schema';
 import { getActiveOrganizerId, getEffectiveDataSource, getPilotDataSource } from '@/lib/pilot-config';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
 import { sendCe200FromDb } from '@/lib/vendor-applications-store';
-import { assertOrganizerOrDemo, getSessionFromRequest, requireOrganizer } from '@/lib/auth/guards';
+import { getSessionFromRequest, organizerIdForRequest, rateLimit } from '@/lib/auth/guards';
+import { isAllowedImageReference } from '@/lib/storage/image-reference';
+
+async function organizerForEvent(eventId: string) {
+  const { mockPlatformEvents } = await import('@/lib/platform-data');
+  const platformEvent = mockPlatformEvents.find(event => event.id === eventId);
+  if (platformEvent?.organizerId) return platformEvent.organizerId;
+  try {
+    const { prisma } = await import('@/lib/prisma');
+    const listing = await prisma.publicEventListing.findFirst({
+      where: { OR: [{ id: eventId }, { slug: eventId }] },
+      select: { claimedByEmail: true, organizerEmail: true },
+    });
+    const email = listing?.claimedByEmail ?? listing?.organizerEmail;
+    if (email) {
+      const organizer = await prisma.organizerAccount.findUnique({
+        where: { email: email.toLowerCase() },
+        select: { id: true },
+      });
+      if (organizer) return organizer.id;
+    }
+  } catch {
+    // The public submission remains available when the hosted DB is temporarily unavailable.
+  }
+  return getActiveOrganizerId();
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -18,14 +43,16 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   await ensurePlatformSeed();
 
+  const auth = await organizerIdForRequest(req);
+  if (!auth.ok) return auth.response;
+
   const { searchParams } = new URL(req.url);
-  const organizerId = searchParams.get('organizerId') ?? undefined;
   const eventId = searchParams.get('eventId') ?? undefined;
   const seriesId = searchParams.get('seriesId') ?? undefined;
   const pipelineStage = searchParams.get('pipelineStage') as OrganizerPipelineStage | null;
 
   const data = await resolveOrganizerInboxAsync({
-    organizerId,
+    organizerId: auth.organizerId,
     eventId: eventId ?? undefined,
     seriesId: seriesId ?? undefined,
     pipelineStage: pipelineStage ?? undefined,
@@ -62,8 +89,9 @@ export async function POST(req: NextRequest) {
   };
 
   if (reset) {
-    const denied = requireOrganizer(req);
-    if (denied) return denied;
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ ok: false, error: 'Reset disabled in production' }, { status: 403 });
+    }
     await resetPilotDataAsync();
     return NextResponse.json({ ok: true, message: 'Pilot data reset to seed' });
   }
@@ -74,8 +102,30 @@ export async function POST(req: NextRequest) {
     if (session?.role === 'vendor') {
       create.vendorEmail = session.email;
     }
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(create.vendorEmail);
+    if (
+      !emailValid ||
+      !create.eventId?.trim() ||
+      !create.eventName?.trim() || create.eventName.length > 160 ||
+      !create.vendorName?.trim() || create.vendorName.length > 120 ||
+      !create.category?.trim() || create.category.length > 80 ||
+      (create.message?.length ?? 0) > 2000
+    ) {
+      return NextResponse.json({ ok: false, error: 'Invalid application details' }, { status: 400 });
+    }
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    if (!rateLimit(`application:${ip}`, 20, 60 * 60_000) || !rateLimit(`application:${create.vendorEmail}`, 10, 60 * 60_000)) {
+      return NextResponse.json({ ok: false, error: 'Too many applications. Try again later.' }, { status: 429 });
+    }
+    if (create.setupPhotoUrl && !isAllowedImageReference(create.setupPhotoUrl)) {
+      return NextResponse.json(
+        { ok: false, error: 'Upload the setup photo before submitting the application' },
+        { status: 400 }
+      );
+    }
+    const targetOrganizerId = await organizerForEvent(create.eventId);
     const item = await resolveCreateApplicationAsync({
-      organizerId: getActiveOrganizerId(),
+      organizerId: targetOrganizerId,
       ...create,
     });
     if (!item) {
@@ -92,7 +142,7 @@ export async function POST(req: NextRequest) {
         templateId: 'application_received',
         toEmail: create.vendorEmail,
         applicationId: item.id,
-        organizerId: getActiveOrganizerId(),
+        organizerId: targetOrganizerId,
         vars: {
           vendorName: create.vendorName,
           eventName: create.eventName,
@@ -107,8 +157,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Everything below is an organizer inbox action — vendors can't approve themselves.
-  const forbidden = assertOrganizerOrDemo(req);
-  if (forbidden) return forbidden;
+  const auth = await organizerIdForRequest(req);
+  if (!auth.ok) return auth.response;
 
   if (action === 'send_ce200' && submissionId) {
     const result = await sendCe200FromDb(submissionId);
@@ -134,7 +184,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Invalid action' }, { status: 400 });
   }
 
-  const result = await resolveApplicationActionAsync(submissionId, action as InboxAction);
+  const result = await resolveApplicationActionAsync(
+    submissionId,
+    action as InboxAction,
+    auth.organizerId
+  );
   if (!result.ok) {
     return NextResponse.json(result, { status: 404 });
   }

@@ -2,23 +2,16 @@ import { withSentryConfig } from '@sentry/nextjs';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  serverExternalPackages: ['better-sqlite3'],
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
     ],
   },
-  experimental: {
-    serverComponentsExternalPackages: ['better-sqlite3'],
-    instrumentationHook: true,
-  },
   async redirects() {
     return [
       { source: '/events', destination: '/', permanent: false },
     ];
-  },
-  webpack: (config) => {
-    config.externals = [...(config.externals || []), 'better-sqlite3'];
-    return config;
   },
 };
 

@@ -23,13 +23,29 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL('/login?error=expired', req.url));
   }
 
-  await prisma.magicLinkToken.update({
-    where: { id: row.id },
+  const consumed = await prisma.magicLinkToken.updateMany({
+    where: { id: row.id, usedAt: null, expiresAt: { gt: new Date() } },
     data: { usedAt: new Date() },
   });
+  if (consumed.count !== 1) {
+    return NextResponse.redirect(new URL('/login?error=expired', req.url));
+  }
 
   if (row.role === 'vendor') {
     await ensurePassportForEmail(row.email);
+  } else {
+    const existing = await prisma.organizerAccount.findUnique({ where: { email: row.email } });
+    if (!existing) {
+      const localPart = row.email.split('@')[0] || 'organizer';
+      await prisma.organizerAccount.create({
+        data: {
+          slug: `${localPart.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-${row.id.slice(-6)}`,
+          name: localPart.replace(/[._-]+/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase()),
+          email: row.email,
+          organization: `${localPart.replace(/[._-]+/g, ' ')} events`,
+        },
+      });
+    }
   }
 
   const session = signSession(createSessionPayload(row.email, row.role as 'vendor' | 'organizer'));

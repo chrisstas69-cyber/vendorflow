@@ -17,6 +17,7 @@ import { AuthNav } from '@/components/layout/auth-nav';
 import { AuthNudgeBanner } from '@/components/layout/auth-nudge-banner';
 import { PublicThemeToggle } from '@/components/public/theme-toggle';
 import { VendorPlanBadge } from '@/components/vendor/vendor-plan-badge';
+import { useAuth } from '@/contexts/auth-context';
 
 const NAV = [
   { href: '/pulse', icon: Activity, label: 'Find Events' },
@@ -32,6 +33,22 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   const pathname = usePathname();
   const { mode } = useTheme();
   const dark = mode === 'night';
+  const { ready, session } = useAuth();
+
+  if (!ready) {
+    return <div className="min-h-screen vf-bg flex items-center justify-center text-sm vf-text-muted">Loading Vendor Hub…</div>;
+  }
+  if (process.env.NODE_ENV === 'production' && session?.role !== 'vendor') {
+    return (
+      <div className="min-h-screen vf-bg flex items-center justify-center px-4">
+        <div className="max-w-md rounded-2xl border vf-border vf-surface p-8 text-center">
+          <h1 className="text-2xl font-bold vf-text">Vendor sign-in required</h1>
+          <p className="mt-2 text-sm vf-text-muted">Sign in with your vendor email to access applications, financials, and documents.</p>
+          <Link href="/login?role=vendor" className="mt-5 inline-flex rounded-lg bg-orange-600 px-4 py-2 font-semibold text-white">Sign in as a vendor</Link>
+        </div>
+      </div>
+    );
+  }
 
   const shell = dark ? 'bg-gray-950 text-gray-100' : 'bg-gray-50 text-gray-900';
   const sidebar = dark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200';
