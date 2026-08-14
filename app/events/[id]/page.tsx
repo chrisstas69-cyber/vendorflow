@@ -13,8 +13,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: 'Event not found' };
   }
   // Root layout template appends "| VendorFlow" — don't duplicate the brand.
-  const title = `${event.name} — Vendor Booths`;
-  const description = `${event.description} ${event.city}, ${event.state} on ${event.date}. Booth fee $${event.boothFee}. Apply as a vendor on VendorFlow.`;
+  const title = `${event.name} — ${event.city}, ${event.state}`;
+  const description = `${event.description} ${event.city}, ${event.state} on ${event.date}. Save and share this event on VendorFlow.`;
   return {
     title,
     description,
@@ -53,16 +53,6 @@ function eventJsonLd(id: string) {
       name: event.organizerName,
     },
     image: event.coverImageUrl ? [event.coverImageUrl] : undefined,
-    offers: {
-      '@type': 'Offer',
-      name: 'Vendor booth',
-      price: event.boothFee,
-      priceCurrency: 'USD',
-      availability:
-        event.vendorSlotsFilled < event.vendorSlots
-          ? 'https://schema.org/InStock'
-          : 'https://schema.org/SoldOut',
-    },
   };
 }
 

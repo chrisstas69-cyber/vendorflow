@@ -87,7 +87,7 @@ export default function IntelligencePage() {
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle className="h-8 w-8 text-red-500" />
               <div>
-                <div className={`text-sm ${muted}`}>Dud risk</div>
+                <div className={`text-sm ${muted}`}>Your vendor fit risk</div>
                 <div className="text-4xl font-bold text-red-500">{summary.dudRisk}%</div>
               </div>
             </div>
@@ -153,7 +153,7 @@ export default function IntelligencePage() {
             <FileText className="h-4 w-4" /> Tip
           </h2>
           <p className={`text-sm ${muted}`}>
-            Dud risk drops when you log weather, crowd, and money after every fair. Your logbook powers this page.
+            Your fit estimate improves when you log weather, crowd, and money after every fair. It measures how an event fits your business—not the quality of the organizer or event.
           </p>
         </div>
       </div>

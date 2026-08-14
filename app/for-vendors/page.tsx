@@ -11,7 +11,7 @@ const FEATURES = [
   {
     icon: Activity,
     title: 'Event Pulse',
-    desc: 'Alpha scores, ROI projections, and DUD risk on every fair.',
+    desc: 'Private fit scores and ROI projections personalized to your vendor business.',
     href: '/pulse',
   },
   {
