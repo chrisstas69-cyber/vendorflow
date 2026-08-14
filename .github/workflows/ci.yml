@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/vendorflow
+      DIRECT_URL: postgresql://ci:ci@127.0.0.1:5432/vendorflow
+      AUTH_SECRET: ci-only-session-secret-that-is-long-enough
+      NEXT_PUBLIC_APP_URL: http://localhost:3002
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install exact dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Check TypeScript
+        run: npm run lint
+
+      - name: Validate Prisma schema
+        run: npx prisma validate
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      # The Vercel build owns database migrations. CI uses a deliberately
+      # unreachable URL to prove the application compiles without mutating data.
+      - name: Build production application
+        run: npx next build
