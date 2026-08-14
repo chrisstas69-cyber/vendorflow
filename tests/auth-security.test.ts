@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { NextRequest } from 'next/server';
-import { createSessionPayload, sessionCookieName, signSession, verifySession } from '@/lib/auth/session';
+import { createSessionPayload, safeAuthDestination, sessionCookieName, signSession, verifySession } from '@/lib/auth/session';
 import { requireCronSecret, requireRole, requireSession } from '@/lib/auth/guards';
 
 process.env.AUTH_SECRET = 'test-secret-that-is-long-enough-for-tests';
@@ -25,6 +25,15 @@ test('private routes reject anonymous and cross-role requests', () => {
   assert.equal(requireSession(requestWithSession()).ok, false);
   assert.equal(requireRole(requestWithSession('vendor'), 'organizer').ok, false);
   assert.equal(requireRole(requestWithSession('organizer'), 'organizer').ok, true);
+});
+
+test('post-login destinations stay internal and match the selected role', () => {
+  assert.equal(safeAuthDestination('/pulse?eventId=evt-001', 'vendor'), '/pulse?eventId=evt-001');
+  assert.equal(safeAuthDestination('/organizer/applications', 'organizer'), '/organizer/applications');
+  assert.equal(safeAuthDestination('/organizer', 'vendor'), null);
+  assert.equal(safeAuthDestination('/pulse', 'organizer'), null);
+  assert.equal(safeAuthDestination('//evil.example', 'vendor'), null);
+  assert.equal(safeAuthDestination('https://evil.example', 'vendor'), null);
 });
 
 test('cron routes fail closed and accept only the configured bearer secret', () => {

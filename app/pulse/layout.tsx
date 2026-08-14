@@ -6,7 +6,7 @@ export default async function VendorPulseProtectedLayout({ children }: { childre
   const token = (await cookies()).get(sessionCookieName())?.value;
   const session = token ? verifySession(token) : null;
   if (process.env.NODE_ENV === 'production' && session?.role !== 'vendor') {
-    redirect('/login?role=vendor');
+    redirect('/login?role=vendor&next=/pulse');
   }
   return children;
 }

@@ -11,21 +11,25 @@ const FEATURES = [
     icon: Megaphone,
     title: 'Free marketing + paid spotlight',
     desc: 'Featured row and top banner slots for maximum visibility.',
+    href: '/organizer/events',
   },
   {
     icon: FileText,
     title: 'Application inbox',
     desc: 'Drag vendors across your pipeline. Review docs, approve, assign booths.',
+    href: '/organizer/applications',
   },
   {
     icon: Users,
     title: 'Vendor network',
     desc: 'Toy vendors, food trucks, and artisans actively browsing fairs.',
+    href: '/organizer/vendors',
   },
   {
     icon: BarChart3,
     title: 'Event analytics',
     desc: 'Page views, applications, and booth fill rate at a glance.',
+    href: '/organizer',
   },
 ];
 
@@ -58,8 +62,9 @@ export default function ForOrganizersPage() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid md:grid-cols-2 gap-4 mb-12">
           {FEATURES.map((item, i) => (
-            <div
+            <Link
               key={item.title}
+              href={item.href}
               className="rounded-2xl border vf-border vf-surface p-6 hover:border-emerald-500/40 transition-all hover:-translate-y-0.5 animate-fade-up"
               style={{ animationDelay: `${i * 60}ms` }}
             >
@@ -68,7 +73,8 @@ export default function ForOrganizersPage() {
               </div>
               <h2 className="font-semibold text-lg vf-text mb-1.5">{item.title}</h2>
               <p className="text-sm vf-text-muted leading-relaxed">{item.desc}</p>
-            </div>
+              <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">Open tool <ArrowRight className="h-4 w-4" /></span>
+            </Link>
           ))}
         </div>
 
@@ -85,8 +91,15 @@ export default function ForOrganizersPage() {
           </div>
           <div className="flex flex-col sm:flex-row gap-2 shrink-0">
             <Link
-              href="/submit-event"
+              href="/organizer"
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-700/20"
+            >
+              Open Organizer Dashboard
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href="/submit-event"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 border vf-border vf-surface hover:vf-surface-2 vf-text font-semibold rounded-xl text-sm"
             >
               Submit event free
               <ArrowRight className="h-4 w-4" />

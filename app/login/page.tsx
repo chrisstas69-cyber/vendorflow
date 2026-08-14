@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Mail, Sparkles } from 'lucide-react';
 import { PublicLayout } from '@/components/layout/public-layout';
@@ -11,6 +11,15 @@ export default function LoginPage() {
   const [message, setMessage] = useState('');
   const [devLink, setDevLink] = useState('');
   const [loading, setLoading] = useState(false);
+  const [nextPath, setNextPath] = useState('');
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedRole = params.get('role');
+    if (requestedRole === 'vendor' || requestedRole === 'organizer') setRole(requestedRole);
+    const requestedNext = params.get('next');
+    if (requestedNext?.startsWith('/') && !requestedNext.startsWith('//')) setNextPath(requestedNext);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +30,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, role }),
+        body: JSON.stringify({ email, role, next: nextPath || undefined }),
       });
       const data = await res.json();
       setMessage(data.message ?? (data.ok ? 'Check your email' : data.error));

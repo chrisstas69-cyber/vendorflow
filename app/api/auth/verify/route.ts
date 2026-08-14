@@ -4,6 +4,7 @@ import {
   createSessionPayload,
   sessionCookieName,
   signSession,
+  safeAuthDestination,
 } from '@/lib/auth/session';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
 import { ensurePassportForEmail } from '@/lib/vendor-applications-store';
@@ -49,7 +50,8 @@ export async function GET(req: NextRequest) {
   }
 
   const session = signSession(createSessionPayload(row.email, row.role as 'vendor' | 'organizer'));
-  const dest = row.role === 'organizer' ? '/organizer' : '/pulse';
+  const role = row.role as 'vendor' | 'organizer';
+  const dest = safeAuthDestination(searchParams.get('next'), role) ?? (role === 'organizer' ? '/organizer' : '/pulse');
   const res = NextResponse.redirect(new URL(dest, req.url));
   res.cookies.set(sessionCookieName(), session, {
     httpOnly: true,

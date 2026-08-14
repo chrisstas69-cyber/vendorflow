@@ -44,7 +44,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
         <div className="max-w-md rounded-2xl border vf-border vf-surface p-8 text-center">
           <h1 className="text-2xl font-bold vf-text">Vendor sign-in required</h1>
           <p className="mt-2 text-sm vf-text-muted">Sign in with your vendor email to access applications, financials, and documents.</p>
-          <Link href="/login?role=vendor" className="mt-5 inline-flex rounded-lg bg-orange-600 px-4 py-2 font-semibold text-white">Sign in as a vendor</Link>
+          <Link href={`/login?role=vendor&next=${encodeURIComponent(pathname)}`} className="mt-5 inline-flex rounded-lg bg-orange-600 px-4 py-2 font-semibold text-white">Sign in as a vendor</Link>
         </div>
       </div>
     );

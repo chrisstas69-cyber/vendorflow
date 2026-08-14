@@ -67,8 +67,19 @@ export function magicLinkExpiresAt(): Date {
   return new Date(Date.now() + MAGIC_LINK_MINUTES * 60 * 1000);
 }
 
-export function buildMagicLinkUrl(token: string, origin: string): string {
-  return `${origin.replace(/\/$/, '')}/api/auth/verify?token=${encodeURIComponent(token)}`;
+export function safeAuthDestination(value: unknown, role: AuthRole): string | null {
+  const path = typeof value === 'string' ? value.trim() : '';
+  if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\')) return null;
+  if (role === 'organizer' && !path.startsWith('/organizer')) return null;
+  if (role === 'vendor' && path.startsWith('/organizer')) return null;
+  return path;
+}
+
+export function buildMagicLinkUrl(token: string, origin: string, next?: string | null): string {
+  const url = new URL('/api/auth/verify', origin.replace(/\/$/, ''));
+  url.searchParams.set('token', token);
+  if (next) url.searchParams.set('next', next);
+  return url.toString();
 }
 
 /** Prefer env, then request Origin/Host — avoids localhost links in production. */

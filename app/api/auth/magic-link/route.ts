@@ -5,6 +5,7 @@ import {
   generateMagicToken,
   magicLinkExpiresAt,
   resolveAppOrigin,
+  safeAuthDestination,
   type AuthRole,
 } from '@/lib/auth/session';
 import { rateLimit } from '@/lib/auth/guards';
@@ -54,7 +55,8 @@ export async function POST(req: NextRequest) {
     data: { email, role, token, expiresAt: magicLinkExpiresAt() },
   });
 
-  const link = buildMagicLinkUrl(token, resolveAppOrigin(req.headers));
+  const next = safeAuthDestination(body.next, role);
+  const link = buildMagicLinkUrl(token, resolveAppOrigin(req.headers), next);
 
   if (canSendEmail() && process.env.RESEND_API_KEY) {
     try {
