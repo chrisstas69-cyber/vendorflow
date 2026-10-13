@@ -78,6 +78,8 @@ export default function EventPulsePage() {
   const [search, setSearch] = useState('');
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
   const [applyingId, setApplyingId] = useState<string | null>(null);
+  const [selectedForApplication, setSelectedForApplication] = useState<(typeof publishedEvents)[0] | null>(null);
+  const [applicationForm, setApplicationForm] = useState({ businessName: '', boothType: '10x10 booth', message: '' });
 
   const toggleTier = (tier: AlphaTier) => {
     setSelectedTiers(prev =>
@@ -106,19 +108,29 @@ export default function EventPulsePage() {
 
   const handleApply = async (event: (typeof publishedEvents)[0]) => {
     if (pipelineIds.has(event.id)) return;
+    setSelectedForApplication(event);
+    setApplicationForm({ businessName: passport.businessName || '', boothType: '10x10 booth', message: '' });
+  };
+
+  const submitApplication = async () => {
+    if (!selectedForApplication || !applicationForm.businessName.trim()) return;
+    const event = selectedForApplication;
     setApplyingId(event.id);
     setMessage(null);
     try {
       const result = await submitVendorApplicationToOrganizer(event, {
         vendorEmail: passport.vendorEmail,
-        vendorName: passport.businessName || passport.contactName || 'Vendor',
+        vendorName: applicationForm.businessName.trim(),
         category: event.category,
-        message: `Interested in ${event.name} via Event Pulse`,
+        message: `${applicationForm.boothType}. ${applicationForm.message.trim()}`.trim(),
         hasInsurance: passport.documents.some(d => d.type === 'coi'),
         setupPhotoUrl: passport.setupPhotoUrl,
       });
       setMessage({ text: result.message, ok: result.ok });
-      if (result.ok) await refresh();
+      if (result.ok) {
+        await refresh();
+        setSelectedForApplication(null);
+      }
     } catch {
       setMessage({ text: 'Network error — try again', ok: false });
     } finally {
@@ -325,6 +337,14 @@ export default function EventPulsePage() {
           )}
         </div>
       </div>
+      {selectedForApplication && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="participate-title">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-900">
+            <div className="flex items-start justify-between gap-4"><div><h2 id="participate-title" className="text-xl font-bold">Participate in {selectedForApplication.name}</h2><p className="mt-1 text-sm text-gray-500">${selectedForApplication.boothFee} booth fee · Organizer review required</p></div><button type="button" onClick={() => setSelectedForApplication(null)} aria-label="Close" className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"><X className="h-5 w-5" /></button></div>
+            <div className="mt-5 space-y-4"><label className="block text-sm font-medium">Business name<input required value={applicationForm.businessName} onChange={e => setApplicationForm(v => ({ ...v, businessName: e.target.value }))} className="mt-1 w-full rounded-lg border p-2.5 dark:border-gray-700 dark:bg-gray-800" placeholder="Your business name" /></label><label className="block text-sm font-medium">Booth type<select value={applicationForm.boothType} onChange={e => setApplicationForm(v => ({ ...v, boothType: e.target.value }))} className="mt-1 w-full rounded-lg border p-2.5 dark:border-gray-700 dark:bg-gray-800"><option>10x10 booth</option><option>Food truck</option><option>Double booth</option><option>Other setup</option></select></label><label className="block text-sm font-medium">Message to organizer<textarea value={applicationForm.message} onChange={e => setApplicationForm(v => ({ ...v, message: e.target.value }))} rows={3} className="mt-1 w-full rounded-lg border p-2.5 dark:border-gray-700 dark:bg-gray-800" placeholder="Products, setup needs, or questions" /></label><button type="button" disabled={!applicationForm.businessName.trim() || applyingId === selectedForApplication.id} onClick={() => void submitApplication()} className="w-full rounded-xl bg-amber-400 py-3 font-semibold text-gray-900 disabled:opacity-50">{applyingId === selectedForApplication.id ? 'Submitting…' : 'Submit application'}</button></div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }

@@ -23,7 +23,7 @@ const NAV = [
   { href: '/pulse', icon: Activity, label: 'Find Events' },
   { href: '/vendor', icon: IdCard, label: 'Passport' },
   { href: '/vendor/assistant', icon: MessageSquare, label: 'Assistant' },
-  { href: '/command', icon: Command, label: 'Command Center' },
+  { href: '/command', icon: Command, label: 'Your applications' },
   { href: '/intelligence', icon: Shield, label: 'Intel' },
   { href: '/calendar', icon: Calendar, label: 'Calendar' },
   { href: '/journal', icon: DollarSign, label: 'Journal' },
