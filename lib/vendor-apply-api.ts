@@ -9,6 +9,8 @@ export interface VendorApplyPayload {
   vendorName: string;
   category: string;
   message?: string;
+  boothType?: string;
+  boothFee?: number;
   hasInsurance?: boolean;
   setupPhotoUrl?: string;
   requiredForms?: string[];
@@ -34,6 +36,8 @@ export async function submitVendorApplicationToOrganizer(
           vendorName: data.vendorName,
           category: data.category,
           message: data.message ?? '',
+          boothType: data.boothType ?? '10x10 booth',
+          boothFee: data.boothFee,
           requiredForms,
           hasInsurance: data.hasInsurance ?? false,
           setupPhotoUrl: data.setupPhotoUrl,

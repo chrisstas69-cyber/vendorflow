@@ -82,6 +82,8 @@ export async function POST(req: NextRequest) {
       vendorName: string;
       category: string;
       message?: string;
+      boothType?: string;
+      boothFee?: number;
       requiredForms?: string[];
       hasInsurance?: boolean;
       setupPhotoUrl?: string;
@@ -109,7 +111,9 @@ export async function POST(req: NextRequest) {
       !create.eventName?.trim() || create.eventName.length > 160 ||
       !create.vendorName?.trim() || create.vendorName.length > 120 ||
       !create.category?.trim() || create.category.length > 80 ||
-      (create.message?.length ?? 0) > 2000
+      (create.message?.length ?? 0) > 2000 ||
+      (create.boothType?.length ?? 0) > 80 ||
+      (create.boothFee !== undefined && (!Number.isFinite(create.boothFee) || create.boothFee < 0))
     ) {
       return NextResponse.json({ ok: false, error: 'Invalid application details' }, { status: 400 });
     }

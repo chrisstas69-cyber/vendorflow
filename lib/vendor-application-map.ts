@@ -16,6 +16,8 @@ export interface VendorApplicationRow {
   vendorName: string;
   category: string;
   message: string;
+  boothType?: string;
+  boothFee?: number | null;
   status: string;
   pipelineStage: string;
   shortlisted: boolean;

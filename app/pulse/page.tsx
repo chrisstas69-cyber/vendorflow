@@ -122,6 +122,8 @@ export default function EventPulsePage() {
         vendorEmail: passport.vendorEmail,
         vendorName: applicationForm.businessName.trim(),
         category: event.category,
+        boothType: applicationForm.boothType,
+        boothFee: event.boothFee,
         message: `${applicationForm.boothType}. ${applicationForm.message.trim()}`.trim(),
         hasInsurance: passport.documents.some(d => d.type === 'coi'),
         setupPhotoUrl: passport.setupPhotoUrl,

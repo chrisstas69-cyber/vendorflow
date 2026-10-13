@@ -296,6 +296,8 @@ export async function createApplicationDb(input: {
   vendorName: string;
   category: string;
   message?: string;
+  boothType?: string;
+  boothFee?: number;
   requiredForms?: string[];
   hasInsurance?: boolean;
   setupPhotoUrl?: string;
@@ -320,6 +322,8 @@ export async function createApplicationDb(input: {
       vendorName: input.vendorName,
       category: input.category,
       message: input.message ?? '',
+      boothType: input.boothType ?? '10x10 booth',
+      boothFee: input.boothFee ?? null,
       requiredForms: JSON.stringify(input.requiredForms ?? ['coi', 'w9']),
       pipelineStage: 'applied',
       status: 'pending',
