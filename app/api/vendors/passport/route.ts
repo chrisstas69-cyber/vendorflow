@@ -10,7 +10,7 @@ import {
 } from '@/lib/vendor-passport-store';
 import { loadPassportFromDb, persistPassportToDb } from '@/lib/vendor-passport-db';
 import { DEMO_VENDOR_EMAIL, validatePassport, type VendorPassport } from '@/lib/vendor-passport';
-import { resolveVendorEmail } from '@/lib/auth/resolve-vendor-email';
+import { requireVendorEmail } from '@/lib/auth/resolve-vendor-email';
 
 async function hydratePassport(vendorEmail: string): Promise<VendorPassport> {
   const fromDb = await loadPassportFromDb(vendorEmail);
@@ -25,7 +25,8 @@ async function hydratePassport(vendorEmail: string): Promise<VendorPassport> {
 
 /** GET — read passport + validation (session-derived identity) */
 export async function GET(req: NextRequest) {
-  const vendorEmail = resolveVendorEmail(req);
+  const auth = requireVendorEmail(req); if (!auth.ok) return auth.response;
+  const vendorEmail = auth.email;
 
   const passport = await hydratePassport(vendorEmail);
   const validation = validatePassport(passport);
@@ -36,7 +37,8 @@ export async function GET(req: NextRequest) {
 /** POST — create passport or sync full client payload */
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const sessionEmail = resolveVendorEmail(req);
+  const auth = requireVendorEmail(req); if (!auth.ok) return auth.response;
+  const sessionEmail = auth.email;
 
   if (body.reset) {
     if (process.env.NODE_ENV === 'production') {
@@ -77,7 +79,8 @@ export async function POST(req: NextRequest) {
 /** PUT — partial update (session-derived identity) */
 export async function PUT(req: NextRequest) {
   const body = await req.json();
-  const vendorEmail = resolveVendorEmail(req);
+  const auth = requireVendorEmail(req); if (!auth.ok) return auth.response;
+  const vendorEmail = auth.email;
 
   const { vendorEmail: _omit, ...patch } = body;
   const passport = updatePassport(vendorEmail, patch);
@@ -89,7 +92,8 @@ export async function PUT(req: NextRequest) {
 
 /** DELETE — remove own passport */
 export async function DELETE(req: NextRequest) {
-  const vendorEmail = resolveVendorEmail(req);
+  const auth = requireVendorEmail(req); if (!auth.ok) return auth.response;
+  const vendorEmail = auth.email;
 
   if (vendorEmail === DEMO_VENDOR_EMAIL) {
     return NextResponse.json({ ok: false, error: 'Cannot delete demo passport' }, { status: 403 });

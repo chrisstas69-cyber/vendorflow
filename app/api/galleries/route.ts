@@ -3,6 +3,9 @@ import { ensurePlatformSeed } from '@/lib/platform-seed';
 import { createGalleryItem, listGallery } from '@/lib/gallery-store';
 import type { GalleryEntityType, GalleryTag } from '@/lib/gallery-schema';
 import { GALLERY_TAGS, getCoverImageUrl } from '@/lib/gallery-schema';
+import { requireSession } from '@/lib/auth/guards';
+import { authorizeGalleryEntity } from '@/lib/auth/gallery-authorization';
+import { isAllowedImageReference } from '@/lib/storage/image-reference';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +18,6 @@ export async function GET(req: NextRequest) {
     const entityType = searchParams.get('entityType') as GalleryEntityType | null;
     const entityId = searchParams.get('entityId');
     const publicOnly = searchParams.get('publicOnly') === 'true';
-
     if (!entityType || !entityId) {
       return NextResponse.json(
         { ok: false, error: 'entityType and entityId are required' },
@@ -25,6 +27,11 @@ export async function GET(req: NextRequest) {
 
     if (!['event', 'organizer', 'vendor'].includes(entityType)) {
       return NextResponse.json({ ok: false, error: 'Invalid entityType' }, { status: 400 });
+    }
+    if (!publicOnly) {
+      const auth = requireSession(req); if (!auth.ok) return auth.response;
+      const ownership = await authorizeGalleryEntity(req, entityType, entityId);
+      if (!ownership.ok) return ownership.response;
     }
 
     const { items, dataSource } = await listGallery(entityType, entityId, publicOnly);
@@ -48,6 +55,7 @@ export async function GET(req: NextRequest) {
 
 /** POST — add a gallery item */
 export async function POST(req: NextRequest) {
+  const auth = requireSession(req); if (!auth.ok) return auth.response;
   await ensurePlatformSeed();
 
   const body = await req.json();
@@ -69,12 +77,14 @@ export async function POST(req: NextRequest) {
     isPublic?: boolean;
   };
 
-  if (!entityType || !entityId || !imageUrl) {
+  if (!entityType || !entityId || !isAllowedImageReference(imageUrl)) {
     return NextResponse.json(
-      { ok: false, error: 'entityType, entityId, and imageUrl are required' },
+      { ok: false, error: 'entityType, entityId, and a valid imageUrl are required' },
       { status: 400 }
     );
   }
+  const ownership = await authorizeGalleryEntity(req, entityType, entityId);
+  if (!ownership.ok) return ownership.response;
 
   const safeTags = (tags ?? []).filter((t): t is GalleryTag => GALLERY_TAGS.includes(t));
 

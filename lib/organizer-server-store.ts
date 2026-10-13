@@ -229,6 +229,8 @@ export function createApplicationSeed(input: {
   vendorName: string;
   category: string;
   message?: string;
+  boothType?: string;
+  boothFee?: number;
   requiredForms?: string[];
   hasInsurance?: boolean;
   setupPhotoUrl?: string;

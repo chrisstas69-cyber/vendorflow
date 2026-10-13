@@ -16,8 +16,9 @@ export function SetupPhotoUpload({
 }: SetupPhotoUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
 
-  const handleFile = (file: File | null) => {
+  const handleFile = async (file: File | null) => {
     if (!file) return;
     setError('');
     if (!file.type.startsWith('image/')) {
@@ -28,9 +29,19 @@ export function SetupPhotoUpload({
       setError('Photo must be under 4 MB');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => onChange(reader.result as string);
-    reader.readAsDataURL(file);
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.set('file', file);
+      const response = await fetch('/api/uploads/setup-photo', { method: 'POST', body: form });
+      const data = await response.json().catch(() => null) as { ok?: boolean; url?: string; error?: string } | null;
+      if (!response.ok || !data?.url) throw new Error(data?.error || 'Photo upload failed');
+      onChange(data.url);
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : 'Photo upload failed');
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -57,10 +68,11 @@ export function SetupPhotoUpload({
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
+          disabled={uploading}
           className="w-full flex flex-col items-center justify-center gap-2 py-8 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-amber-400 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 transition-colors"
         >
           <Camera className="h-8 w-8 text-gray-400" />
-          <span className="text-sm font-medium">Upload setup photo</span>
+          <span className="text-sm font-medium">{uploading ? 'Uploading…' : 'Upload setup photo'}</span>
           <span className="text-xs text-gray-500">JPG or PNG, max 4 MB</span>
         </button>
       )}
@@ -70,6 +82,7 @@ export function SetupPhotoUpload({
         type="file"
         accept="image/jpeg,image/png,image/webp"
         className="hidden"
+        disabled={uploading}
         onChange={e => handleFile(e.target.files?.[0] ?? null)}
       />
       {error && <p className="text-xs text-red-600 mt-1">{error}</p>}

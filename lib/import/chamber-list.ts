@@ -58,9 +58,9 @@ function detectFormat(header: string[]): 'tracker' | 'legacy' {
 
 export function loadChamberListFromFile(filePath?: string): ChamberListRecord[] {
   const csvPath = filePath ?? path.join(process.cwd(), 'data', 'chamber_list.csv');
-  if (!fs.existsSync(csvPath)) return [];
+  if (!fs.existsSync(/* turbopackIgnore: true */ csvPath)) return [];
 
-  const raw = fs.readFileSync(csvPath, 'utf-8');
+  const raw = fs.readFileSync(/* turbopackIgnore: true */ csvPath, 'utf-8');
   const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
   if (lines.length < 2) return [];
 

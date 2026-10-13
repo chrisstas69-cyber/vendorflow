@@ -3,22 +3,23 @@ import {
   resolveApplicationByIdAsync,
   resolveAppendInternalNoteAsync,
 } from '@/lib/pilot-data-adapter';
-import { getActiveOrganizerId } from '@/lib/pilot-config';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
-import { assertOrganizerOrDemo } from '@/lib/auth/guards';
+import { organizerIdForRequest } from '@/lib/auth/guards';
+import { isAllowedImageReference } from '@/lib/storage/image-reference';
 
 export const dynamic = 'force-dynamic';
 
 /** GET — single application by id (organizer inbox; includes internal notes) */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   await ensurePlatformSeed();
-  const forbidden = assertOrganizerOrDemo(req);
-  if (forbidden) return forbidden;
-  const organizerId = getActiveOrganizerId();
-  const item = await resolveApplicationByIdAsync(params.id, organizerId);
+  const { id } = await params;
+  const auth = await organizerIdForRequest(req);
+  if (!auth.ok) return auth.response;
+  const organizerId = auth.organizerId;
+  const item = await resolveApplicationByIdAsync(id, organizerId);
   if (!item) {
     return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
   }
@@ -28,16 +29,24 @@ export async function GET(
 /** PATCH — update application fields */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   await ensurePlatformSeed();
-  const forbidden = assertOrganizerOrDemo(req);
-  if (forbidden) return forbidden;
+  const { id } = await params;
+  const auth = await organizerIdForRequest(req);
+  if (!auth.ok) return auth.response;
   const body = await req.json();
-  const organizerId = getActiveOrganizerId();
+  const organizerId = auth.organizerId;
+  if (body.setupPhotoUrl !== undefined && !isAllowedImageReference(body.setupPhotoUrl)) {
+    return NextResponse.json({ ok: false, error: 'Invalid photo URL' }, { status: 400 });
+  }
 
   if (body.appendInternalNote) {
-    const item = await resolveAppendInternalNoteAsync(params.id, String(body.appendInternalNote));
+    const item = await resolveAppendInternalNoteAsync(
+      id,
+      String(body.appendInternalNote),
+      organizerId
+    );
     if (!item) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
     return NextResponse.json({ ok: true, item });
   }
@@ -48,29 +57,29 @@ export async function PATCH(
     if (body.shortlisted !== undefined) {
       const { getServerSubmissions, syncServerSubmissions } = await import('@/lib/organizer-server-store');
       const subs = getServerSubmissions();
-      const idx = subs.findIndex(s => s.id === params.id);
+      const idx = subs.findIndex(s => s.id === id);
       if (idx >= 0) {
         subs[idx] = { ...subs[idx], shortlisted: body.shortlisted };
         syncServerSubmissions(subs);
       }
     }
     if (body.appendInternalNote) {
-      appendInternalNoteSeed(params.id, body.appendInternalNote);
+      appendInternalNoteSeed(id, body.appendInternalNote);
     }
-    const item = await resolveApplicationByIdAsync(params.id, organizerId);
+    const item = await resolveApplicationByIdAsync(id, organizerId);
     return NextResponse.json({ ok: true, item });
   }
 
   const { prisma } = await import('@/lib/prisma');
   const existing = await prisma.vendorApplication.findFirst({
-    where: { id: params.id, organizerId },
+    where: { id, organizerId },
   });
   if (!existing) {
     return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
   }
 
   const updated = await prisma.vendorApplication.update({
-    where: { id: params.id },
+    where: { id },
     data: {
       ...(body.shortlisted !== undefined ? { shortlisted: body.shortlisted } : {}),
       ...(body.message !== undefined ? { message: body.message } : {}),

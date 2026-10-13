@@ -10,7 +10,16 @@ const geistSans = localFont({
   weight: '100 900',
 });
 
-const BASE_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://vendorflow-mu.vercel.app').replace(/\/$/, '');
+function appBaseUrl() {
+  const fallback = 'https://vendorflow-mu.vercel.app';
+  try {
+    return new URL(process.env.NEXT_PUBLIC_APP_URL ?? fallback).toString().replace(/\/$/, '');
+  } catch {
+    return fallback;
+  }
+}
+
+const BASE_URL = appBaseUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),

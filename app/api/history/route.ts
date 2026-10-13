@@ -7,8 +7,10 @@ import {
   HISTORY_FIELDS,
 } from '@/lib/airtable';
 import { calculateProfit } from '@/lib/engines';
+import { requireRole } from '@/lib/auth/guards';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = requireRole(req, 'vendor'); if (!auth.ok) return auth.response;
   try {
     const records = await listHistory();
     const history = records.map(r => ({ id: r.id, ...r.fields }));
@@ -19,6 +21,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = requireRole(req, 'vendor'); if (!auth.ok) return auth.response;
   try {
     const body = await req.json();
     const eventName = body.eventName as string;

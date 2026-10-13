@@ -41,9 +41,16 @@ export async function resolveOrganizerInboxAsync(filters: InboxFilters = {}) {
   return getApplicationsInbox({ ...filters, organizerId });
 }
 
-export async function resolveApplicationActionAsync(submissionId: string, action: InboxAction) {
+export async function resolveApplicationActionAsync(
+  submissionId: string,
+  action: InboxAction,
+  organizerId?: string
+) {
   if (getEffectiveDataSource() === 'db') {
-    return performApplicationActionDb(submissionId, action);
+    return performApplicationActionDb(submissionId, action, 'Organizer', organizerId);
+  }
+  if (organizerId && !getApplicationsInbox({ organizerId }).items.some(item => item.id === submissionId)) {
+    return { ok: false as const, error: 'Application not found' };
   }
   return performInboxAction(submissionId, action);
 }
@@ -65,17 +72,23 @@ export async function resolveCreateApplicationAsync(
   return createApplicationSeed(input);
 }
 
-export async function resolveAppendInternalNoteAsync(submissionId: string, note: string) {
+export async function resolveAppendInternalNoteAsync(
+  submissionId: string,
+  note: string,
+  organizerId?: string
+) {
   if (getEffectiveDataSource() === 'db') {
     const { prisma } = await import('@/lib/prisma');
-    const existing = await prisma.vendorApplication.findUnique({ where: { id: submissionId } });
+    const existing = await prisma.vendorApplication.findFirst({
+      where: { id: submissionId, ...(organizerId ? { organizerId } : {}) },
+    });
     if (!existing) return null;
     const merged = existing.internalNotes ? `${existing.internalNotes}\n${note}` : note;
     await prisma.vendorApplication.update({
       where: { id: submissionId },
       data: { internalNotes: merged },
     });
-    return getApplicationByIdFromDb(submissionId);
+    return getApplicationByIdFromDb(submissionId, organizerId);
   }
   return appendInternalNoteSeed(submissionId, note);
 }

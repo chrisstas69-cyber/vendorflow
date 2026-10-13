@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { AppLayout } from '@/components/layout/app-layout';
 import { VendorPulseCard } from '@/components/vendor/vendor-pulse-card';
 import { OnboardingChecklist } from '@/components/vendor/onboarding-checklist';
@@ -17,6 +18,8 @@ import { Filter, Heart, Search, X } from 'lucide-react';
 import { useTheme } from '@/contexts/theme-context';
 
 export default function EventPulsePage() {
+  const searchParams = useSearchParams();
+  const requestedEventId = searchParams.get('eventId');
   const { publishedEvents } = useDemoStore();
   const { passport } = useVendorPassport();
   const { applications, refresh, getPublicStatus } = useVendorApplications();
@@ -29,15 +32,15 @@ export default function EventPulsePage() {
     [applications]
   );
 
-  const [interestTick, setInterestTick] = useState(0);
+  const [interestCounts, setInterestCounts] = useState<
+    Record<string, { saves: number; rsvps: number }>
+  >({});
   const appliedDemand = useMemo(() => {
-    void interestTick;
     const rows = applications
       .map(a => {
         const event = publishedEvents.find(e => e.id === a.eventId);
         if (!event) return null;
-        seedInterestCount(event.id, event.saves);
-        const counts = getInterestCounts(event.id);
+        const counts = interestCounts[event.id] ?? { saves: 0, rsvps: 0 };
         return {
           eventId: event.id,
           name: event.name,
@@ -50,12 +53,23 @@ export default function EventPulsePage() {
       .sort((a, b) => b.total - a.total);
     const totalPeople = rows.reduce((sum, r) => sum + r.total, 0);
     return { rows, totalPeople };
-  }, [applications, publishedEvents, interestTick]);
+  }, [applications, publishedEvents, interestCounts]);
 
   useEffect(() => {
-    const t = setInterval(() => setInterestTick(n => n + 1), 2000);
+    const refreshInterest = () => {
+      const next: Record<string, { saves: number; rsvps: number }> = {};
+      for (const application of applications) {
+        const event = publishedEvents.find(item => item.id === application.eventId);
+        if (!event) continue;
+        seedInterestCount(event.id, event.saves);
+        next[event.id] = getInterestCounts(event.id);
+      }
+      setInterestCounts(next);
+    };
+    refreshInterest();
+    const t = setInterval(refreshInterest, 2000);
     return () => clearInterval(t);
-  }, []);
+  }, [applications, publishedEvents]);
 
   const [showFilters, setShowFilters] = useState(true);
   const [selectedTiers, setSelectedTiers] = useState<AlphaTier[]>(['S', 'A', 'B', 'C']);
@@ -64,6 +78,8 @@ export default function EventPulsePage() {
   const [search, setSearch] = useState('');
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
   const [applyingId, setApplyingId] = useState<string | null>(null);
+  const [selectedForApplication, setSelectedForApplication] = useState<(typeof publishedEvents)[0] | null>(null);
+  const [applicationForm, setApplicationForm] = useState({ businessName: '', boothType: '10x10 booth', message: '' });
 
   const toggleTier = (tier: AlphaTier) => {
     setSelectedTiers(prev =>
@@ -72,6 +88,7 @@ export default function EventPulsePage() {
   };
 
   const filteredEvents = publishedEvents
+    .filter(event => !requestedEventId || event.id === requestedEventId)
     .filter(event => selectedTiers.includes(event.tier))
     .filter(event => category === 'all' || event.category === category)
     .filter(event => {
@@ -91,19 +108,31 @@ export default function EventPulsePage() {
 
   const handleApply = async (event: (typeof publishedEvents)[0]) => {
     if (pipelineIds.has(event.id)) return;
+    setSelectedForApplication(event);
+    setApplicationForm({ businessName: passport.businessName || '', boothType: '10x10 booth', message: '' });
+  };
+
+  const submitApplication = async () => {
+    if (!selectedForApplication || !applicationForm.businessName.trim()) return;
+    const event = selectedForApplication;
     setApplyingId(event.id);
     setMessage(null);
     try {
       const result = await submitVendorApplicationToOrganizer(event, {
         vendorEmail: passport.vendorEmail,
-        vendorName: passport.businessName || passport.contactName || 'Vendor',
+        vendorName: applicationForm.businessName.trim(),
         category: event.category,
-        message: `Interested in ${event.name} via Event Pulse`,
+        boothType: applicationForm.boothType,
+        boothFee: event.boothFee,
+        message: `${applicationForm.boothType}. ${applicationForm.message.trim()}`.trim(),
         hasInsurance: passport.documents.some(d => d.type === 'coi'),
         setupPhotoUrl: passport.setupPhotoUrl,
       });
       setMessage({ text: result.message, ok: result.ok });
-      if (result.ok) await refresh();
+      if (result.ok) {
+        await refresh();
+        setSelectedForApplication(null);
+      }
     } catch {
       setMessage({ text: 'Network error — try again', ok: false });
     } finally {
@@ -180,7 +209,7 @@ export default function EventPulsePage() {
                 {[
                   { value: 'roi', label: 'Best ROI' },
                   { value: 'family', label: 'Most family-friendly' },
-                  { value: 'risk', label: 'Lowest risk' },
+                  { value: 'risk', label: 'Best vendor fit' },
                 ].map(option => (
                   <label key={option.value} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer text-sm">
                     <input
@@ -235,9 +264,9 @@ export default function EventPulsePage() {
           <div className={`sticky top-0 z-10 backdrop-blur border-b p-4 ${dark ? 'bg-gray-950/95 border-gray-800' : 'bg-gray-50/95 border-gray-200'}`}>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-bold">Find your next event</h1>
+                <h1 className="text-2xl font-bold">{requestedEventId ? 'Vendor opportunity' : 'Find your next event'}</h1>
                 <p className={`text-sm mt-1 ${muted}`}>
-                  Apply directly — submissions land in the organizer inbox
+                  Private vendor details and fit estimates are based on your products and history—not a public rating of the event.
                   {appliedDemand.totalPeople > 0 && (
                     <>
                       {' '}
@@ -310,6 +339,14 @@ export default function EventPulsePage() {
           )}
         </div>
       </div>
+      {selectedForApplication && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="participate-title">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-900">
+            <div className="flex items-start justify-between gap-4"><div><h2 id="participate-title" className="text-xl font-bold">Participate in {selectedForApplication.name}</h2><p className="mt-1 text-sm text-gray-500">${selectedForApplication.boothFee} booth fee · Organizer review required</p></div><button type="button" onClick={() => setSelectedForApplication(null)} aria-label="Close" className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"><X className="h-5 w-5" /></button></div>
+            <div className="mt-5 space-y-4"><label className="block text-sm font-medium">Business name<input required value={applicationForm.businessName} onChange={e => setApplicationForm(v => ({ ...v, businessName: e.target.value }))} className="mt-1 w-full rounded-lg border p-2.5 dark:border-gray-700 dark:bg-gray-800" placeholder="Your business name" /></label><label className="block text-sm font-medium">Booth type<select value={applicationForm.boothType} onChange={e => setApplicationForm(v => ({ ...v, boothType: e.target.value }))} className="mt-1 w-full rounded-lg border p-2.5 dark:border-gray-700 dark:bg-gray-800"><option>10x10 booth</option><option>Food truck</option><option>Double booth</option><option>Other setup</option></select></label><label className="block text-sm font-medium">Message to organizer<textarea value={applicationForm.message} onChange={e => setApplicationForm(v => ({ ...v, message: e.target.value }))} rows={3} className="mt-1 w-full rounded-lg border p-2.5 dark:border-gray-700 dark:bg-gray-800" placeholder="Products, setup needs, or questions" /></label><button type="button" disabled={!applicationForm.businessName.trim() || applyingId === selectedForApplication.id} onClick={() => void submitApplication()} className="w-full rounded-xl bg-amber-400 py-3 font-semibold text-gray-900 disabled:opacity-50">{applyingId === selectedForApplication.id ? 'Submitting…' : 'Submit application'}</button></div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }

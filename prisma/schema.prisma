@@ -53,6 +53,8 @@ model VendorApplication {
   vendorName   String
   category     String
   message      String @default("")
+  boothType    String @default("10x10 booth")
+  boothFee     Int?
 
   status        String  @default("pending") // pending | approved | rejected
   pipelineStage String  @default("applied") // scraped | applied | reviewing | approved | waitlisted
@@ -337,6 +339,7 @@ model VendorReceipt {
   amountCents Int    @default(0)
   fileName    String?
   imageData   String?
+  fileUrl     String?
   notes       String @default("")
 
   @@index([vendorEmail])

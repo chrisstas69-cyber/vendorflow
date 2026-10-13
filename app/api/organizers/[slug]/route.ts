@@ -14,23 +14,24 @@ const SLUG_FALLBACK: Record<string, string> = {
 /** GET — public organizer profile + events */
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   await ensurePlatformSeed();
-  const profile = await getOrganizerPublicProfile(params.slug);
+  const { slug } = await params;
+  const profile = await getOrganizerPublicProfile(slug);
 
   if (profile) {
     return NextResponse.json({ ok: true, profile });
   }
 
-  const fallbackId = SLUG_FALLBACK[params.slug];
+  const fallbackId = SLUG_FALLBACK[slug];
   if (fallbackId === DEMO_ORGANIZER_ID) {
     const { mockPlatformEvents } = await import('@/lib/platform-data');
     return NextResponse.json({
       ok: true,
       profile: {
         id: DEMO_ORGANIZER_ID,
-        slug: params.slug,
+        slug,
         name: PILOT_ORGANIZER.organization,
         email: PILOT_ORGANIZER.email,
         region: PILOT_ORGANIZER.region,

@@ -2,20 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
 import { getOpsOrganization, logOpsOutreach, updateOpsOrganization } from '@/lib/ops-contacts-store';
 import { resolveViewerRole } from '@/lib/ops-contacts-schema';
-import { canUseInternalViewer } from '@/lib/auth/guards';
+import { canUseInternalViewer, requireRole } from '@/lib/auth/guards';
 
 export const dynamic = 'force-dynamic';
 
 /** GET — organization detail with contacts & outreach log */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = requireRole(req, 'organizer'); if (!auth.ok) return auth.response;
   await ensurePlatformSeed();
+  const { id } = await params;
 
   const requested = resolveViewerRole(new URL(req.url).searchParams.get('viewerRole'));
   const viewer = requested === 'internal' && !canUseInternalViewer(req) ? 'organizer' : requested;
-  const org = await getOpsOrganization(params.id, viewer);
+  const org = await getOpsOrganization(id, viewer);
 
   if (!org) {
     return NextResponse.json({ ok: false, error: 'Organization not found or access denied' }, { status: 404 });
@@ -27,9 +29,11 @@ export async function GET(
 /** PATCH — update outreach status, notes (internal) */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = requireRole(req, 'organizer'); if (!auth.ok) return auth.response;
   await ensurePlatformSeed();
+  const { id } = await params;
 
   const viewer = resolveViewerRole(new URL(req.url).searchParams.get('viewerRole'));
   if (viewer !== 'internal' || !canUseInternalViewer(req)) {
@@ -37,7 +41,7 @@ export async function PATCH(
   }
 
   const body = await req.json();
-  const org = await updateOpsOrganization(params.id, {
+  const org = await updateOpsOrganization(id, {
     outreachStatus: body.outreachStatus,
     notes: body.notes,
     internalOnly: body.internalOnly,
@@ -54,9 +58,11 @@ export async function PATCH(
 /** POST — log outreach activity */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = requireRole(req, 'organizer'); if (!auth.ok) return auth.response;
   await ensurePlatformSeed();
+  const { id } = await params;
 
   const body = await req.json();
   const { activityType, summary, contactId, actorLabel } = body as {
@@ -71,7 +77,7 @@ export async function POST(
   }
 
   const activity = await logOpsOutreach({
-    organizationId: params.id,
+    organizationId: id,
     contactId,
     activityType,
     summary,

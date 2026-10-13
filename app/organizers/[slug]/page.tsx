@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { PublicLayout } from '@/components/layout/public-layout';
 import { TrustGalleryView } from '@/components/gallery/trust-gallery-view';
@@ -21,23 +21,24 @@ interface OrganizerProfile {
   events: PlatformEvent[];
 }
 
-export default function OrganizerProfilePage({ params }: { params: { slug: string } }) {
+export default function OrganizerProfilePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
   const [profile, setProfile] = useState<OrganizerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const { items, loading: galleryLoading } = useGallery(
     'organizer',
-    profile?.id ?? params.slug,
+    profile?.id ?? slug,
     { publicOnly: true }
   );
 
   useEffect(() => {
-    fetch(`/api/organizers/${params.slug}`)
+    fetch(`/api/organizers/${slug}`)
       .then(r => r.json())
       .then(data => {
         if (data.ok && data.profile) setProfile(data.profile);
       })
       .finally(() => setLoading(false));
-  }, [params.slug]);
+  }, [slug]);
 
   if (loading) {
     return (

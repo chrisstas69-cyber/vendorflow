@@ -4,6 +4,7 @@ import {
   createSessionPayload,
   sessionCookieName,
   signSession,
+  safeAuthDestination,
 } from '@/lib/auth/session';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
 import { ensurePassportForEmail } from '@/lib/vendor-applications-store';
@@ -23,17 +24,34 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL('/login?error=expired', req.url));
   }
 
-  await prisma.magicLinkToken.update({
-    where: { id: row.id },
+  const consumed = await prisma.magicLinkToken.updateMany({
+    where: { id: row.id, usedAt: null, expiresAt: { gt: new Date() } },
     data: { usedAt: new Date() },
   });
+  if (consumed.count !== 1) {
+    return NextResponse.redirect(new URL('/login?error=expired', req.url));
+  }
 
   if (row.role === 'vendor') {
     await ensurePassportForEmail(row.email);
+  } else {
+    const existing = await prisma.organizerAccount.findUnique({ where: { email: row.email } });
+    if (!existing) {
+      const localPart = row.email.split('@')[0] || 'organizer';
+      await prisma.organizerAccount.create({
+        data: {
+          slug: `${localPart.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-${row.id.slice(-6)}`,
+          name: localPart.replace(/[._-]+/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase()),
+          email: row.email,
+          organization: `${localPart.replace(/[._-]+/g, ' ')} events`,
+        },
+      });
+    }
   }
 
   const session = signSession(createSessionPayload(row.email, row.role as 'vendor' | 'organizer'));
-  const dest = row.role === 'organizer' ? '/organizer' : '/pulse';
+  const role = row.role as 'vendor' | 'organizer';
+  const dest = safeAuthDestination(searchParams.get('next'), role) ?? (role === 'organizer' ? '/organizer' : '/pulse');
   const res = NextResponse.redirect(new URL(dest, req.url));
   res.cookies.set(sessionCookieName(), session, {
     httpOnly: true,

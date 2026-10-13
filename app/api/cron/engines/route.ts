@@ -13,20 +13,15 @@ import {
   calculateProfit,
   isSTierZip,
 } from '@/lib/engines';
+import { requireCronSecret } from '@/lib/auth/guards';
 
 export async function POST(req: NextRequest) {
-  const secret = req.headers.get('authorization')?.replace('Bearer ', '');
-  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const denied = requireCronSecret(req); if (denied) return denied;
   return runEngines();
 }
 
 export async function GET(req: NextRequest) {
-  const secret = req.headers.get('authorization')?.replace('Bearer ', '');
-  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const denied = requireCronSecret(req); if (denied) return denied;
   return runEngines();
 }
 

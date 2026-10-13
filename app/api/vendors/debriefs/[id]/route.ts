@@ -3,10 +3,9 @@ import { ensurePlatformSeed } from '@/lib/platform-seed';
 import { getEffectiveDataSource } from '@/lib/pilot-config';
 import type { EventDebriefInput } from '@/lib/event-debrief-schema';
 import { deleteDebrief, getDebrief, upsertDebrief } from '@/lib/event-debrief-store';
-import { resolveVendorEmail } from '@/lib/auth/resolve-vendor-email';
+import { requireVendorEmail } from '@/lib/auth/resolve-vendor-email';
 
-async function getOwnedDebrief(req: NextRequest, id: string) {
-  const vendorEmail = resolveVendorEmail(req);
+async function getOwnedDebrief(vendorEmail: string, id: string) {
   const debrief = await getDebrief(id);
   if (!debrief || debrief.vendorEmail !== vendorEmail) return null;
   return debrief;
@@ -15,8 +14,9 @@ async function getOwnedDebrief(req: NextRequest, id: string) {
 /** GET — single debrief (owner only) */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await ensurePlatformSeed();
+  const auth = requireVendorEmail(req); if (!auth.ok) return auth.response;
   const { id } = await params;
-  const debrief = await getOwnedDebrief(req, id);
+  const debrief = await getOwnedDebrief(auth.email, id);
   if (!debrief) {
     return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
   }
@@ -26,8 +26,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 /** PATCH — partial update (owner only) */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await ensurePlatformSeed();
+  const auth = requireVendorEmail(req); if (!auth.ok) return auth.response;
   const { id } = await params;
-  const existing = await getOwnedDebrief(req, id);
+  const existing = await getOwnedDebrief(auth.email, id);
   if (!existing) {
     return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
   }
@@ -45,8 +46,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 /** DELETE — owner only */
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await ensurePlatformSeed();
+  const auth = requireVendorEmail(req); if (!auth.ok) return auth.response;
   const { id } = await params;
-  const existing = await getOwnedDebrief(req, id);
+  const existing = await getOwnedDebrief(auth.email, id);
   if (!existing) {
     return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
   }
@@ -57,8 +59,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 /** PUT — replace by id (owner only; email bound to session) */
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await ensurePlatformSeed();
+  const auth = requireVendorEmail(req); if (!auth.ok) return auth.response;
   const { id } = await params;
-  const existing = await getOwnedDebrief(req, id);
+  const existing = await getOwnedDebrief(auth.email, id);
   if (!existing) {
     return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
   }

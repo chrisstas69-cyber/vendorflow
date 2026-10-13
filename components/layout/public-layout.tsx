@@ -127,7 +127,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             {NAV.map(link => {
               const active = pathname === link.href;
               return (
-                <Link
+                <a
                   key={link.href}
                   href={link.href}
                   className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
@@ -137,7 +137,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                   }`}
                 >
                   {link.label}
-                </Link>
+                </a>
               );
             })}
           </nav>
@@ -173,7 +173,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               {NAV.map(link => {
                 const active = pathname === link.href;
                 return (
-                  <Link
+                  <a
                     key={link.href}
                     href={link.href}
                     onClick={() => setMobileOpen(false)}
@@ -184,7 +184,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                     }`}
                   >
                     {link.label}
-                  </Link>
+                  </a>
                 );
               })}
               <AuthActions mobile onNavigate={() => setMobileOpen(false)} />
@@ -242,9 +242,11 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             <span>© 2026 VendorFlow — NY &amp; NJ events</span>
             <div className="flex items-center gap-4">
               <Link href="/discover" className="hover:vf-text">Discover</Link>
-              <Link href="/for-vendors" className="hover:vf-text">Vendors</Link>
-              <Link href="/for-organizers" className="hover:vf-text">Organizers</Link>
+              <a href="/for-vendors" className="hover:vf-text">Vendors</a>
+              <a href="/for-organizers" className="hover:vf-text">Organizers</a>
               <Link href="/pricing" className="hover:vf-text">Pricing</Link>
+              <Link href="/privacy" className="hover:vf-text">Privacy</Link>
+              <Link href="/terms" className="hover:vf-text">Terms</Link>
             </div>
           </div>
         </div>
@@ -268,12 +270,12 @@ function FooterCol({
       <ul className="space-y-2">
         {links.map(l => (
           <li key={l.label}>
-            <Link
+            <a
               href={l.href}
               className="text-xs vf-text-muted hover:vf-text transition-colors"
             >
               {l.label}
-            </Link>
+            </a>
           </li>
         ))}
       </ul>

@@ -23,6 +23,7 @@ import type { ActivityFeedDTO } from '@/lib/workflow/event-types';
 import { generateBoothInventory } from '@/lib/booth/street-fair-generate';
 import type { LayoutMode, StreetFairLayoutDefinition } from '@/lib/booth/street-fair-schema';
 import { getActiveOrganizerId } from '@/lib/pilot-config';
+import { safeImageReference } from '@/lib/storage/image-reference';
 
 function parseJsonArray(raw: string): string[] {
   try {
@@ -86,7 +87,7 @@ function toInboxItem(
     status: app.status as 'pending' | 'approved' | 'rejected',
     submittedAt: app.createdAt.toISOString(),
     hasInsurance: app.hasInsurance,
-    setupPhotoUrl: app.setupPhotoUrl ?? undefined,
+    setupPhotoUrl: safeImageReference(app.setupPhotoUrl),
     shortlisted: app.shortlisted,
     infoRequested: app.infoRequested,
     documentsCount: uploadedDocTypes.length,
@@ -199,11 +200,12 @@ export async function getApplicationByIdFromDb(id: string, organizerId?: string)
 export async function performApplicationActionDb(
   submissionId: string,
   action: InboxAction,
-  actorLabel = 'Organizer'
+  actorLabel = 'Organizer',
+  organizerId?: string
 ) {
   await ensurePilotDbSeed();
-  const app = await prisma.vendorApplication.findUnique({
-    where: { id: submissionId },
+  const app = await prisma.vendorApplication.findFirst({
+    where: { id: submissionId, ...(organizerId ? { organizerId } : {}) },
     include: { boothAssignment: true },
   });
   if (!app) return { ok: false as const, error: 'Application not found' };
@@ -294,6 +296,8 @@ export async function createApplicationDb(input: {
   vendorName: string;
   category: string;
   message?: string;
+  boothType?: string;
+  boothFee?: number;
   requiredForms?: string[];
   hasInsurance?: boolean;
   setupPhotoUrl?: string;
@@ -318,6 +322,8 @@ export async function createApplicationDb(input: {
       vendorName: input.vendorName,
       category: input.category,
       message: input.message ?? '',
+      boothType: input.boothType ?? '10x10 booth',
+      boothFee: input.boothFee ?? null,
       requiredForms: JSON.stringify(input.requiredForms ?? ['coi', 'w9']),
       pipelineStage: 'applied',
       status: 'pending',

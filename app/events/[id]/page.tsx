@@ -3,17 +3,18 @@ import { findPlatformEventById } from '@/lib/event-lookup';
 import { EventDetailClient } from './event-detail-client';
 
 interface Props {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export function generateMetadata({ params }: Props): Metadata {
-  const event = findPlatformEventById(params.id);
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const event = findPlatformEventById(id);
   if (!event) {
     return { title: 'Event not found' };
   }
   // Root layout template appends "| VendorFlow" — don't duplicate the brand.
-  const title = `${event.name} — Vendor Booths`;
-  const description = `${event.description} ${event.city}, ${event.state} on ${event.date}. Booth fee $${event.boothFee}. Apply as a vendor on VendorFlow.`;
+  const title = `${event.name} — ${event.city}, ${event.state}`;
+  const description = `${event.description} ${event.city}, ${event.state} on ${event.date}. Save and share this event on VendorFlow.`;
   return {
     title,
     description,
@@ -52,21 +53,12 @@ function eventJsonLd(id: string) {
       name: event.organizerName,
     },
     image: event.coverImageUrl ? [event.coverImageUrl] : undefined,
-    offers: {
-      '@type': 'Offer',
-      name: 'Vendor booth',
-      price: event.boothFee,
-      priceCurrency: 'USD',
-      availability:
-        event.vendorSlotsFilled < event.vendorSlots
-          ? 'https://schema.org/InStock'
-          : 'https://schema.org/SoldOut',
-    },
   };
 }
 
-export default function EventDetailPage({ params }: Props) {
-  const jsonLd = eventJsonLd(params.id);
+export default async function EventDetailPage({ params }: Props) {
+  const { id } = await params;
+  const jsonLd = eventJsonLd(id);
   return (
     <>
       {jsonLd && (

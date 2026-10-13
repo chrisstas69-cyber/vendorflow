@@ -33,11 +33,11 @@ export async function POST(req: NextRequest) {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
     if (!rateLimit(`event-trust:${ip}`, 10, 60_000)) return NextResponse.json({ ok: false, error: 'Try again shortly.' }, { status: 429 });
     if (body.type === 'claim') {
-      if (!String(body.email ?? '').includes('@')) return NextResponse.json({ ok: false, error: 'Valid email required.' }, { status: 400 });
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.email ?? '')) || String(body.message ?? '').length > 2000 || String(body.evidenceUrl ?? '').length > 2048) return NextResponse.json({ ok: false, error: 'Valid claim details are required.' }, { status: 400 });
       await prisma.eventClaim.create({ data: { listingId: listing?.id, externalEventId: platformEvent?.id ?? scrapedEvent?.event_id, eventName, email: String(body.email).toLowerCase().trim(), role: body.role, evidenceUrl: body.evidenceUrl, note: body.message } });
       return NextResponse.json({ ok: true, message: 'Claim received. VendorFlow will verify your connection to the event.' });
     }
-    if (!String(body.message ?? '').trim()) return NextResponse.json({ ok: false, error: 'Describe what needs correcting.' }, { status: 400 });
+    if (!String(body.message ?? '').trim() || String(body.message).length > 2000) return NextResponse.json({ ok: false, error: 'Describe what needs correcting in 2,000 characters or fewer.' }, { status: 400 });
     await prisma.eventCorrection.create({ data: { listingId: listing?.id, externalEventId: platformEvent?.id ?? scrapedEvent?.event_id, eventName, email: body.email || null, message: String(body.message).trim() } });
     return NextResponse.json({ ok: true, message: 'Thank you. The correction is queued for review.' });
   } catch (error) { return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : 'Request failed.' }, { status: 500 }); }

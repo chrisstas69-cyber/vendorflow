@@ -55,22 +55,14 @@ export function ReceiptVaultPanel() {
   const handleFile = async (file: File) => {
     setUploading(true);
     try {
-      const reader = new FileReader();
-      const imageData = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      const form = new FormData();
+      form.set('file', file);
+      form.set('category', category);
+      form.set('amount', String(parseFloat(amount) || 0));
+      form.set('notes', file.name);
       await fetch('/api/vendors/receipts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          category,
-          amount: parseFloat(amount) || 0,
-          fileName: file.name,
-          imageData: imageData.length < 500_000 ? imageData : undefined,
-          notes: file.name,
-        }),
+        body: form,
       });
       await load();
       setAmount('');

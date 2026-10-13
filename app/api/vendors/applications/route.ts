@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
-import { resolveVendorEmail } from '@/lib/auth/resolve-vendor-email';
+import { requireVendorEmail } from '@/lib/auth/resolve-vendor-email';
 import { getEffectiveDataSource } from '@/lib/pilot-config';
 import { listVendorApplicationsFromDb } from '@/lib/vendor-applications-store';
 import { mockApplications } from '@/lib/mock-data';
@@ -10,7 +10,8 @@ export const dynamic = 'force-dynamic';
 /** GET — vendor's own applications (Postgres when available, seed demo otherwise) */
 export async function GET(req: NextRequest) {
   await ensurePlatformSeed();
-  const vendorEmail = resolveVendorEmail(req);
+  const auth = requireVendorEmail(req); if (!auth.ok) return auth.response;
+  const vendorEmail = auth.email;
   const dataSource = getEffectiveDataSource();
 
   if (dataSource !== 'db') {

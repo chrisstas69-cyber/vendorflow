@@ -1,8 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { listLeads, LEAD_FIELDS } from '@/lib/airtable';
 import { ALERT_SORT, GRADE_SORT } from '@/lib/engines';
+import { requireAdmin } from '@/lib/auth/guards';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = requireAdmin(req); if (!auth.ok) return auth.response;
   try {
     const records = await listLeads();
     const leads = records

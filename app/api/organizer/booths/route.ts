@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getActiveOrganizerId, getEffectiveDataSource } from '@/lib/pilot-config';
+import { getEffectiveDataSource } from '@/lib/pilot-config';
+import { organizerIdForRequest } from '@/lib/auth/guards';
 import {
   getBoothMapFromDb,
   getBoothLayoutResponseDb,
@@ -20,8 +21,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   await ensurePlatformSeed();
 
+  const auth = await organizerIdForRequest(req);
+  if (!auth.ok) return auth.response;
+
   const { searchParams } = new URL(req.url);
-  const organizerId = searchParams.get('organizerId') ?? getActiveOrganizerId();
+  const organizerId = auth.organizerId;
   const eventId = searchParams.get('eventId');
 
   if (!eventId) {
@@ -79,20 +83,22 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   await ensurePlatformSeed();
 
+  const auth = await organizerIdForRequest(req);
+  if (!auth.ok) return auth.response;
+
   const body = await req.json();
   const {
-    organizerId = getActiveOrganizerId(),
     eventId,
     layoutMode,
     streetFair,
     grid,
   } = body as {
-    organizerId?: string;
     eventId?: string;
     layoutMode?: LayoutMode;
     streetFair?: StreetFairLayoutDefinition;
     grid?: unknown[];
   };
+  const organizerId = auth.organizerId;
 
   if (!eventId) {
     return NextResponse.json({ ok: false, error: 'eventId is required' }, { status: 400 });
@@ -142,14 +148,15 @@ export async function PUT(req: NextRequest) {
 export async function POST(req: NextRequest) {
   await ensurePlatformSeed();
 
+  const auth = await organizerIdForRequest(req);
+  if (!auth.ok) return auth.response;
+
   const body = await req.json();
   const {
-    organizerId = getActiveOrganizerId(),
     eventId,
     assignments,
     actorLabel,
   } = body as {
-    organizerId?: string;
     eventId?: string;
     assignments?: {
       boothLabel: string;
@@ -159,6 +166,7 @@ export async function POST(req: NextRequest) {
     }[];
     actorLabel?: string;
   };
+  const organizerId = auth.organizerId;
 
   if (!eventId || !Array.isArray(assignments)) {
     return NextResponse.json(

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Calendar, MapPin, TrendingUp, DollarSign } from 'lucide-react';
+import { Calendar, MapPin, TrendingUp, DollarSign, Store } from 'lucide-react';
 import { TierBadge } from '@/components/tier-badge';
 import { WorthItBadge } from '@/components/vendor/worth-it-badge';
 import type { PlatformEvent } from '@/lib/platform-data';
@@ -54,6 +54,9 @@ export function VendorPulseCard({ event, onApply, applying, inPipeline, applicat
 
         <div className="mb-3 flex items-center gap-2 flex-wrap">
           <WorthItBadge event={event} compact />
+          {event.vendorSlots > event.vendorSlotsFilled && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"><Store className="h-3 w-3" /> Accepting vendors</span>
+          )}
           {applicationStatus && <ApplicationStatusBadge status={applicationStatus} />}
         </div>
         {(event.saves > 0 || inPipeline) && (
@@ -96,7 +99,7 @@ export function VendorPulseCard({ event, onApply, applying, inPipeline, applicat
           className="mt-auto w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-semibold text-sm bg-amber-400 hover:bg-amber-500 text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <DollarSign className="h-4 w-4" />
-          {inPipeline ? 'Applied' : applying ? 'Submitting…' : 'Apply now'}
+          {inPipeline ? 'Application submitted' : applying ? 'Submitting…' : 'Participate'}
         </button>
       </div>
     </div>

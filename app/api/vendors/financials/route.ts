@@ -3,11 +3,12 @@ import { ensurePlatformSeed } from '@/lib/platform-seed';
 import { getEffectiveDataSource } from '@/lib/pilot-config';
 import { listVendorFinancials, upsertVendorFinancial } from '@/lib/vendor-financial-store';
 import type { VendorFinancialInput } from '@/lib/vendor-financial-schema';
-import { resolveVendorEmail } from '@/lib/auth/resolve-vendor-email';
+import { requireVendorEmail } from '@/lib/auth/resolve-vendor-email';
 
 export async function GET(req: NextRequest) {
   await ensurePlatformSeed();
-  const vendorEmail = resolveVendorEmail(req);
+  const auth = requireVendorEmail(req); if (!auth.ok) return auth.response;
+  const vendorEmail = auth.email;
   const { items } = await listVendorFinancials(vendorEmail);
   return NextResponse.json({ ok: true, dataSource: getEffectiveDataSource(), items });
 }
@@ -15,7 +16,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   await ensurePlatformSeed();
   const body = await req.json();
-  const vendorEmail = resolveVendorEmail(req);
+  const auth = requireVendorEmail(req); if (!auth.ok) return auth.response;
+  const vendorEmail = auth.email;
   const input = body.financial as VendorFinancialInput;
   if (!input?.eventName || !input?.eventDate) {
     return NextResponse.json({ ok: false, error: 'eventName and eventDate required' }, { status: 400 });

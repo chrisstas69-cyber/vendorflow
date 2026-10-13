@@ -44,7 +44,7 @@ export function EventCard({ event, onApply, applying }: EventCardProps) {
                     <div className="font-bold">{event.footTraffic}</div>
                     <div>Fee Transparency:</div>
                     <div className="font-bold">100%</div>
-                    <div>DUD Risk:</div>
+                    <div>Your Fit Risk:</div>
                     <div className={`font-bold ${dudRiskColor}`}>{event.dudRisk}%</div>
                   </div>
                 </div>
@@ -106,7 +106,7 @@ export function EventCard({ event, onApply, applying }: EventCardProps) {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <AlertTriangle className={`h-4 w-4 ${dudRiskColor}`} />
-          <span className="text-xs font-bold">DUD RISK</span>
+          <span className="text-xs font-bold">YOUR FIT RISK</span>
         </div>
         <div className={`text-sm font-bold ${dudRiskColor}`}>{event.dudRisk}%</div>
       </div>

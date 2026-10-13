@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getActiveOrganizerId, getEffectiveDataSource } from '@/lib/pilot-config';
+import { getEffectiveDataSource } from '@/lib/pilot-config';
+import { organizerIdForRequest } from '@/lib/auth/guards';
 import { ensurePlatformSeed } from '@/lib/platform-seed';
 import { prisma } from '@/lib/prisma';
 import { defaultTimelineStages } from '@/lib/workflow/timeline-stages';
@@ -11,8 +12,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   await ensurePlatformSeed();
 
+  const auth = await organizerIdForRequest(req);
+  if (!auth.ok) return auth.response;
+
   const { searchParams } = new URL(req.url);
-  const organizerId = searchParams.get('organizerId') ?? getActiveOrganizerId();
+  const organizerId = auth.organizerId;
   const eventId = searchParams.get('eventId');
 
   if (!eventId) {

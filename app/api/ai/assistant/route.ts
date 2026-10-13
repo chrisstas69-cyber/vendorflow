@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { assembleAssistantContext, sanitizeContextForPrompt } from '@/lib/assistant/context-assembler';
 import { parseQuickActionsFromReply } from '@/lib/assistant/quick-actions';
 import type { UserRole } from '@/lib/platform-data';
+import { requireSession } from '@/lib/auth/guards';
 
 /** POST — conversational assistant with context assembly + quick actions */
 export async function POST(req: NextRequest) {
+  const auth = requireSession(req); if (!auth.ok) return auth.response;
   const body = await req.json();
-  const role = (body.role as 'organizer' | 'vendor') ?? 'vendor';
+  const role = auth.session.role;
   const message = (body.message as string)?.trim();
 
   if (!message) {

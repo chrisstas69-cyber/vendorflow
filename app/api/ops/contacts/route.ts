@@ -8,13 +8,14 @@ import {
   OUTREACH_STATUSES,
   resolveViewerRole,
 } from '@/lib/ops-contacts-schema';
-import { canUseInternalViewer } from '@/lib/auth/guards';
+import { canUseInternalViewer, requireRole } from '@/lib/auth/guards';
 
 export const dynamic = 'force-dynamic';
 
 /** GET — search operational contact database (private) */
 export async function GET(req: NextRequest) {
   try {
+    const auth = requireRole(req, 'organizer'); if (!auth.ok) return auth.response;
     await ensurePlatformSeed();
 
     const { searchParams } = new URL(req.url);

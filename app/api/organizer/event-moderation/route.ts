@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { assertOrganizerOrDemo } from '@/lib/auth/guards';
+import { requireAdmin } from '@/lib/auth/guards';
 import { eventToken, sendEventEmail, slugifyEvent, type PublicEventInput } from '@/lib/public-events';
 
 export async function GET(req: NextRequest) {
-  const denied = assertOrganizerOrDemo(req); if (denied) return denied;
+  const auth = requireAdmin(req); if (!auth.ok) return auth.response;
   try {
     const [submissions, claims, corrections] = await Promise.all([
       prisma.eventSubmission.findMany({ where: { status: 'pending' }, orderBy: { createdAt: 'asc' }, take: 100 }),
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const denied = assertOrganizerOrDemo(req); if (denied) return denied;
+  const auth = requireAdmin(req); if (!auth.ok) return auth.response;
   try {
     const body = await req.json();
     if (body.entity === 'submission') {

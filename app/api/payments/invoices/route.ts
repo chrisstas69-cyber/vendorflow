@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { listInvoices, serializeInvoice } from '@/lib/payments/payment-service';
-import { getSessionFromRequest } from '@/lib/auth/guards';
+import { organizerIdForRequest, requireSession } from '@/lib/auth/guards';
 import { prisma } from '@/lib/prisma';
 import {
   BOOTH_FEE_TEMPLATE_BODY,
@@ -12,15 +12,17 @@ import {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const session = getSessionFromRequest(req);
-    const vendorEmail =
-      session?.role === 'vendor'
-        ? session.email
-        : searchParams.get('vendorEmail') ?? undefined;
+    const auth = requireSession(req); if (!auth.ok) return auth.response;
+    const organizer = auth.session.role === 'organizer'
+      ? await organizerIdForRequest(req)
+      : null;
+    if (organizer && !organizer.ok) return organizer.response;
     const invoices = await listInvoices({
-      organizerId: searchParams.get('organizerId') ?? undefined,
-      vendorEmail,
-      vendorPassportId: session?.role === 'vendor' ? undefined : searchParams.get('vendorPassportId') ?? undefined,
+      organizerId: organizer?.ok ? organizer.organizerId : undefined,
+      vendorEmail: auth.session.role === 'vendor' ? auth.session.email : undefined,
+      vendorPassportId: auth.session.role === 'organizer'
+        ? searchParams.get('vendorPassportId') ?? undefined
+        : undefined,
       status: searchParams.get('status') ?? undefined,
     });
     return NextResponse.json({ ok: true, invoices: invoices.map(serializeInvoice) });
@@ -35,9 +37,9 @@ export async function GET(req: NextRequest) {
 /** POST — create invoice + optional contract from template */
 export async function POST(req: NextRequest) {
   try {
+    const auth = await organizerIdForRequest(req); if (!auth.ok) return auth.response;
     const body = await req.json();
     const {
-      organizerId,
       vendorPassportId,
       eventId,
       lineItems,
@@ -47,6 +49,7 @@ export async function POST(req: NextRequest) {
       eventName,
       eventDate,
     } = body;
+    const organizerId = auth.organizerId;
 
     if (!organizerId || !vendorPassportId || !lineItems?.length) {
       return NextResponse.json(
@@ -54,6 +57,19 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    if (
+      !Array.isArray(lineItems) ||
+      lineItems.length > 50 ||
+      lineItems.some((item: { label?: unknown; amountCents?: unknown; quantity?: unknown }) =>
+        typeof item.label !== 'string' || !item.label.trim() || item.label.length > 160 ||
+        !Number.isInteger(item.amountCents) || Number(item.amountCents) < 0 || Number(item.amountCents) > 100_000_000 ||
+        (item.quantity !== undefined && (!Number.isInteger(item.quantity) || Number(item.quantity) < 1 || Number(item.quantity) > 100))
+      )
+    ) {
+      return NextResponse.json({ ok: false, error: 'Invalid invoice line items' }, { status: 400 });
+    }
+    const vendor = await prisma.vendorPassport.findUnique({ where: { id: vendorPassportId }, select: { id: true } });
+    if (!vendor) return NextResponse.json({ ok: false, error: 'Vendor not found' }, { status: 404 });
 
     const totalAmountCents = lineItems.reduce(
       (s: number, li: { amountCents: number; quantity?: number }) =>

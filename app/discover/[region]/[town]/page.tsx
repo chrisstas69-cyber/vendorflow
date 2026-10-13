@@ -8,7 +8,7 @@ import {
 } from '@/lib/marketplace';
 
 interface PageProps {
-  params: { region: string; town: string };
+  params: Promise<{ region: string; town: string }>;
 }
 
 function titleCase(slug: string) {
@@ -22,11 +22,12 @@ export function generateStaticParams() {
   return TOWN_LANDING_PAGES.map(({ region, town }) => ({ region, town }));
 }
 
-export function generateMetadata({ params }: PageProps): Metadata {
-  const regionLabel = REGION_SLUG_TO_DB[params.region] ?? titleCase(params.region);
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { region, town } = await params;
+  const regionLabel = REGION_SLUG_TO_DB[region] ?? titleCase(region);
   const townLabel =
-    TOWN_LANDING_PAGES.find(p => p.region === params.region && p.town === params.town)?.title ??
-    titleCase(params.town);
+    TOWN_LANDING_PAGES.find(p => p.region === region && p.town === town)?.title ??
+    titleCase(town);
 
   const title = `Events in ${townLabel}, ${regionLabel} | VendorFlow`;
   const description = `Discover fairs, festivals, markets, and family events in ${townLabel}, ${regionLabel}. Filter by kids zone, food trucks, free parking, and more.`;
@@ -38,20 +39,21 @@ export function generateMetadata({ params }: PageProps): Metadata {
   };
 }
 
-export default function RegionalDiscoverPage({ params }: PageProps) {
-  const regionLabel = REGION_SLUG_TO_DB[params.region] ?? titleCase(params.region);
+export default async function RegionalDiscoverPage({ params }: PageProps) {
+  const { region, town } = await params;
+  const regionLabel = REGION_SLUG_TO_DB[region] ?? titleCase(region);
   const townLabel =
-    TOWN_LANDING_PAGES.find(p => p.region === params.region && p.town === params.town)?.title ??
-    titleCase(params.town);
-  const initialState = params.region === 'nj' ? 'NJ' : ('NY' as const);
+    TOWN_LANDING_PAGES.find(p => p.region === region && p.town === town)?.title ??
+    titleCase(town);
+  const initialState = region === 'nj' ? 'NJ' : ('NY' as const);
 
   return (
     <PublicLayout>
       <div className="max-w-6xl mx-auto px-4 py-8">
         <Suspense fallback={<p className="public-muted">Loading events…</p>}>
           <DiscoverExplore
-            initialRegionSlug={params.region}
-            initialTownSlug={params.town}
+            initialRegionSlug={region}
+            initialTownSlug={town}
             initialState={initialState}
             pageTitle={`Events in ${townLabel}`}
             pageDescription={`Street fairs, festivals, and markets in ${townLabel}, ${regionLabel} — powered by the VendorFlow events index.`}
